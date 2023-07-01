@@ -1,10 +1,11 @@
 from asyncio import get_event_loop
-from datetime import datetime
 from os import getenv
 
 from asyncinotify import Inotify, Mask
+from orjson import OPT_INDENT_2, OPT_SORT_KEYS, dumps
 from pika import BlockingConnection, DeliveryMode, URLParameters
 from pika.spec import BasicProperties
+from prospector import Prospector
 
 AMQP_CONNECTION = getenv("AMQP_CONNECTION")  # format: amqp://user:password@server:port
 AMQP_EXCHANGE = "apollonia-ingestor"
@@ -43,19 +44,14 @@ class Ingestor:
         self.amqp_connection.close()
 
     async def ingest(self):
-        print(f" -=: Watching {DATA_DIRECTORY}. :=- ")
+        print(f" -=: Igesting from {DATA_DIRECTORY}. :=- ")
         with Inotify() as inotify:
             inotify.add_watch(DATA_DIRECTORY, Mask.CLOSE_WRITE)
 
             async for event in inotify:
-                file_found = str(event.path)
-                print(f" --: processing {file_found} :-- ")
-                data = {
-                    "found_at": datetime.utcnow().timestamp(),
-                    "name": file_found,
-                }
+                data = Prospector(event.path).prospect()
                 self.amqp_channel.basic_publish(
-                    body=data,
+                    body=dumps(data, option=OPT_SORT_KEYS | OPT_INDENT_2),
                     exchange=AMQP_EXCHANGE,
                     properties=self.amqp_properties,
                     routing_key=f"{ROUTING_KEY}",

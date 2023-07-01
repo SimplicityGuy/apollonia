@@ -1,2 +1,4 @@
 asyncinotify
+orjson
 pika
+xxhash
