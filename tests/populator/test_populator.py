@@ -26,16 +26,16 @@ class MockMessage(AbstractIncomingMessage):
     def body(self) -> bytes:
         return self._body
 
-    async def ack(self, multiple: bool = False) -> None:
+    async def ack(self, _multiple: bool = False) -> None:
         self.acked = True
 
-    async def nack(self, multiple: bool = False, requeue: bool = True) -> None:
+    async def nack(self, _multiple: bool = False, _requeue: bool = True) -> None:
         self.nacked = True
 
-    async def reject(self, requeue: bool = False) -> None:
+    async def reject(self, _requeue: bool = False) -> None:
         self.rejected = True
 
-    async def process(self, *args, **kwargs):
+    async def process(self, *_args, **_kwargs):
         """Context manager for processing."""
 
         class ProcessContext:
@@ -226,7 +226,7 @@ class TestPopulator:
 
     @pytest.mark.asyncio
     @patch("populator.populator.logger")
-    async def test_import_to_neo4j_with_minimal_data(self, mock_logger: Mock) -> None:
+    async def test_import_to_neo4j_with_minimal_data(self, _mock_logger: Mock) -> None:
         """Test import with minimal data (missing optional fields)."""
         # Minimal data
         test_data = {"file_path": "/data/minimal.txt", "timestamp": "2024-01-01T12:00:00+00:00"}

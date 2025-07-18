@@ -168,7 +168,7 @@ async def test_prospector_file_permissions() -> None:
         import os
 
         if hasattr(os, "chmod"):
-            os.chmod(temp_path, 0o000)
+            temp_path.chmod(0o000)
 
             prospector = Prospector(temp_path)
             result = await prospector.prospect()
@@ -178,7 +178,7 @@ async def test_prospector_file_permissions() -> None:
             assert result["xxh128_hash"] == ""
 
             # Restore permissions for cleanup
-            os.chmod(temp_path, 0o644)
+            temp_path.chmod(0o644)
 
     finally:
         temp_path.unlink()

@@ -5,6 +5,7 @@ import logging
 import os
 import signal
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import orjson
@@ -76,7 +77,7 @@ class Ingestor:
         logger.info("Starting file monitoring on %s", DATA_DIRECTORY)
 
         # Ensure the data directory exists
-        os.makedirs(DATA_DIRECTORY, exist_ok=True)
+        Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
         async with Inotify() as inotify:
             inotify.add_watch(DATA_DIRECTORY, Mask.CREATE | Mask.MOVED_TO | Mask.CLOSE_WRITE)
@@ -136,7 +137,7 @@ async def async_main() -> None:
     """Run the ingestor service."""
     ingestor: Ingestor | None = None
 
-    def signal_handler(signum: int, frame: Any) -> None:
+    def signal_handler(signum: int, _frame: Any) -> None:
         """Handle shutdown signals."""
         logger.info("Received signal %s, shutting down gracefully", signum)
         if ingestor:

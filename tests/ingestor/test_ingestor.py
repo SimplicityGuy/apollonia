@@ -128,7 +128,7 @@ class TestIngestor:
     @patch("ingestor.ingestor.Inotify")
     @patch("ingestor.ingestor.os.makedirs")
     async def test_ingest_error_handling(
-        self, mock_makedirs: Mock, mock_inotify_class: Mock
+        self, _mock_makedirs: Mock, mock_inotify_class: Mock
     ) -> None:
         """Test error handling during ingest."""
         # Setup mocks

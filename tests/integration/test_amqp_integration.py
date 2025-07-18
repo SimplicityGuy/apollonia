@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 import time
 from typing import Any
 
 import orjson
+import pika
 import pytest
 from aio_pika import Message, connect_robust
 from pika import BlockingConnection, URLParameters
@@ -34,7 +36,7 @@ def skip_if_no_amqp(amqp_url: str) -> None:
 class TestAMQPIntegration:
     """Test AMQP integration between services."""
 
-    def test_blocking_connection(self, amqp_url: str, skip_if_no_amqp: None) -> None:
+    def test_blocking_connection(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
         """Test basic blocking connection (used by ingestor)."""
         connection = BlockingConnection(URLParameters(amqp_url))
         channel = connection.channel()
@@ -78,7 +80,7 @@ class TestAMQPIntegration:
         connection.close()
 
     @pytest.mark.asyncio
-    async def test_async_connection(self, amqp_url: str, skip_if_no_amqp: None) -> None:
+    async def test_async_connection(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
         """Test async connection (used by populator)."""
         connection = await connect_robust(amqp_url)
 
@@ -122,7 +124,7 @@ class TestAMQPIntegration:
             await exchange.delete()
 
     @pytest.mark.asyncio
-    async def test_message_flow(self, amqp_url: str, skip_if_no_amqp: None) -> None:
+    async def test_message_flow(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
         """Test complete message flow from publisher to consumer."""
         # Setup connection
         connection = await connect_robust(amqp_url)
@@ -182,13 +184,13 @@ class TestAMQPIntegration:
             # Cleanup
             await queue.delete()
 
-    def test_error_handling(self, amqp_url: str, skip_if_no_amqp: None) -> None:
+    def test_error_handling(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
         """Test error handling and recovery."""
         connection = BlockingConnection(URLParameters(amqp_url))
         channel = connection.channel()
 
         # Try to consume from non-existent queue
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, RuntimeError)):
             channel.basic_get("non-existent-queue")
 
         # Connection should still be usable
@@ -197,7 +199,7 @@ class TestAMQPIntegration:
         connection.close()
 
     @pytest.mark.asyncio
-    async def test_concurrent_consumers(self, amqp_url: str, skip_if_no_amqp: None) -> None:
+    async def test_concurrent_consumers(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
         """Test multiple consumers on same queue."""
         connection = await connect_robust(amqp_url)
 
@@ -246,10 +248,8 @@ class TestAMQPIntegration:
             # Cancel consumers
             for task in consumer_tasks:
                 task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await task
-                except asyncio.CancelledError:
-                    pass
 
             # Verify all messages were consumed
             message_ids = [msg[1] for msg in consumed_messages]

@@ -216,7 +216,7 @@ async def async_main() -> None:
     """Run the populator service."""
     populator: Populator | None = None
 
-    def signal_handler(signum: int, frame: Any) -> None:
+    def signal_handler(signum: int, _frame: Any) -> None:
         """Handle shutdown signals."""
         logger.info("Received signal %s, shutting down gracefully", signum)
         if populator:
@@ -246,7 +246,7 @@ def main() -> None:
         logger.error("AMQP_CONNECTION_STRING environment variable not set")
         sys.exit(1)
 
-    if not NEO4J_PASSWORD or NEO4J_PASSWORD == "password":
+    if not NEO4J_PASSWORD or NEO4J_PASSWORD == "password":  # noqa: S105
         logger.warning("Using default Neo4j password - please change in production")
 
     asyncio.run(async_main())

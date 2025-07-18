@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import tempfile
-from collections.abc import Generator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
 
 @pytest.fixture
-def temp_directory() -> Generator[Path, None, None]:
+def temp_directory() -> Generator[Path]:
     """Create a temporary directory for testing."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)

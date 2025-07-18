@@ -119,15 +119,17 @@ class Prospector:
         stem = self.path.stem
         try:
             for file in self.path.parent.iterdir():
-                if file.is_file() and file != self.path:
-                    # Same stem, different extension
-                    if (
+                if (
+                    file.is_file()
+                    and file != self.path
+                    and (
                         file.stem == stem
                         or file.stem.lower() in ["tracklist", "tracks", "info", "readme"]
                         or len(stem) > 3
                         and file.stem.startswith(stem[:3])
-                    ):
-                        neighbors.append(str(file.absolute()))
+                    )
+                ):
+                    neighbors.append(str(file.absolute()))
         except OSError:
             logger.exception("Failed to search for neighbors of: %s", self.path)
 

@@ -22,10 +22,11 @@ services:
 # Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install development dependencies
-uv sync --all-extras
+# Complete development setup (installs dependencies and pre-commit hooks)
+uv run task install
 
-# Install pre-commit hooks
+# Alternative: manual setup
+uv sync --all-extras
 uv run task install-hooks
 ```
 
@@ -77,6 +78,12 @@ uv run task test
 # Run tests in watch mode
 uv run task test-watch
 
+# Run integration tests only
+uv run task test-integration
+
+# Run end-to-end tests only
+uv run task test-e2e
+
 # Run specific test file
 uv run pytest tests/test_ingestor.py -v
 
@@ -93,14 +100,23 @@ uv run task ingestor
 # Run the populator locally
 uv run task populator
 
+# Build Python packages (main project)
+uv run task build
+
+# Build individual service packages
+uv run task build-services
+
 # Clean build artifacts
 uv run task clean
 
-# Build Python packages
-uv run task build
+# Complete cleanup (including Docker)
+uv run task clean-all
 
 # Update pre-commit hooks
 uv run task update-hooks
+
+# Run CI checks locally
+uv run task ci
 ```
 
 ## Required Environment Variables

@@ -36,7 +36,7 @@ def skip_if_no_neo4j(neo4j_config: dict[str, str]) -> None:
 
 
 @pytest.fixture
-async def neo4j_driver(neo4j_config: dict[str, str], skip_if_no_neo4j: None):
+async def neo4j_driver(neo4j_config: dict[str, str], _skip_if_no_neo4j: None):
     """Create async Neo4j driver."""
     driver = AsyncGraphDatabase.driver(
         neo4j_config["uri"], auth=(neo4j_config["user"], neo4j_config["password"])
@@ -69,7 +69,7 @@ class TestNeo4jIntegration:
             assert record["value"] == 1
 
     @pytest.mark.asyncio
-    async def test_create_file_node(self, neo4j_driver, clean_database) -> None:
+    async def test_create_file_node(self, neo4j_driver, _clean_database) -> None:
         """Test creating a file node."""
         file_data = {
             "file_path": "/test/example.txt",
@@ -108,7 +108,7 @@ class TestNeo4jIntegration:
             assert node["size"] == file_data["size"]
 
     @pytest.mark.asyncio
-    async def test_update_existing_node(self, neo4j_driver, clean_database) -> None:
+    async def test_update_existing_node(self, neo4j_driver, _clean_database) -> None:
         """Test updating an existing file node."""
         file_path = "/test/update.txt"
 
@@ -146,7 +146,7 @@ class TestNeo4jIntegration:
             assert node["size"] == 1000
 
     @pytest.mark.asyncio
-    async def test_neighbor_relationships(self, neo4j_driver, clean_database) -> None:
+    async def test_neighbor_relationships(self, neo4j_driver, _clean_database) -> None:
         """Test creating neighbor relationships between files."""
         async with neo4j_driver.session() as session:
             # Create main file
@@ -181,7 +181,7 @@ class TestNeo4jIntegration:
             assert neighbor_paths == sorted(neighbors)
 
     @pytest.mark.asyncio
-    async def test_find_duplicates_by_hash(self, neo4j_driver, clean_database) -> None:
+    async def test_find_duplicates_by_hash(self, neo4j_driver, _clean_database) -> None:
         """Test finding duplicate files by hash."""
         test_hash = "duplicate_hash_123"
 
@@ -215,7 +215,7 @@ class TestNeo4jIntegration:
             assert duplicate_paths == sorted(files)
 
     @pytest.mark.asyncio
-    async def test_transaction_rollback(self, neo4j_driver, clean_database) -> None:
+    async def test_transaction_rollback(self, neo4j_driver, _clean_database) -> None:
         """Test transaction rollback on error."""
         async with neo4j_driver.session() as session:
             try:
@@ -226,7 +226,7 @@ class TestNeo4jIntegration:
                     # Force an error
                     await tx.run("INVALID CYPHER QUERY")
 
-            except Exception:
+            except Exception:  # noqa: S110
                 pass  # Expected
 
             # Verify node was not created
@@ -237,7 +237,7 @@ class TestNeo4jIntegration:
             assert record is None
 
     @pytest.mark.asyncio
-    async def test_performance_with_indexes(self, neo4j_driver, clean_database) -> None:
+    async def test_performance_with_indexes(self, neo4j_driver, _clean_database) -> None:
         """Test performance improvement with indexes."""
         async with neo4j_driver.session() as session:
             # Create index if not exists
@@ -248,7 +248,7 @@ class TestNeo4jIntegration:
                 await session.run(
                     "CREATE INDEX file_sha256_index IF NOT EXISTS FOR (f:File) ON (f.sha256)"
                 )
-            except Exception:
+            except Exception:  # noqa: S110
                 pass  # Indexes might already exist
 
             # Create many nodes
@@ -268,7 +268,7 @@ class TestNeo4jIntegration:
             assert record["count"] == 10  # Should find 10 files with hash_5
 
     @pytest.mark.asyncio
-    async def test_datetime_handling(self, neo4j_driver, clean_database) -> None:
+    async def test_datetime_handling(self, neo4j_driver, _clean_database) -> None:
         """Test proper datetime handling."""
         now = datetime.now(UTC)
 
