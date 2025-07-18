@@ -203,3 +203,19 @@ Temporary Items
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+###
+# Project-specific
+###
+# Data directory for local testing
+data/
+
+# uv
+.uv/
+uv.lock
+
+# Ruff
+.ruff_cache/
+
+# Docker volumes
+*.vol/

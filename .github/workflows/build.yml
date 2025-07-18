@@ -9,15 +9,61 @@ on:
   pull_request:
     branches:
       - main
-# TODO: enable once more complete.
-#  schedule:
-#      - cron: '0 1 * * 6'
+  schedule:
+    - cron: '0 1 * * 6'  # Weekly build on Saturday at 1 AM UTC
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.actor }}/apollonia
 
 jobs:
+  # Run Python tests and linting
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13']  # Test on 3.12 for compatibility, 3.13 as primary
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          # For Python 3.12, we need to install with relaxed version constraints
+          if [[ "${{ matrix.python-version }}" == "3.12" ]]; then
+            uv sync --all-extras
+          else
+            uv sync --frozen --all-extras
+          fi
+
+      - name: Run linting
+        run: |
+          uv run task lint
+          uv run task typecheck
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest -v --cov=ingestor --cov=populator --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: apollonia-coverage-${{ matrix.python-version }}
+          fail_ci_if_error: false
+
   list-sub-projects:
     runs-on: ubuntu-latest
 
@@ -25,15 +71,74 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
     steps:
-      - name: Checkout repository.
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Get all sub-projects.
+      - name: Get all sub-projects with Dockerfiles
         id: set-matrix
-        run: echo "::set-output name=matrix::$(ls -d */ | sed -r 's/\///g' | jq -R -s -c 'split("\n")[:-1]')"
+        run: |
+          dirs=$(find . -name Dockerfile -type f -exec dirname {} \; | sed 's|^\./||' | grep -v '^\.' | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix=$dirs" >> $GITHUB_OUTPUT
+
+  # Integration tests with services
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        ports:
+          - 5672:5672
+          - 15672:15672
+        env:
+          RABBITMQ_DEFAULT_USER: test
+          RABBITMQ_DEFAULT_PASS: test
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      neo4j:
+        image: neo4j:5-community
+        ports:
+          - 7474:7474
+          - 7687:7687
+        env:
+          NEO4J_AUTH: neo4j/testpassword
+        options: >-
+          --health-cmd "neo4j status"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Run integration tests
+        env:
+          AMQP_CONNECTION_STRING: amqp://test:test@localhost:5672/
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: testpassword
+        run: |
+          uv run pytest -v tests/integration -m integration
 
   build-apollonia:
-    needs: list-sub-projects
+    needs: [list-sub-projects, test, integration-test]
 
     runs-on: ubuntu-latest
 
@@ -46,27 +151,28 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout repository.
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           submodules: true
 
-      - name: Log in to the GitHub Container Registry.
+      - name: Log in to the GitHub Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Anchore security scan - apollonia/${{ matrix.sub-project }}.
+      - name: Anchore security scan - apollonia/${{ matrix.sub-project }}
         uses: anchore/scan-action@v3
         with:
           path: ${{ matrix.sub-project }}
+          fail-build: false  # Don't fail on vulnerabilities for now
 
-      - name: Extract metadata (tags, labels) for Docker.
+      - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.sub-project }}
           tags: |
@@ -75,16 +181,16 @@ jobs:
             type=ref,event=pr
             type=schedule,pattern={{date 'YYYYMMDD'}}
 
-      - name: Set up QEMU.
-        uses: docker/setup-qemu-action@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx.
-        uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
         with:
           platforms: linux/amd64, linux/arm64
 
-      - name: Build and push Docker image to GitHub Container Registry - apollonia/${{ matrix.sub-project }}.
-        uses: docker/build-push-action@v4
+      - name: Build and push Docker image to GitHub Container Registry - apollonia/${{ matrix.sub-project }}
+        uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.sub-project }}
           platforms: linux/amd64, linux/arm64
@@ -93,9 +199,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Send notification to Discord.
-        uses: sarisia/actions-status-discord@v1.12.0
+      - name: Send notification to Discord
+        uses: sarisia/actions-status-discord@v1.13.0
         if: always()
         with:
           title: apollonia/${{ matrix.sub-project }}

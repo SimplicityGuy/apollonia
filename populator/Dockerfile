@@ -30,8 +30,8 @@ FROM python:3.13-alpine
 
 # OCI Image annotations
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.title="Apollonia Ingestor" \
-      org.opencontainers.image.description="File monitoring service that publishes file metadata to AMQP" \
+LABEL org.opencontainers.image.title="Apollonia Populator" \
+      org.opencontainers.image.description="Message consumer service that imports file metadata to Neo4j" \
       org.opencontainers.image.authors="Robert Wlodarczyk <robert@simplicityguy.com>" \
       org.opencontainers.image.url="https://github.com/SimplicityGuy/apollonia" \
       org.opencontainers.image.documentation="https://github.com/SimplicityGuy/apollonia/blob/main/README.md" \
@@ -51,11 +51,7 @@ RUN addgroup -g 1001 -S apollonia && \
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
-COPY --from=builder /usr/local/bin/apollonia-ingestor /usr/local/bin/apollonia-ingestor
-
-# Create data directory
-RUN mkdir -p /data && \
-    chown -R apollonia:apollonia /data
+COPY --from=builder /usr/local/bin/apollonia-populator /usr/local/bin/apollonia-populator
 
 # Switch to non-root user
 USER apollonia:apollonia
@@ -63,20 +59,19 @@ USER apollonia:apollonia
 # Set working directory
 WORKDIR /app
 
-# Volume for monitored data
-VOLUME ["/data"]
-
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
 # Environment variables
 ENV AMQP_CONNECTION_STRING="" \
-    DATA_DIRECTORY="/data" \
+    NEO4J_URI="bolt://localhost:7687" \
+    NEO4J_USER="neo4j" \
+    NEO4J_PASSWORD="" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Expose no ports (uses AMQP client connection only)
+# Expose no ports (uses AMQP and Neo4j client connections only)
 
 # Run the service
-ENTRYPOINT ["apollonia-ingestor"]
+ENTRYPOINT ["apollonia-populator"]

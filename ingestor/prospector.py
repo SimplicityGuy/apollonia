@@ -1,15 +1,16 @@
-"""
-Creates the Prospector class for discovering file attributes.
+"""File prospecting functionality for extracting metadata."""
 
-Classes:
-    Prospector
-"""
-from datetime import datetime
+from __future__ import annotations
+
+import logging
+from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
-from xxhash import xxh128
+import xxhash
+
+logger = logging.getLogger(__name__)
 
 
 class Prospector:
@@ -23,19 +24,15 @@ class Prospector:
         is used elsewhere in apollonia.
     """
 
-    def __init__(self, path: Path):
-        """
-        Initialization of the Prospector class.
+    def __init__(self, path: Path | str) -> None:
+        """Initialize the Prospector.
 
         Args:
-            path (Path): The file object specified as a Path.
-
-        Returns:
-            Prospector: Instance of the class.
+            path: The file path to prospect.
         """
-        self.path: Path = path
+        self.path = Path(path) if isinstance(path, str) else path
 
-    def prospect(self) -> dict[str, Any]:
+    async def prospect(self) -> dict[str, Any]:
         """
         Collect all the information of the file specified by the path that is used
         elsewhere in apollonia.
@@ -43,55 +40,95 @@ class Prospector:
         Returns:
             dict[str, Any]: Dictionary of the data collected.
         """
-        filename: str = str(self.path)
-        print(f" --: prospecting {filename} :-- ")
+        """Collect file metadata.
 
-        data: dict = {
-            "found_at": datetime.utcnow().timestamp(),
-            "name": filename,
-            "hashes": self.__hashes(),
-            "neighbors": self.__neighbors(),
+        Returns:
+            Dictionary containing file metadata including hashes, timestamps, and related files.
+        """
+        logger.debug("Prospecting file: %s", self.path)
+
+        # Get file stats
+        try:
+            stats = self.path.stat()
+        except OSError:
+            logger.exception("Failed to stat file: %s", self.path)
+            stats = None
+
+        data: dict[str, Any] = {
+            "file_path": str(self.path.absolute()),
+            "event_type": "IN_CREATE",  # For compatibility
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
+        # Add file stats if available
+        if stats:
+            data.update(
+                {
+                    "size": stats.st_size,
+                    "modified_time": datetime.fromtimestamp(stats.st_mtime, tz=UTC).isoformat(),
+                    "accessed_time": datetime.fromtimestamp(stats.st_atime, tz=UTC).isoformat(),
+                    "changed_time": datetime.fromtimestamp(stats.st_ctime, tz=UTC).isoformat(),
+                }
+            )
+
+        # Add hashes
+        hashes = self._compute_hashes()
+        data["sha256_hash"] = hashes["sha256"]
+        data["xxh128_hash"] = hashes["xxh128"]
+
+        # Add neighbors
+        data["neighbors"] = self._find_neighbors()
+
         return data
 
-    def __hashes(self) -> dict[str, str]:
-        """
-        Computes hashes of the file specified by the path.
+    def _compute_hashes(self) -> dict[str, str]:
+        """Compute file hashes.
 
         Returns:
-            dict[str, str]: Dictionary of the hashes of the file, there the key
-            specifies the type of hash.
+            Dictionary with SHA256 and xxh128 hashes.
         """
         hash_sha256 = sha256()
-        hash_xxh128 = xxh128()
+        hash_xxh128 = xxhash.xxh128()
 
-        with self.path.open("rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(byte_block)
-                hash_xxh128.update(byte_block)
+        try:
+            with self.path.open("rb") as f:
+                while chunk := f.read(65536):  # 64KB chunks
+                    hash_sha256.update(chunk)
+                    hash_xxh128.update(chunk)
+        except OSError:
+            logger.exception("Failed to read file for hashing: %s", self.path)
+            return {"sha256": "", "xxh128": ""}
 
-        return {"sha256": hash_sha256.hexdigest(), "xxh128": hash_xxh128.hexdigest()}
+        return {
+            "sha256": hash_sha256.hexdigest(),
+            "xxh128": hash_xxh128.hexdigest(),
+        }
 
-    def __neighbors(self) -> list[str]:
-        """
-        Looks for other files with similar naming to the file specified by the path.
-        These may be, perhaps, one or more of the following: cue, m3u, txt, or other
-        files, such as tracklist.txt.
+    def _find_neighbors(self) -> list[str]:
+        """Find related files with similar naming.
 
         Returns:
-            list[str]: Neighboring files.
+            List of related file paths.
         """
+        neighbors: list[str] = []
 
-        limit: int = 3
-        start: int = limit if len(self.path.stem) > limit else 0
-        search_stems: list[str] = [self.path.stem[start:], "[t|T]racklist", "[t|T]racks"]
-        data: list[str] = []
-        for search_stem in search_stems:
-            data += [
-                str(filename)
-                for filename in self.path.glob(f"**/*{search_stem}*")
-                if filename != str(self.path)
-            ]
+        if not self.path.parent.exists():
+            return neighbors
 
-        return data
+        # Look for files with the same stem but different extensions
+        stem = self.path.stem
+        try:
+            for file in self.path.parent.iterdir():
+                if file.is_file() and file != self.path:
+                    # Same stem, different extension
+                    if (
+                        file.stem == stem
+                        or file.stem.lower() in ["tracklist", "tracks", "info", "readme"]
+                        or len(stem) > 3
+                        and file.stem.startswith(stem[:3])
+                    ):
+                        neighbors.append(str(file.absolute()))
+        except OSError:
+            logger.exception("Failed to search for neighbors of: %s", self.path)
+
+        return neighbors[:10]  # Limit to 10 neighbors

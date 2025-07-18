@@ -1,4 +1,0 @@
-asyncinotify
-orjson
-pika
-xxhash
