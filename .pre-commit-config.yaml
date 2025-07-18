@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b  # frozen: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-executables-have-shebangs
@@ -17,7 +17,7 @@ repos:
 
   # Ruff replaces Black, isort, Bandit, and many other linters
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.5
+    rev: 6c5418a077bd954e7078087a655421b85772095b  # frozen: v0.12.4
     hooks:
       # Run the linter
       - id: ruff
@@ -26,7 +26,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.0
+    rev: 850d8bf806620ef89a99381c5cf5ea2c1ea826dd  # frozen: v1.17.0
     hooks:
       - id: mypy
         additional_dependencies:
@@ -35,12 +35,12 @@ repos:
         files: ^(ingestor|populator)/.*\.py$
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.29.0
+    rev: 54da05914997e6b04e4db33ed6757d744984c68b  # frozen: 0.33.2
     hooks:
       - id: check-github-workflows
 
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.17
+    rev: ff29be1a1ba8029d9375882aa2c812b62112a593  # frozen: 0.7.22
     hooks:
       - id: mdformat
         additional_dependencies:
@@ -49,7 +49,7 @@ repos:
         args: [--wrap, "100"]
 
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.13.0-beta
+    rev: c3dc18df7a501f02a560a2cc7ba3c69a85ca01d3  # frozen: v2.13.1-beta
     hooks:
       - id: hadolint-docker
         args: [--ignore, DL3006, --ignore, DL3008]

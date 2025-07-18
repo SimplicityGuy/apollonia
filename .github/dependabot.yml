@@ -1,17 +1,16 @@
----
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-
-  - package-ecosystem: "docker"
-    directory: "/ingestor"
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "pip"
-    directory: "/ingestor"
-    schedule:
-      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    reviewers:
+      - "@SimplicityGuy"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
