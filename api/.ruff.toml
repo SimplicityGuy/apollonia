@@ -1,0 +1,15 @@
+[lint]
+ignore = [
+    "S105",  # Possible hardcoded password
+    "S108",  # Probable insecure usage of temporary file or directory
+    "B008",  # Do not perform function calls in argument defaults
+    "TC003", # Move standard library imports into type-checking block
+    "TC002", # Move third-party imports into type-checking block
+    "TID252", # Prefer absolute imports over relative imports
+    "RUF001", # String contains ambiguous character
+    "ARG001", # Unused function argument
+    "ARG005", # Unused lambda argument
+]
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]

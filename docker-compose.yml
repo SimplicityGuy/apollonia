@@ -132,6 +132,33 @@ services:
       NEO4J_PASSWORD: apollonia
     restart: unless-stopped
 
+  # API Service
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: apollonia-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://apollonia:apollonia@postgres:5432/apollonia
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: your-secret-key-here
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Original Ingestor (kept for backward compatibility)
   ingestor:
     build:
