@@ -96,7 +96,7 @@ dev-dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["ingestor", "populator"]
+packages = ["ingestor", "populator", "analyzer"]
 
 [tool.taskipy.tasks]
 # Development setup tasks
@@ -122,6 +122,7 @@ check-all = "uv run pre-commit run --all-files && uv run task check"
 ingestor = "uv run python -m ingestor.ingestor"
 media-ingestor = "uv run python -m ingestor.media_ingestor"
 populator = "uv run python -m populator.populator"
+analyzer = "uv run python -m analyzer.analyzer"
 
 # Build tasks
 build = "uv build"
