@@ -17,8 +17,11 @@ from .models import ModelManager
 from .processors import AudioProcessor, VideoProcessor
 
 if TYPE_CHECKING:
-    from aio_pika import RobustConnection
-    from aio_pika.abc import AbstractIncomingMessage, AbstractRobustChannel
+    from aio_pika.abc import (
+        AbstractIncomingMessage,
+        AbstractRobustChannel,
+        AbstractRobustConnection,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +44,7 @@ class MLAnalyzer:
 
     def __init__(self) -> None:
         """Initialize the ML analyzer."""
-        self.amqp_connection: RobustConnection | None = None
+        self.amqp_connection: AbstractRobustConnection | None = None
         self.amqp_channel: AbstractRobustChannel | None = None
         self.model_manager = ModelManager(cache_dir=Path(MODEL_CACHE_DIR))
         self.audio_processor = AudioProcessor(self.model_manager)
@@ -52,24 +55,25 @@ class MLAnalyzer:
         """Set up connections and initialize models."""
         logger.info("🔌 Connecting to AMQP broker at %s", AMQP_CONNECTION)
         self.amqp_connection = await connect_robust(AMQP_CONNECTION)
-        self.amqp_channel = await self.amqp_connection.channel()
+        self.amqp_channel = await self.amqp_connection.channel()  # type: ignore[assignment]
 
         # Declare exchanges
-        await self.amqp_channel.declare_exchange(
-            AMQP_EXCHANGE_IN,
-            ExchangeType.TOPIC,
-            durable=True,
-        )
+        if self.amqp_channel:
+            await self.amqp_channel.declare_exchange(
+                AMQP_EXCHANGE_IN,
+                ExchangeType.TOPIC,
+                durable=True,
+            )
 
-        await self.amqp_channel.declare_exchange(
-            AMQP_EXCHANGE_OUT,
-            ExchangeType.TOPIC,
-            durable=True,
-        )
+            await self.amqp_channel.declare_exchange(
+                AMQP_EXCHANGE_OUT,
+                ExchangeType.TOPIC,
+                durable=True,
+            )
 
-        # Declare and bind queue
-        queue = await self.amqp_channel.declare_queue(AMQP_QUEUE, durable=True)
-        await queue.bind(AMQP_EXCHANGE_IN, routing_key="media.#")
+            # Declare and bind queue
+            queue = await self.amqp_channel.declare_queue(AMQP_QUEUE, durable=True)
+            await queue.bind(AMQP_EXCHANGE_IN, routing_key="media.#")
 
         logger.info("📡 AMQP setup complete")
 
@@ -128,14 +132,14 @@ class MLAnalyzer:
                 # Publish enriched data
                 if self.amqp_channel:
                     routing_key = f"enriched.{media_type}.analyzed"
-                    await self.amqp_channel.default_exchange.publish(
+                    exchange = await self.amqp_channel.get_exchange(AMQP_EXCHANGE_OUT)
+                    await exchange.publish(
                         Message(
                             body=orjson.dumps(enriched_data),
                             content_type="application/json",
                             delivery_mode=2,  # Persistent
                         ),
                         routing_key=routing_key,
-                        exchange=AMQP_EXCHANGE_OUT,
                     )
                     logger.info("📤 Published enriched data for: %s", file_path.name)
 

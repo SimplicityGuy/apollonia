@@ -5,6 +5,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from .ml.extractors import AudioFeatureExtractor, VideoFeatureExtractor
+from .ml.pipelines import AudioPipeline, VideoPipeline
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -23,6 +26,8 @@ class AudioProcessor:
             model_manager: Model manager instance
         """
         self.model_manager = model_manager
+        self.feature_extractor = AudioFeatureExtractor()
+        self.pipeline = AudioPipeline(model_manager, self.feature_extractor)
 
     async def process(self, file_path: Path, metadata: dict[str, Any]) -> dict[str, Any]:
         """Process an audio file with ML models.
@@ -43,41 +48,38 @@ class AudioProcessor:
         }
 
         try:
-            # In a real implementation, we would:
-            # 1. Load audio file using librosa or essentia
-            # 2. Extract audio features
-            # 3. Run through ML models
+            # Run the ML pipeline
+            ml_results = await self.pipeline.predict(file_path, metadata)
 
-            # For now, use mock models
-            genre_model = self.model_manager.get_model("genre_classifier")
-            mood_model = self.model_manager.get_model("mood_classifier")
-            attr_model = self.model_manager.get_model("attribute_extractor")
-
-            # Mock audio data
-            audio_data = None  # Would be actual audio array
-
-            # Get predictions
-            genre_results = await genre_model.predict(audio_data)
-            mood_results = await mood_model.predict(audio_data)
-            attr_results = await attr_model.predict(audio_data)
+            # Extract key results
+            predictions = ml_results["predictions"]
+            features = ml_results["features"]
 
             results.update(
                 {
-                    "genres": genre_results["genres"],
-                    "moods": mood_results["moods"],
-                    "attributes": attr_results["attributes"],
-                    "vocal": attr_results["vocal"],
-                    "tonality": attr_results["tonality"],
+                    "genres": predictions["genres"],
+                    "moods": predictions["moods"],
+                    "attributes": predictions["attributes"],
+                    "instruments": predictions["instruments"],
+                    "vocal": predictions["vocal"],
+                    "quality_score": ml_results["quality_score"],
+                    "technical_info": {
+                        "duration": features["duration"],
+                        "sample_rate": features["sample_rate"],
+                        "channels": features["channels"],
+                        "bitrate": features["bitrate"],
+                        "format": features["format"],
+                    },
+                    "audio_features": {
+                        "tempo": features["rhythm"]["tempo"],
+                        "key": features["harmonic"]["key"],
+                        "mode": features["harmonic"]["mode"],
+                        "loudness": features["dynamics"]["loudness"],
+                        "dynamic_range": features["dynamics"]["dynamic_range"],
+                    },
+                    "processing_metadata": ml_results["processing_metadata"],
                 }
             )
-
-            # Extract additional metadata if possible
-            results["technical_info"] = {
-                "duration": 0,  # Would extract from audio
-                "sample_rate": 44100,  # Would extract from audio
-                "channels": 2,  # Would extract from audio
-                "bitrate": 320000,  # Would extract from audio
-            }
 
             logger.info("✅ Audio processing complete for: %s", file_path.name)
 
@@ -99,6 +101,10 @@ class VideoProcessor:
             model_manager: Model manager instance
         """
         self.model_manager = model_manager
+        self.feature_extractor = VideoFeatureExtractor()
+        audio_feature_extractor = AudioFeatureExtractor()
+        audio_pipeline = AudioPipeline(model_manager, audio_feature_extractor)
+        self.pipeline = VideoPipeline(model_manager, self.feature_extractor, audio_pipeline)
 
     async def process(self, file_path: Path, metadata: dict[str, Any]) -> dict[str, Any]:
         """Process a video file with ML models.
@@ -119,40 +125,48 @@ class VideoProcessor:
         }
 
         try:
-            # In a real implementation, we would:
-            # 1. Extract audio track from video
-            # 2. Process audio through audio models
-            # 3. Extract key frames for scene detection
-            # 4. Run video-specific models
+            # Run the ML pipeline
+            ml_results = await self.pipeline.predict(file_path, metadata)
 
-            # For now, process audio track only (mock)
-            if file_path.suffix.lower() in {".mp4", ".avi", ".mkv", ".mov"}:
-                # Extract and process audio track
-                logger.info("🎵 Extracting audio from video...")
+            # Extract key results
+            predictions = ml_results["predictions"]
+            features = ml_results["features"]
 
-                # Use audio models on extracted audio
-                genre_model = self.model_manager.get_model("genre_classifier")
-                mood_model = self.model_manager.get_model("mood_classifier")
-
-                audio_data = None  # Would be extracted audio
-
-                genre_results = await genre_model.predict(audio_data)
-                mood_results = await mood_model.predict(audio_data)
-
-                results["audio_analysis"] = {
-                    "genres": genre_results["genres"],
-                    "moods": mood_results["moods"],
-                }
-
-            # Video-specific metadata
+            # Build results
             results["video_info"] = {
-                "duration": 0,  # Would extract from video
-                "width": 1920,  # Would extract from video
-                "height": 1080,  # Would extract from video
-                "fps": 30,  # Would extract from video
-                "codec": "h264",  # Would extract from video
-                "has_audio": True,  # Would check video
+                "duration": features["duration"],
+                "width": features["width"],
+                "height": features["height"],
+                "fps": features["fps"],
+                "codec": features["codec"],
+                "bitrate": features["bitrate"],
+                "format": features["format"],
+                "has_audio": features["has_audio"],
             }
+
+            results["visual_analysis"] = {
+                "scene_changes": features["visual"]["scene_changes"],
+                "dominant_colors": features["visual"]["dominant_colors"],
+                "motion_intensity": features["visual"]["motion_intensity"],
+                "avg_brightness": features["visual"]["avg_brightness"],
+                "avg_saturation": features["visual"]["avg_saturation"],
+                "avg_contrast": features["visual"]["avg_contrast"],
+            }
+
+            results["content_analysis"] = features["content"]
+
+            results["predictions"] = {
+                "video_genres": predictions["video_genres"],
+                "video_moods": predictions["video_moods"],
+                "scene_types": predictions["scene_types"],
+                "quality_metrics": predictions["quality_metrics"],
+            }
+
+            # Include audio analysis if present
+            if features["has_audio"] and "audio" in predictions:
+                results["audio_analysis"] = predictions["audio"]
+
+            results["processing_metadata"] = ml_results["processing_metadata"]
 
             logger.info("✅ Video processing complete for: %s", file_path.name)
 
