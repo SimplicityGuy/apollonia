@@ -34,6 +34,7 @@ dependencies = [
     "asyncpg>=0.29.0",
     "alembic>=1.13.0",
     "sqlalchemy>=2.0.0",
+    "greenlet>=3.0.0",
     # API dependencies
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
@@ -140,6 +141,12 @@ update-hooks = "uv run pre-commit autoupdate"
 # Development workflow
 install = "uv sync --all-extras && uv run task install-hooks"
 ci = "uv run task check-all"
+
+# Database tasks
+db-up = "docker compose up -d postgres redis"
+db-migrate = "alembic upgrade head"
+db-downgrade = "alembic downgrade -1"
+db-revision = "alembic revision --autogenerate"
 
 [tool.ruff]
 target-version = "py313"

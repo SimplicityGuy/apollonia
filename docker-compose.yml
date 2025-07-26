@@ -1,6 +1,39 @@
 version: '3.8'
 
 services:
+  # PostgreSQL for media catalog
+  postgres:
+    image: postgres:16-alpine
+    container_name: apollonia-postgres
+    environment:
+      POSTGRES_USER: apollonia
+      POSTGRES_PASSWORD: apollonia
+      POSTGRES_DB: apollonia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apollonia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: apollonia-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ for message queuing
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: apollonia-rabbitmq
@@ -18,6 +51,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Neo4j for graph database (optional, kept for compatibility)
   neo4j:
     image: neo4j:5-community
     container_name: apollonia-neo4j
@@ -36,6 +70,69 @@ services:
       timeout: 5s
       retries: 5
 
+  # Media Ingestor Service
+  media-ingestor:
+    build:
+      context: ./ingestor
+      dockerfile: Dockerfile.media
+    container_name: apollonia-media-ingestor
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      AMQP_CONNECTION_STRING: amqp://apollonia:apollonia@rabbitmq:5672/
+      WATCH_DIRECTORIES: /music,/videos
+      MEDIA_ONLY: "true"
+      WATCH_SUBDIRS: "true"
+    volumes:
+      - ./data/music:/music
+      - ./data/videos:/videos
+    restart: unless-stopped
+
+  # ML Analyzer Service
+  analyzer:
+    build:
+      context: ./analyzer
+      dockerfile: Dockerfile
+    container_name: apollonia-analyzer
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AMQP_CONNECTION_STRING: amqp://apollonia:apollonia@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      MODEL_CACHE_DIR: /models
+      ENABLE_GPU: "false"
+    volumes:
+      - ./models:/models
+      - ./data/music:/music:ro
+      - ./data/videos:/videos:ro
+    restart: unless-stopped
+
+  # Database Populator Service (enhanced)
+  populator:
+    build:
+      context: ./populator
+      dockerfile: Dockerfile
+    container_name: apollonia-populator
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      AMQP_CONNECTION_STRING: amqp://apollonia:apollonia@rabbitmq:5672/
+      DATABASE_URL: postgresql+asyncpg://apollonia:apollonia@postgres:5432/apollonia
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: apollonia
+    restart: unless-stopped
+
+  # Original Ingestor (kept for backward compatibility)
   ingestor:
     build:
       context: ./ingestor
@@ -50,25 +147,11 @@ services:
     volumes:
       - ./data:/data
     restart: unless-stopped
-
-  populator:
-    build:
-      context: ./populator
-      dockerfile: Dockerfile
-    container_name: apollonia-populator
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      neo4j:
-        condition: service_healthy
-    environment:
-      AMQP_CONNECTION_STRING: amqp://apollonia:apollonia@rabbitmq:5672/
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USER: neo4j
-      NEO4J_PASSWORD: apollonia
-    restart: unless-stopped
+    profiles: ["legacy"]  # Only start with --profile legacy
 
 volumes:
+  postgres_data:
+  redis_data:
   rabbitmq_data:
   neo4j_data:
   neo4j_logs:
