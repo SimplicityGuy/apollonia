@@ -5,8 +5,17 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from .ml.extractors import AudioFeatureExtractor, VideoFeatureExtractor
-from .ml.pipelines import AudioPipeline, VideoPipeline
+try:
+    # Try to import real pipelines (requires TensorFlow)
+    from .ml.real_pipelines import RealAudioPipeline, RealVideoPipeline
+
+    USE_REAL_ML = True
+except ImportError:
+    # Fall back to mock pipelines
+    from .ml.extractors import AudioFeatureExtractor, VideoFeatureExtractor
+    from .ml.pipelines import AudioPipeline, VideoPipeline
+
+    USE_REAL_ML = False
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -14,6 +23,11 @@ if TYPE_CHECKING:
     from .models import ModelManager
 
 logger = logging.getLogger(__name__)
+
+if USE_REAL_ML:
+    logger.info("✅ Using real ML pipelines with TensorFlow")
+else:
+    logger.warning("⚠️ TensorFlow not available, using mock ML pipelines")
 
 
 class AudioProcessor:
@@ -26,8 +40,11 @@ class AudioProcessor:
             model_manager: Model manager instance
         """
         self.model_manager = model_manager
-        self.feature_extractor = AudioFeatureExtractor()
-        self.pipeline = AudioPipeline(model_manager, self.feature_extractor)
+        if USE_REAL_ML:
+            self.pipeline = RealAudioPipeline()
+        else:
+            self.feature_extractor = AudioFeatureExtractor()
+            self.pipeline = AudioPipeline(model_manager, self.feature_extractor)
 
     async def process(self, file_path: Path, metadata: dict[str, Any]) -> dict[str, Any]:
         """Process an audio file with ML models.
@@ -101,10 +118,13 @@ class VideoProcessor:
             model_manager: Model manager instance
         """
         self.model_manager = model_manager
-        self.feature_extractor = VideoFeatureExtractor()
-        audio_feature_extractor = AudioFeatureExtractor()
-        audio_pipeline = AudioPipeline(model_manager, audio_feature_extractor)
-        self.pipeline = VideoPipeline(model_manager, self.feature_extractor, audio_pipeline)
+        if USE_REAL_ML:
+            self.pipeline = RealVideoPipeline()
+        else:
+            self.feature_extractor = VideoFeatureExtractor()
+            audio_feature_extractor = AudioFeatureExtractor()
+            audio_pipeline = AudioPipeline(model_manager, audio_feature_extractor)
+            self.pipeline = VideoPipeline(model_manager, self.feature_extractor, audio_pipeline)
 
     async def process(self, file_path: Path, metadata: dict[str, Any]) -> dict[str, Any]:
         """Process a video file with ML models.

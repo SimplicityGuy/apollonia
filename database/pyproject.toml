@@ -2,7 +2,7 @@
 name = "apollonia-database"
 version = "0.1.0"
 description = "Database models and migrations for Apollonia"
-requires-python = ">=3.13"
+requires-python = ">=3.12,<3.13"
 
 dependencies = [
     "asyncpg>=0.29.0",
