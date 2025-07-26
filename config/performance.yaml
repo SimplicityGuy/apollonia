@@ -1,0 +1,177 @@
+# Performance optimization configuration for Apollonia
+
+# API Service Performance
+api:
+  # Connection pool settings
+  database:
+    pool_size: 20
+    max_overflow: 40
+    pool_timeout: 30
+    pool_recycle: 3600
+    echo_pool: false
+
+  # Redis caching
+  redis:
+    pool_size: 50
+    decode_responses: true
+    socket_keepalive: true
+    socket_connect_timeout: 5
+    retry_on_timeout: true
+
+  # Request handling
+  request:
+    max_request_size: 104857600  # 100MB
+    request_timeout: 300  # 5 minutes
+    keepalive_timeout: 75
+
+  # Uvicorn server
+  server:
+    workers: 4  # CPU cores
+    worker_class: "uvicorn.workers.UvicornWorker"
+    worker_connections: 1000
+    backlog: 2048
+
+# ML Analyzer Performance
+analyzer:
+  # Model loading
+  models:
+    cache_size: 5  # Number of models to keep in memory
+    preload_models:
+      - "music-tagger"
+      - "mood-classifier"
+    lazy_loading: true
+
+  # Processing
+  processing:
+    batch_size: 32
+    max_concurrent_files: 4
+    timeout_per_file: 300
+
+  # GPU settings
+  gpu:
+    enabled: false
+    memory_fraction: 0.7
+    allow_growth: true
+
+# Media Ingestor Performance
+ingestor:
+  # File watching
+  watch:
+    debounce_interval: 1.0  # seconds
+    max_events_per_batch: 100
+
+  # Hashing
+  hashing:
+    buffer_size: 65536  # 64KB chunks
+    algorithms:
+      - "sha256"
+      - "xxh128"
+
+  # AMQP
+  amqp:
+    prefetch_count: 10
+    heartbeat: 600
+    connection_timeout: 30
+
+# Database Populator Performance
+populator:
+  # Batch processing
+  batch:
+    size: 100
+    timeout: 30
+    max_retries: 3
+
+  # Database operations
+  database:
+    bulk_insert_size: 1000
+    bulk_update_size: 500
+
+  # Neo4j (if enabled)
+  neo4j:
+    batch_size: 500
+    transaction_timeout: 120
+
+# Frontend Performance
+frontend:
+  # Build optimizations
+  build:
+    chunk_size_warning: 500  # KB
+    tree_shaking: true
+    minify: true
+    source_maps: false
+
+  # Runtime
+  runtime:
+    api_timeout: 30000  # ms
+    cache_ttl: 3600  # seconds
+    max_cache_size: 50  # MB
+
+# Infrastructure
+infrastructure:
+  # Docker resource limits
+  docker:
+    api:
+      cpus: "2.0"
+      memory: "2G"
+    analyzer:
+      cpus: "4.0"
+      memory: "4G"
+    frontend:
+      cpus: "0.5"
+      memory: "512M"
+
+  # Health checks
+  health_checks:
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 60
+
+  # Logging
+  logging:
+    level: "INFO"
+    max_file_size: "100M"
+    max_files: 10
+
+# Monitoring & Metrics
+monitoring:
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9090
+
+  # Application metrics
+  metrics:
+    - name: "request_duration"
+      type: "histogram"
+      buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+    - name: "active_connections"
+      type: "gauge"
+    - name: "processed_files"
+      type: "counter"
+    - name: "processing_errors"
+      type: "counter"
+
+# Optimization Profiles
+profiles:
+  # Development profile
+  development:
+    api.server.workers: 1
+    analyzer.processing.max_concurrent_files: 2
+    frontend.build.source_maps: true
+    infrastructure.logging.level: "DEBUG"
+
+  # Production profile
+  production:
+    api.server.workers: 8
+    analyzer.processing.max_concurrent_files: 8
+    analyzer.gpu.enabled: true
+    infrastructure.logging.level: "WARNING"
+
+  # High-performance profile
+  performance:
+    api.database.pool_size: 50
+    api.server.workers: 16
+    analyzer.processing.batch_size: 64
+    analyzer.processing.max_concurrent_files: 16
+    populator.batch.size: 500

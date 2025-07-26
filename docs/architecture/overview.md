@@ -1,100 +1,132 @@
-# Architecture Overview
+# Apollonia Architecture Overview
 
-Apollonia is a microservices-based file processing system that monitors directories for new files,
-extracts metadata, and stores the information in a graph database.
+## System Design
+
+Apollonia is a comprehensive media catalog system built as a distributed microservices architecture,
+designed for scalability, resilience, and real-time media processing. The system follows
+event-driven patterns with asynchronous message passing between services.
 
 ## System Architecture
 
 ```mermaid
-graph LR
-    A[File System] -->|inotify events| B[Ingestor Service]
-    B -->|AMQP messages| C[RabbitMQ]
-    C -->|consume| D[Populator Service]
-    D -->|import| E[Neo4j Database]
+graph TD
+    A[File System] -->|Watch| B[Media Ingestor]
+    B -->|AMQP| C[RabbitMQ]
+    C -->|Consume| D[ML Analyzer]
+    C -->|Consume| E[DB Populator]
+    D -->|Results| F[Redis Cache]
+    D -->|AMQP| C
+    E -->|Store| G[PostgreSQL]
+    E -->|Graph| H[Neo4j]
+    I[API Service] -->|Query| G
+    I -->|Query| H
+    I -->|Cache| F
+    J[Frontend] -->|HTTP/GraphQL| I
+    K[User] -->|Browse| J
+    L[User] -->|Upload| J
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#bbf,stroke:#333,stroke-width:2px
     style C fill:#fbb,stroke:#333,stroke-width:2px
-    style D fill:#bbf,stroke:#333,stroke-width:2px
-    style E fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#bfb,stroke:#333,stroke-width:2px
+    style E fill:#bbf,stroke:#333,stroke-width:2px
+    style F fill:#fbf,stroke:#333,stroke-width:2px
+    style G fill:#bfb,stroke:#333,stroke-width:2px
+    style H fill:#bfb,stroke:#333,stroke-width:2px
+    style I fill:#ffb,stroke:#333,stroke-width:2px
+    style J fill:#bff,stroke:#333,stroke-width:2px
 ```
 
-## Components
+## Core Components
 
-### 1. Ingestor Service
+### 1. Media Ingestor Service
 
-The Ingestor is responsible for:
+The Media Ingestor monitors file systems for media files and initiates processing:
 
-- Monitoring a specified directory for file system events
-- Computing file hashes (SHA256 and xxh128)
-- Discovering related files (neighbors)
-- Publishing file metadata to AMQP
+- **Purpose**: Real-time media file detection and cataloging
+- **Technology**: Python 3.12, asyncinotify
+- **Key Features**:
+  - Monitors multiple directories simultaneously
+  - Detects media formats (audio: MP3, WAV, FLAC; video: MP4, AVI, MOV)
+  - Computes file hashes (SHA256, xxh128) for deduplication
+  - Discovers related files (subtitles, metadata, artwork)
+  - Publishes events to AMQP for downstream processing
 
-**Key Features:**
+### 2. ML Analyzer Service
 
-- Asynchronous file monitoring using `asyncinotify`
-- Efficient hashing with chunked reading
-- Graceful shutdown on SIGINT/SIGTERM
-- Automatic reconnection to AMQP
+Extracts features from media files using machine learning:
 
-### 2. Message Queue (RabbitMQ)
+- **Purpose**: Audio/video analysis and feature extraction
+- **Technology**: Python 3.12, TensorFlow, Essentia
+- **Key Features**:
+  - Audio analysis: tempo, key, mood, genre classification
+  - Video analysis: scene detection, object recognition, quality assessment
+  - Model management with caching and lazy loading
+  - Async processing with result caching in Redis
+  - Configurable for GPU acceleration
 
-RabbitMQ provides:
+### 3. Database Populator Service
 
-- Reliable message delivery between services
-- Fan-out exchange pattern for scalability
-- Message persistence for fault tolerance
+Persists all metadata and ML results:
+
+- **Purpose**: Data persistence and relationship management
+- **Technology**: Python 3.12, SQLAlchemy, py2neo
+- **Databases**:
+  - PostgreSQL: Primary store for structured metadata
+  - Neo4j: Graph relationships between media files
+- **Key Features**:
+  - Batch processing for efficiency
+  - Transaction management with rollback
+  - Data validation and error handling
+  - Relationship mapping between related files
+
+### 4. API Service
+
+Provides REST and GraphQL APIs:
+
+- **Purpose**: Client access to media catalog
+- **Technology**: Python 3.12, FastAPI, Strawberry GraphQL
+- **Key Features**:
+  - JWT authentication with OAuth2 flow
+  - RESTful endpoints for CRUD operations
+  - GraphQL for flexible queries
+  - Redis caching for performance
+  - WebSocket support for real-time updates
+  - Comprehensive API documentation
+
+### 5. Frontend Application
+
+Modern web interface for users:
+
+- **Purpose**: User interaction and visualization
+- **Technology**: React 18, TypeScript, Vite
+- **Key Features**:
+  - Responsive design with dark mode
+  - Real-time processing status
+  - Drag-and-drop file upload
+  - Interactive analytics dashboards
+  - Advanced search and filtering
+  - Batch operations support
+
+### 6. Supporting Infrastructure
+
+#### Message Queue (RabbitMQ)
+
+- Fan-out exchanges for scalability
+- Persistent messages for reliability
 - Dead letter queues for error handling
 
-**Configuration:**
+#### Cache Layer (Redis)
 
-- Exchange: `apollonia` (fanout, durable)
-- Queue: `apollonia-populator` (durable)
-- Messages: JSON-encoded with persistent delivery
+- ML model results caching
+- API response caching
+- Session management
+- Real-time metrics
 
-### 3. Populator Service
+#### Databases
 
-The Populator handles:
-
-- Consuming messages from AMQP queue
-- Parsing file metadata from messages
-- Creating/updating nodes in Neo4j
-- Establishing relationships between files
-
-**Key Features:**
-
-- Asynchronous message processing
-- Automatic message acknowledgment
-- Connection pooling for Neo4j
-- Error handling with message requeuing
-
-### 4. Graph Database (Neo4j)
-
-Neo4j stores:
-
-- File nodes with metadata properties
-- Relationships between related files
-- Query capabilities for file discovery
-
-**Data Model:**
-
-```cypher
-// File Node
-(:File {
-    path: String,
-    sha256: String,
-    xxh128: String,
-    size: Integer,
-    modified: DateTime,
-    accessed: DateTime,
-    changed: DateTime,
-    discovered: DateTime,
-    event_type: String
-})
-
-// Neighbor Relationship
-(:File)-[:NEIGHBOR]->(:File)
-```
+- **PostgreSQL**: ACID-compliant primary datastore
+- **Neo4j**: Graph relationships and recommendations
 
 ## Message Flow
 

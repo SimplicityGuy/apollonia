@@ -159,6 +159,24 @@ services:
       timeout: 10s
       retries: 3
 
+  # Frontend Web Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: apollonia-frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Original Ingestor (kept for backward compatibility)
   ingestor:
     build:

@@ -9,25 +9,40 @@ Pronunciation: _a·pol·lon·ia_
 
 ## Overview
 
-Apollonia is a Python-based microservices architecture for file monitoring and processing, using
-AMQP message queuing for service communication. The system monitors directories for new files,
-extracts metadata, and stores the information in a Neo4j graph database.
+Apollonia is a comprehensive media catalog system that automatically detects, classifies, and
+analyzes audio and video files using machine learning. Built with a modern microservices
+architecture, it provides real-time processing, advanced analytics, and a responsive web interface
+for managing large media collections.
+
+## Key Features
+
+- **Automatic Media Detection**: Monitors directories and automatically processes new media files
+- **ML-Powered Analysis**: Uses TensorFlow and Essentia for audio/video feature extraction
+- **Real-time Processing**: Event-driven architecture with AMQP message queuing
+- **Comprehensive API**: RESTful and GraphQL APIs with JWT authentication
+- **Modern Web Interface**: React-based UI with real-time updates and analytics
+- **Scalable Architecture**: Microservices design with Docker containerization
+- **Multi-format Support**: Handles various audio (MP3, WAV, FLAC) and video (MP4, AVI, MOV) formats
 
 ## Architecture
 
-The project consists of two main services:
+The system consists of several specialized services:
 
-- **[Ingestor](docs/services/ingestor.md)**: Monitors directories for new files and publishes
-  metadata to AMQP
-- **[Populator](docs/services/populator.md)**: Consumes messages from AMQP and imports data to Neo4j
+- **[Media Ingestor](docs/services/ingestor.md)**: Monitors directories and detects media files
+- **[ML Analyzer](docs/services/analyzer.md)**: Extracts features using TensorFlow/Essentia models
+- **[Database Populator](docs/services/populator.md)**: Stores metadata in PostgreSQL and Neo4j
+- **[API Service](docs/services/api.md)**: Provides REST and GraphQL endpoints
+- **[Frontend](frontend/README.md)**: React-based web application
 
 ## Requirements
 
-- Python 3.13+ (primary target)
-- Python 3.12 is tested for compatibility in CI/CD
+- Python 3.12 (for TensorFlow/Essentia compatibility)
 - Docker and Docker Compose for containerized deployment
+- PostgreSQL for primary data storage
 - RabbitMQ for message queuing
-- Neo4j for graph database storage
+- Redis for caching
+- Neo4j for graph relationships (optional)
+- Node.js 18+ for frontend development
 
 ## Quick Start
 
@@ -50,10 +65,23 @@ The project consists of two main services:
    docker-compose logs -f
    ```
 
-1. **Add files to monitor**:
+1. **Access the web interface**:
+
+   Open http://localhost:3000 in your browser
+
+   Default credentials:
+
+   - Username: admin
+   - Password: admin123
+
+1. **Add media files**:
 
    ```bash
-   cp your-files/* ./data/
+   # Copy files to monitored directories
+   cp your-music/* ./data/music/
+   cp your-videos/* ./data/videos/
+
+   # Or use the web interface upload feature
    ```
 
 ## Development
@@ -79,25 +107,36 @@ uv run task check
 
 ## Documentation
 
+- **Getting Started**
+
+  - [Quick Start Guide](docs/getting-started.md) - Initial setup and usage
+  - [Architecture Overview](docs/architecture/overview.md) - System design and components
+  - [API Documentation](docs/api/README.md) - REST and GraphQL reference
+
 - **Development**
 
   - [Development Guide](docs/development/development-guide.md) - Setup and workflow instructions
   - [Python Version Notes](docs/development/python-version-notes.md) - Python version strategy
-  - [Roadmap](docs/development/roadmap.md) - Future development phases
-  - [Architecture Overview](docs/architecture/overview.md) - System design and components
+  - [Frontend Development](frontend/README.md) - React application guide
+  - [Testing Guide](docs/development/testing.md) - Unit, integration, and E2E tests
 
 - **Services**
 
-  - [Ingestor Service](docs/services/ingestor.md) - File monitoring service details
-  - [Populator Service](docs/services/populator.md) - Neo4j import service details
+  - [Media Ingestor](docs/services/ingestor.md) - File monitoring service
+  - [ML Analyzer](docs/services/analyzer.md) - Machine learning analysis
+  - [Database Populator](docs/services/populator.md) - Data persistence service
+  - [API Service](docs/services/api.md) - REST and GraphQL endpoints
 
 - **Operations**
 
   - [Docker Deployment](docs/operations/docker-deployment.md) - Container deployment guide
   - [Configuration](docs/operations/configuration.md) - Environment variables and settings
+  - [Performance Tuning](docs/operations/performance.md) - Optimization guide
+  - [Monitoring](docs/operations/monitoring.md) - Metrics and observability
 
 - **Contributing**
 
+  - [Contributing Guide](CONTRIBUTING.md) - How to contribute
   - [Claude Code Guide](CLAUDE.md) - Instructions for AI-assisted development
 
 ## License
