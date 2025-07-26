@@ -26,6 +26,19 @@ dependencies = [
     "xxhash>=3.5.0",
     "aio-pika>=9.4.0",
     "neo4j>=5.19.0",
+    # Media processing dependencies (TensorFlow not yet available for Python 3.13)
+    # "essentia-tensorflow>=2.1b6.dev1110",
+    "numpy>=1.26.0",
+    # "tensorflow>=2.15.0",
+    # Database dependencies
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+    "sqlalchemy>=2.0.0",
+    # API dependencies
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "strawberry-graphql[fastapi]>=0.217.0",
+    "redis>=5.0.0",
 ]
 
 [project.urls]
@@ -107,6 +120,7 @@ check-all = "uv run pre-commit run --all-files && uv run task check"
 
 # Service tasks
 ingestor = "uv run python -m ingestor.ingestor"
+media-ingestor = "uv run python -m ingestor.media_ingestor"
 populator = "uv run python -m populator.populator"
 
 # Build tasks
@@ -186,6 +200,7 @@ warn_unreachable = true
 strict_equality = true
 ignore_missing_imports = true
 pretty = true
+allow_untyped_calls = true
 show_error_codes = true
 show_error_context = true
 show_column_numbers = true

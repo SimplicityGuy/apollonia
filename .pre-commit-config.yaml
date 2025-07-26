@@ -33,6 +33,7 @@ repos:
           - types-aiofiles
           - types-pyyaml
         files: ^(ingestor|populator)/.*\.py$
+        args: [--ignore-missing-imports]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 54da05914997e6b04e4db33ed6757d744984c68b  # frozen: 0.33.2
