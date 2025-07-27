@@ -57,7 +57,7 @@ jobs:
         uses: astral-sh/setup-uv@v2
 
       - name: 🐍 Set up Python
-        run: uv python install 3.13
+        run: uv python install 3.12
 
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras
@@ -116,7 +116,7 @@ jobs:
         uses: astral-sh/setup-uv@v2
 
       - name: 🐍 Set up Python
-        run: uv python install 3.13
+        run: uv python install 3.12
 
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras

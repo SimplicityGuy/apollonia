@@ -26,7 +26,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ['3.12', '3.13']
+        python-version: ['3.12']
 
     steps:
       - name: 📥 Checkout repository
@@ -60,7 +60,7 @@ jobs:
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.13'
+        if: matrix.python-version == '3.12'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -79,7 +79,7 @@ jobs:
 
       - name: 📊 Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always() && matrix.python-version == '3.13'
+        if: always() && matrix.python-version == '3.12'
         with:
           files: pytest-results.xml
           comment_mode: create new
@@ -192,8 +192,8 @@ jobs:
         with:
           enable-cache: true
 
-      - name: 🐍 Set up Python 3.13
-        run: uv python install 3.13
+      - name: 🐍 Set up Python 3.12
+        run: uv python install 3.12
 
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras
@@ -233,8 +233,8 @@ jobs:
       - name: 📦 Install uv
         uses: astral-sh/setup-uv@v2
 
-      - name: 🐍 Set up Python 3.13
-        run: uv python install 3.13
+      - name: 🐍 Set up Python 3.12
+        run: uv python install 3.12
 
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras
