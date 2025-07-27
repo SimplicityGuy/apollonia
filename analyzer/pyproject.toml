@@ -9,7 +9,6 @@ dependencies = [
     "orjson>=3.9.0",
     "numpy>=1.26.0",
     # ML dependencies
-    "essentia-tensorflow>=2.1b6.dev1110",
     "tensorflow>=2.15.0",
     "librosa>=0.10.0",
     "moviepy>=1.0.3",
@@ -18,6 +17,12 @@ dependencies = [
     "redis>=5.0.0",
     "aiofiles>=24.1.0",
     "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+# x86_64 only dependencies
+x86_64 = [
+    "essentia-tensorflow>=2.1b6.dev1110",
 ]
 
 [build-system]

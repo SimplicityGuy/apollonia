@@ -84,7 +84,6 @@ dependencies = [
     { name = "alembic" },
     { name = "asyncinotify" },
     { name = "asyncpg" },
-    { name = "essentia-tensorflow" },
     { name = "fastapi" },
     { name = "greenlet" },
     { name = "librosa" },
@@ -145,6 +144,9 @@ test = [
     { name = "pytest-mock" },
     { name = "pytest-timeout" },
 ]
+x86-64 = [
+    { name = "essentia-tensorflow" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -160,7 +162,7 @@ requires-dist = [
     { name = "asyncinotify", specifier = ">=4.2.1" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "docker", marker = "extra == 'integration'", specifier = ">=7.0.0" },
-    { name = "essentia-tensorflow", specifier = ">=2.1b6.dev1110" },
+    { name = "essentia-tensorflow", marker = "extra == 'x86-64'", specifier = ">=2.1b6.dev1110" },
     { name = "fastapi", specifier = ">=0.109.0" },
     { name = "greenlet", specifier = ">=3.0.0" },
     { name = "librosa", specifier = ">=0.10.0" },
@@ -194,7 +196,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.27.0" },
     { name = "xxhash", specifier = ">=3.5.0" },
 ]
-provides-extras = ["dev", "test", "integration", "all"]
+provides-extras = ["dev", "test", "integration", "x86-64", "all"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "apollonia", extras = ["dev"] }]

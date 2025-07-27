@@ -2,7 +2,7 @@
 # Multi-stage build for optimized image size
 
 # Build stage
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,12 +17,18 @@ WORKDIR /app
 # Copy dependency files
 COPY analyzer/pyproject.toml .
 
-# Install dependencies
+# Install dependencies based on architecture
 RUN uv venv && \
-    uv sync --no-dev
+    if [ "$(uname -m)" = "x86_64" ]; then \
+        echo "Installing x86_64 dependencies including essentia-tensorflow"; \
+        uv sync --no-dev --extra x86_64; \
+    else \
+        echo "Installing base dependencies only (ARM64 detected)"; \
+        uv sync --no-dev; \
+    fi
 
 # Runtime stage
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 # Install runtime dependencies for media processing
 RUN apt-get update && apt-get install -y --no-install-recommends \

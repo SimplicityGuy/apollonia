@@ -27,7 +27,6 @@ dependencies = [
     "aio-pika>=9.4.0",
     "neo4j>=5.19.0",
     # Media processing dependencies
-    "essentia-tensorflow>=2.1b6.dev1110",
     "numpy>=1.26.0",
     "tensorflow>=2.15.0",
     "librosa>=0.10.0",
@@ -84,6 +83,11 @@ integration = [
     "neo4j>=5.19.0",
     "aio-pika>=9.4.0",
     "pika>=1.3.0",
+]
+
+# x86_64 only dependencies
+x86_64 = [
+    "essentia-tensorflow>=2.1b6.dev1110",
 ]
 
 # All dependencies combined
