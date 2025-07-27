@@ -11,7 +11,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /build
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY populator/pyproject.toml ./
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system --no-deps -r requirements.txt
 
 # Copy source code
-COPY . .
+COPY populator/ .
 
 # Install the package
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -63,11 +63,10 @@ WORKDIR /app
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
-# Environment variables
+# Environment variables (NEO4J_PASSWORD should be provided at runtime)
 ENV AMQP_CONNECTION_STRING="" \
     NEO4J_URI="bolt://localhost:7687" \
     NEO4J_USER="neo4j" \
-    NEO4J_PASSWORD="" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 

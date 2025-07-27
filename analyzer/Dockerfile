@@ -15,8 +15,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml .
-COPY analyzer/pyproject.toml ./analyzer/
+COPY analyzer/pyproject.toml .
 
 # Install dependencies
 RUN uv venv && \
@@ -40,7 +39,7 @@ WORKDIR /app
 COPY --from=builder --chown=apollonia:apollonia /app/.venv /app/.venv
 
 # Copy application code
-COPY --chown=apollonia:apollonia analyzer/ ./analyzer/
+COPY --chown=apollonia:apollonia analyzer/ .
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
@@ -73,4 +72,4 @@ LABEL org.opencontainers.image.authors="robert@simplicityguy.com"
 LABEL org.opencontainers.image.source="https://github.com/SimplicityGuy/apollonia"
 
 # Run the analyzer
-CMD ["python", "-m", "analyzer.analyzer"]
+CMD ["python", "-m", "analyzer"]

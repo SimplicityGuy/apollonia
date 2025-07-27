@@ -11,7 +11,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /build
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY ingestor/pyproject.toml ./
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system --no-deps -r requirements.txt
 
 # Copy source code
-COPY . .
+COPY ingestor/ .
 
 # Install the package
 RUN --mount=type=cache,target=/root/.cache/uv \

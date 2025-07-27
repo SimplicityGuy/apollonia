@@ -13,8 +13,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml .
-COPY ../shared /shared
+COPY api/pyproject.toml .
+COPY shared /shared
 
 # Install dependencies
 RUN uv venv && \
@@ -39,7 +39,7 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
-COPY . .
+COPY api/ .
 COPY --from=builder /shared /shared
 
 # Set environment variables

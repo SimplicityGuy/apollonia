@@ -5,7 +5,6 @@ description = "File monitoring service for Apollonia - watches directories and p
 authors = [
     { name = "Robert Wlodarczyk", email = "robert@simplicityguy.com" }
 ]
-readme = "../README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
 classifiers = [
