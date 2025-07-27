@@ -6,8 +6,8 @@ authors = [
     { name = "Robert Wlodarczyk", email = "robert@simplicityguy.com" }
 ]
 readme = "README.md"
-# Using Python 3.12 for TensorFlow compatibility
-requires-python = ">=3.12,<3.13"
+# Support Python 3.12+ including 3.13
+requires-python = ">=3.12"
 license = { text = "MIT" }
 classifiers = [
     "Development Status :: 3 - Alpha",
