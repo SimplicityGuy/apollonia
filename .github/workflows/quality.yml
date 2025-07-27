@@ -40,17 +40,22 @@ jobs:
       - name: 🐍 Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
+      - name: Install just
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+        with:
+          just-version: '1.38.0'  # Pin to specific version for reliability
+
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras
 
-      - name: 🔍 Run Ruff linting
-        run: uv run ruff check . --output-format=github
+      - name: 🔍 Run linting checks
+        run: just lint
 
       - name: 💅 Check code formatting
-        run: uv run ruff format --check .
+        run: just format-check
 
-      - name: 🔍 Run mypy type checking
-        run: uv run mypy .
+      - name: 🔍 Run type checking
+        run: just typecheck
 
       - name: 🔒 Security scan with bandit
         run: uv run bandit -r . -f json -o bandit-report.json || true
@@ -79,22 +84,27 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install just
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+        with:
+          just-version: '1.38.0'  # Pin to specific version for reliability
+
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: 📦 Install dependencies
-        run: npm install
+        run: cd frontend && npm install
 
-      - name: 🔍 Run ESLint
-        run: npm run lint
+      - name: 🔍 Run linting checks
+        run: just lint
 
-      - name: 💅 Check Prettier formatting
-        run: npm run format -- --check
+      - name: 💅 Check code formatting
+        run: just format-check
 
-      - name: 🔍 Run TypeScript type checking
-        run: npm run type-check
+      - name: 🔍 Run type checking
+        run: just typecheck
 
       - name: 🔒 Audit dependencies
         run: npm audit --audit-level=moderate
@@ -111,6 +121,11 @@ jobs:
       - name: 📦 Install uv
         uses: astral-sh/setup-uv@v2
 
+      - name: Install just
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+        with:
+          just-version: '1.38.0'  # Pin to specific version for reliability
+
       - name: 🐍 Set up Python
         run: uv python install 3.12
 
@@ -118,4 +133,4 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: 🪝 Run pre-commit hooks
-        run: uv run pre-commit run --all-files
+        run: just pre-commit
