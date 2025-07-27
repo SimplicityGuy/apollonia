@@ -226,6 +226,10 @@ jobs:
     needs: [build-services, build-frontend]
     if: always() && (needs.build-services.result == 'success' || needs.build-frontend.result == 'success')
 
+    permissions:
+      contents: read
+      packages: read
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4

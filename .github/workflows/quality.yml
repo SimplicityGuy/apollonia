@@ -18,6 +18,11 @@ jobs:
     name: Python Quality Checks
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      security-events: write
+      checks: write
+
     strategy:
       matrix:
         python-version: ['3.12']
@@ -61,6 +66,10 @@ jobs:
   frontend-quality:
     name: Frontend Quality Checks
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      checks: write
 
     defaults:
       run:

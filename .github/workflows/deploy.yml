@@ -34,6 +34,11 @@ jobs:
       name: staging
       url: https://staging.apollonia.example.com
 
+    permissions:
+      contents: read
+      packages: read
+      deployments: write
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -81,6 +86,11 @@ jobs:
     environment:
       name: production
       url: https://apollonia.example.com
+
+    permissions:
+      contents: read
+      packages: read
+      deployments: write
 
     steps:
       - name: 📥 Checkout repository
