@@ -161,6 +161,13 @@ uv run task check
   - [Performance Tuning](docs/operations/performance.md) - Optimization guide
   - [Monitoring](docs/operations/monitoring.md) - Metrics and observability
 
+- **CI/CD**
+
+  - [GitHub Workflows](docs/development/github-workflows.md) - CI/CD pipeline documentation
+  - [Emoji Logging Convention](docs/development/logging-convention.md) - Standardized logging with
+    emojis
+  - [Justfile Commands](docs/development/justfile-guide.md) - Development task runner reference
+
 - **Contributing**
 
   - [Contributing Guide](CONTRIBUTING.md) - How to contribute
