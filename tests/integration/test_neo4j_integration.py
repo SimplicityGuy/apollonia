@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 import pytest
 from neo4j import AsyncGraphDatabase, GraphDatabase
@@ -36,7 +40,7 @@ def skip_if_no_neo4j(neo4j_config: dict[str, str]) -> None:
 
 
 @pytest.fixture
-async def neo4j_driver(neo4j_config: dict[str, str], _skip_if_no_neo4j: None):
+async def neo4j_driver(neo4j_config: dict[str, str], _skip_if_no_neo4j: None) -> AsyncIterator[Any]:
     """Create async Neo4j driver."""
     driver = AsyncGraphDatabase.driver(
         neo4j_config["uri"], auth=(neo4j_config["user"], neo4j_config["password"])
@@ -46,7 +50,7 @@ async def neo4j_driver(neo4j_config: dict[str, str], _skip_if_no_neo4j: None):
 
 
 @pytest.fixture
-async def clean_database(neo4j_driver):
+async def clean_database(neo4j_driver: Any) -> AsyncIterator[None]:
     """Clean test data from database."""
     async with neo4j_driver.session() as session:
         # Delete test nodes
@@ -61,7 +65,7 @@ class TestNeo4jIntegration:
     """Test Neo4j integration for populator service."""
 
     @pytest.mark.asyncio
-    async def test_connection(self, neo4j_driver) -> None:
+    async def test_connection(self, neo4j_driver: Any) -> None:
         """Test basic Neo4j connection."""
         async with neo4j_driver.session() as session:
             result = await session.run("RETURN 1 AS value")
@@ -69,7 +73,7 @@ class TestNeo4jIntegration:
             assert record["value"] == 1
 
     @pytest.mark.asyncio
-    async def test_create_file_node(self, neo4j_driver, _clean_database) -> None:
+    async def test_create_file_node(self, neo4j_driver: Any, _clean_database: None) -> None:
         """Test creating a file node."""
         file_data = {
             "file_path": "/test/example.txt",
@@ -108,7 +112,7 @@ class TestNeo4jIntegration:
             assert node["size"] == file_data["size"]
 
     @pytest.mark.asyncio
-    async def test_update_existing_node(self, neo4j_driver, _clean_database) -> None:
+    async def test_update_existing_node(self, neo4j_driver: Any, _clean_database: None) -> None:
         """Test updating an existing file node."""
         file_path = "/test/update.txt"
 
@@ -146,7 +150,7 @@ class TestNeo4jIntegration:
             assert node["size"] == 1000
 
     @pytest.mark.asyncio
-    async def test_neighbor_relationships(self, neo4j_driver, _clean_database) -> None:
+    async def test_neighbor_relationships(self, neo4j_driver: Any, _clean_database: None) -> None:
         """Test creating neighbor relationships between files."""
         async with neo4j_driver.session() as session:
             # Create main file
@@ -181,7 +185,7 @@ class TestNeo4jIntegration:
             assert neighbor_paths == sorted(neighbors)
 
     @pytest.mark.asyncio
-    async def test_find_duplicates_by_hash(self, neo4j_driver, _clean_database) -> None:
+    async def test_find_duplicates_by_hash(self, neo4j_driver: Any, _clean_database: None) -> None:
         """Test finding duplicate files by hash."""
         test_hash = "duplicate_hash_123"
 
@@ -215,7 +219,7 @@ class TestNeo4jIntegration:
             assert duplicate_paths == sorted(files)
 
     @pytest.mark.asyncio
-    async def test_transaction_rollback(self, neo4j_driver, _clean_database) -> None:
+    async def test_transaction_rollback(self, neo4j_driver: Any, _clean_database: None) -> None:
         """Test transaction rollback on error."""
         async with neo4j_driver.session() as session:
             try:
@@ -237,7 +241,7 @@ class TestNeo4jIntegration:
             assert record is None
 
     @pytest.mark.asyncio
-    async def test_performance_with_indexes(self, neo4j_driver, _clean_database) -> None:
+    async def test_performance_with_indexes(self, neo4j_driver: Any, _clean_database: None) -> None:
         """Test performance improvement with indexes."""
         async with neo4j_driver.session() as session:
             # Create index if not exists
@@ -268,7 +272,7 @@ class TestNeo4jIntegration:
             assert record["count"] == 10  # Should find 10 files with hash_5
 
     @pytest.mark.asyncio
-    async def test_datetime_handling(self, neo4j_driver, _clean_database) -> None:
+    async def test_datetime_handling(self, neo4j_driver: Any, _clean_database: None) -> None:
         """Test proper datetime handling."""
         now = datetime.now(UTC)
 

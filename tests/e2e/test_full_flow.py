@@ -4,7 +4,9 @@ import asyncio
 import logging
 import os
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import aiohttp
 import pytest
@@ -21,7 +23,7 @@ POSTGRES_URL = os.getenv(
 
 
 @pytest.fixture(scope="session")
-def test_media_files():
+def test_media_files() -> Iterator[dict[str, Path]]:
     """Create test media files for upload."""
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create test audio file (empty for testing)
@@ -36,7 +38,7 @@ def test_media_files():
 
 
 @pytest.fixture(scope="session")
-async def auth_token():
+async def auth_token() -> str:
     """Get authentication token for API requests."""
     async with aiohttp.ClientSession() as session:
         # Register test user
@@ -53,11 +55,11 @@ async def auth_token():
         login_data = {"username": "testuser", "password": "testpass123"}
         async with session.post(f"{API_URL}/api/v1/auth/login", data=login_data) as resp:
             result = await resp.json()
-            return result["access_token"]
+            return str(result["access_token"])
 
 
 @pytest.mark.asyncio
-async def test_health_check():
+async def test_health_check() -> None:
     """Test that all services are healthy."""
     async with aiohttp.ClientSession() as session:
         # Check API health
@@ -73,7 +75,9 @@ async def test_health_check():
 
 
 @pytest.mark.asyncio
-async def test_file_upload_and_processing(test_media_files, auth_token):
+async def test_file_upload_and_processing(
+    test_media_files: dict[str, Path], auth_token: str
+) -> None:
     """Test complete file upload and processing flow."""
     headers = {"Authorization": f"Bearer {auth_token}"}
 
@@ -106,7 +110,7 @@ async def test_file_upload_and_processing(test_media_files, auth_token):
 
 
 @pytest.mark.asyncio
-async def test_catalog_operations(auth_token):
+async def test_catalog_operations(auth_token: str) -> None:
     """Test catalog creation and management."""
     headers = {"Authorization": f"Bearer {auth_token}"}
 
@@ -134,7 +138,7 @@ async def test_catalog_operations(auth_token):
 
 
 @pytest.mark.asyncio
-async def test_graphql_query(auth_token):
+async def test_graphql_query(auth_token: str) -> None:
     """Test GraphQL endpoint."""
     headers = {"Authorization": f"Bearer {auth_token}"}
 
@@ -163,7 +167,7 @@ async def test_graphql_query(auth_token):
 
 
 @pytest.mark.asyncio
-async def test_analytics_endpoint(auth_token):
+async def test_analytics_endpoint(auth_token: str) -> None:
     """Test analytics data retrieval."""
     headers = {"Authorization": f"Bearer {auth_token}"}
 
@@ -179,7 +183,7 @@ async def test_analytics_endpoint(auth_token):
 
 
 @pytest.mark.asyncio
-async def test_search_functionality(auth_token):
+async def test_search_functionality(auth_token: str) -> None:
     """Test media file search."""
     headers = {"Authorization": f"Bearer {auth_token}"}
 
@@ -195,7 +199,7 @@ async def test_search_functionality(auth_token):
             assert "total" in results
 
 
-def test_database_schema():
+def test_database_schema() -> None:
     """Verify database schema is correctly set up."""
     engine = create_engine(POSTGRES_URL)
 
@@ -216,11 +220,11 @@ def test_database_schema():
 
 
 @pytest.mark.asyncio
-async def test_concurrent_uploads(test_media_files, auth_token):
+async def test_concurrent_uploads(test_media_files: dict[str, Path], auth_token: str) -> None:
     """Test handling of concurrent file uploads."""
     headers = {"Authorization": f"Bearer {auth_token}"}
 
-    async def upload_file(session, file_path, filename):
+    async def upload_file(session: aiohttp.ClientSession, file_path: Path, filename: str) -> Any:
         with file_path.open("rb") as f:
             data = aiohttp.FormData()
             data.add_field("file", f, filename=filename)

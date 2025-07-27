@@ -4,9 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from .real_models import RealAudioFeatureExtractor, TensorFlowMusicModels, VideoFeatureExtractor
+
+
+class VideoPrediction(TypedDict):
+    """Video genre prediction result."""
+
+    label: str
+    confidence: float
+
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -153,7 +161,7 @@ class RealAudioPipeline:
         clarity = features["timbre"]["clarity"]
         score += clarity * 0.2
 
-        return round(min(score, 1.0), 3)
+        return float(round(min(score, 1.0), 3))
 
 
 class RealVideoPipeline:
@@ -232,9 +240,9 @@ class RealVideoPipeline:
         logger.info("✅ Real video ML pipeline complete for: %s", file_path.name)
         return results
 
-    async def _predict_video_genres(self, features: dict[str, Any]) -> list[dict[str, Any]]:
+    async def _predict_video_genres(self, features: dict[str, Any]) -> list[VideoPrediction]:
         """Predict video genres/categories."""
-        genres = []
+        genres: list[VideoPrediction] = []
 
         # Use visual features for genre prediction
         motion = features["visual"]["motion_intensity"]
@@ -242,19 +250,19 @@ class RealVideoPipeline:
         brightness = features["visual"]["avg_brightness"]
 
         if motion > 0.7 and scene_changes > 5:
-            genres.append({"label": "Action", "confidence": 0.85})
-            genres.append({"label": "Sports", "confidence": 0.70})
+            genres.append(VideoPrediction(label="Action", confidence=0.85))
+            genres.append(VideoPrediction(label="Sports", confidence=0.70))
 
         if brightness < 0.3:
-            genres.append({"label": "Thriller", "confidence": 0.65})
-            genres.append({"label": "Horror", "confidence": 0.50})
+            genres.append(VideoPrediction(label="Thriller", confidence=0.65))
+            genres.append(VideoPrediction(label="Horror", confidence=0.50))
 
         if motion < 0.3 and scene_changes < 3:
-            genres.append({"label": "Documentary", "confidence": 0.60})
-            genres.append({"label": "Drama", "confidence": 0.55})
+            genres.append(VideoPrediction(label="Documentary", confidence=0.60))
+            genres.append(VideoPrediction(label="Drama", confidence=0.55))
 
         if not genres:
-            genres.append({"label": "General", "confidence": 0.80})
+            genres.append(VideoPrediction(label="General", confidence=0.80))
 
         # Sort by confidence
         genres.sort(key=lambda x: x["confidence"], reverse=True)

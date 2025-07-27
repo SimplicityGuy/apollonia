@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -91,7 +95,7 @@ class TestIngestor:
         mock_event.mask = Mask.CREATE
 
         # Setup async iterator that yields one event then stops
-        async def mock_aiter():
+        async def mock_aiter() -> AsyncIterator[Any]:
             yield mock_event
             # Set running to False to exit loop
             ingestor._running = False
@@ -140,7 +144,7 @@ class TestIngestor:
         mock_event.path = Path("/data/error.txt")
 
         # Setup async iterator
-        async def mock_aiter():
+        async def mock_aiter() -> AsyncIterator[Any]:
             yield mock_event
             ingestor._running = False
 
@@ -171,7 +175,7 @@ class TestIngestor:
         mock_inotify_class.return_value.__aenter__.return_value = mock_inotify
 
         # Setup async iterator that would yield infinitely
-        async def mock_aiter():
+        async def mock_aiter() -> AsyncIterator[Any]:
             while True:
                 # Check if we should stop
                 if not ingestor._running:
@@ -184,7 +188,7 @@ class TestIngestor:
         ingestor.amqp_channel = Mock()
 
         # Stop the ingestor after a short delay
-        async def stop_after_delay():
+        async def stop_after_delay() -> None:
             await asyncio.sleep(0.1)
             ingestor.stop()
 
@@ -281,7 +285,7 @@ class TestMainFunctions:
         # Capture the signal handler
         signal_handler = None
 
-        def capture_handler(sig, handler):
+        def capture_handler(sig: int, handler: Any) -> None:
             nonlocal signal_handler
             if sig == 2:  # SIGINT
                 signal_handler = handler

@@ -113,7 +113,7 @@ async def cache_invalidate_pattern(pattern: str) -> int:
             logger.info(
                 "🗑️ Invalidated %d cache keys matching pattern: %s", deleted, pattern
             )
-            return deleted
+            return int(deleted)
 
         return 0
     except Exception as e:

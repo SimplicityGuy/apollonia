@@ -4,13 +4,28 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import essentia.standard as es
 import numpy as np
 from essentia.standard import (
     MonoLoader,
 )
+
+
+class GenrePrediction(TypedDict):
+    """Genre prediction result."""
+
+    label: str
+    confidence: float
+
+
+class InstrumentPrediction(TypedDict):
+    """Instrument prediction result."""
+
+    label: str
+    confidence: float
+
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +271,7 @@ class TensorFlowMusicModels:
             ],
         }
 
-    async def predict_genre(self, audio_features: dict[str, Any]) -> list[dict[str, Any]]:
+    async def predict_genre(self, audio_features: dict[str, Any]) -> list[GenrePrediction]:
         """Predict music genres from features.
 
         Args:
@@ -273,26 +288,26 @@ class TensorFlowMusicModels:
         tempo = audio_features["rhythm"]["tempo"]
         brightness = audio_features["timbre"]["brightness"]
 
-        genres = []
+        genres: list[GenrePrediction] = []
         # model_info = self.models["genre"]  # For future use with real models
 
         # Simple heuristic-based genre detection
         if tempo > 120 and brightness > 0.7:
-            genres.append({"label": "Electronic", "confidence": 0.85})
-            genres.append({"label": "Pop", "confidence": 0.65})
+            genres.append(GenrePrediction(label="Electronic", confidence=0.85))
+            genres.append(GenrePrediction(label="Pop", confidence=0.65))
         elif tempo < 80:
-            genres.append({"label": "Classical", "confidence": 0.75})
-            genres.append({"label": "Jazz", "confidence": 0.55})
+            genres.append(GenrePrediction(label="Classical", confidence=0.75))
+            genres.append(GenrePrediction(label="Jazz", confidence=0.55))
         else:
-            genres.append({"label": "Rock", "confidence": 0.70})
-            genres.append({"label": "Pop", "confidence": 0.60})
+            genres.append(GenrePrediction(label="Rock", confidence=0.70))
+            genres.append(GenrePrediction(label="Pop", confidence=0.60))
 
         # Add some variety
         if audio_features["timbre"]["roughness"] > 0.7:
-            genres.append({"label": "Metal", "confidence": 0.65})
+            genres.append(GenrePrediction(label="Metal", confidence=0.65))
 
         if audio_features["harmonic"]["mode"] == "minor":
-            genres.append({"label": "Blues", "confidence": 0.50})
+            genres.append(GenrePrediction(label="Blues", confidence=0.50))
 
         # Sort by confidence and return top 5
         genres.sort(key=lambda x: x["confidence"], reverse=True)
@@ -340,7 +355,9 @@ class TensorFlowMusicModels:
         # Round all values
         return {k: round(v, 3) for k, v in moods.items()}
 
-    async def predict_instruments(self, audio_features: dict[str, Any]) -> list[dict[str, Any]]:
+    async def predict_instruments(
+        self, audio_features: dict[str, Any]
+    ) -> list[InstrumentPrediction]:
         """Predict instruments present in the audio.
 
         Args:
@@ -352,7 +369,7 @@ class TensorFlowMusicModels:
         if not self._initialized:
             await self.initialize()
 
-        instruments = []
+        instruments: list[InstrumentPrediction] = []
 
         # Feature-based instrument detection
         brightness = audio_features["timbre"]["brightness"]
@@ -361,17 +378,17 @@ class TensorFlowMusicModels:
 
         # Heuristic instrument detection
         if brightness > 0.8 and zcr > 0.1:
-            instruments.append({"name": "Synthesizer", "confidence": 0.85})
+            instruments.append(InstrumentPrediction(label="Synthesizer", confidence=0.85))
 
         if spectral_complexity > 0.7:
-            instruments.append({"name": "Drums", "confidence": 0.80})
-            instruments.append({"name": "Bass", "confidence": 0.70})
+            instruments.append(InstrumentPrediction(label="Drums", confidence=0.80))
+            instruments.append(InstrumentPrediction(label="Bass", confidence=0.70))
 
         if brightness < 0.5 and zcr < 0.05:
-            instruments.append({"name": "Piano", "confidence": 0.75})
+            instruments.append(InstrumentPrediction(label="Piano", confidence=0.75))
 
         if 0.4 < brightness < 0.7:
-            instruments.append({"name": "Guitar", "confidence": 0.70})
+            instruments.append(InstrumentPrediction(label="Guitar", confidence=0.70))
 
         # Sort by confidence
         instruments.sort(key=lambda x: x["confidence"], reverse=True)
@@ -439,14 +456,14 @@ class VideoFeatureExtractor:
     async def _extract_visual_features(self, video: Any) -> dict[str, Any]:
         """Extract visual features from video."""
         # Sample frames for analysis
-        frames = []
+        frame_list = []
         sample_times = np.linspace(0, video.duration, min(10, int(video.duration)))
 
         for t in sample_times:
             frame = video.get_frame(t)
-            frames.append(frame)
+            frame_list.append(frame)
 
-        frames = np.array(frames)
+        frames = np.array(frame_list)
 
         # Calculate visual statistics
         return {
