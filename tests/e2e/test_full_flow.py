@@ -47,7 +47,7 @@ async def auth_token():
             async with session.post(f"{API_URL}/api/v1/auth/register", json=user_data) as resp:
                 await resp.json()
         except Exception:
-            logger.debug("User registration failed (user might already exist)")
+            logger.debug("🔐 User registration failed (user might already exist)")
 
         # Login
         login_data = {"username": "testuser", "password": "testpass123"}

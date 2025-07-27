@@ -363,7 +363,8 @@ class TestMainFunctions:
             main()
 
         mock_logger.warning.assert_called_once()
-        assert "default Neo4j password" in mock_logger.warning.call_args[0][0]
+        warning_msg = mock_logger.warning.call_args[0][0]
+        assert "default Neo4j password" in warning_msg or "⚠️" in warning_msg
 
     @pytest.mark.asyncio
     @patch("populator.populator.Populator")

@@ -41,7 +41,7 @@ class Ingestor:
 
     def __enter__(self) -> Ingestor:
         """Set up AMQP connection and channel."""
-        logger.info("Connecting to AMQP broker at %s", AMQP_CONNECTION)
+        logger.info("🔌 Connecting to AMQP broker at %s", AMQP_CONNECTION)
         self.amqp_connection = BlockingConnection(URLParameters(AMQP_CONNECTION))
         self.amqp_channel = self.amqp_connection.channel()
 
@@ -52,7 +52,7 @@ class Ingestor:
             durable=True,
             auto_delete=False,
         )
-        logger.info("AMQP exchange '%s' declared", AMQP_EXCHANGE)
+        logger.info("📡 AMQP exchange '%s' declared", AMQP_EXCHANGE)
 
         return self
 
@@ -64,17 +64,17 @@ class Ingestor:
     ) -> None:
         """Clean up AMQP connection."""
         if self.amqp_connection and not self.amqp_connection.is_closed:
-            logger.info("Closing AMQP connection")
+            logger.info("🔌 Closing AMQP connection")
             self.amqp_connection.close()
 
     def stop(self) -> None:
         """Signal the ingestor to stop."""
-        logger.info("Stopping ingestor")
+        logger.info("🛑 Stopping ingestor")
         self._running = False
 
     async def ingest(self) -> None:
         """Monitor directory for file changes and publish to AMQP."""
-        logger.info("Starting file monitoring on %s", DATA_DIRECTORY)
+        logger.info("👁️ Starting file monitoring on %s", DATA_DIRECTORY)
 
         # Ensure the data directory exists
         Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
@@ -87,7 +87,7 @@ class Ingestor:
                     break
 
                 try:
-                    logger.debug("Processing event: %s for %s", event.mask, event.path)
+                    logger.debug("🔍 Processing event: %s for %s", event.mask, event.path)
                     prospector = Prospector(event.path)
                     data = await prospector.prospect()
 
@@ -102,9 +102,9 @@ class Ingestor:
                             body=message_body,
                             properties=self.amqp_properties,
                         )
-                        logger.info("Published event for file: %s", event.path)
+                        logger.info("📤 Published event for file: %s", event.path)
                 except Exception:
-                    logger.exception("Error processing file event for %s", event.path)
+                    logger.exception("💥 Error processing file event for %s", event.path)
 
 
 def setup_logging() -> None:
@@ -139,7 +139,7 @@ async def async_main() -> None:
 
     def signal_handler(signum: int, _frame: Any) -> None:
         """Handle shutdown signals."""
-        logger.info("Received signal %s, shutting down gracefully", signum)
+        logger.info("⚡ Received signal %s, shutting down gracefully", signum)
         if ingestor:
             ingestor.stop()
 
@@ -151,9 +151,9 @@ async def async_main() -> None:
         with Ingestor() as ingestor:
             await ingestor.ingest()
     except KeyboardInterrupt:
-        logger.info("Interrupted by user")
+        logger.info("⌨️ Interrupted by user")
     except Exception:
-        logger.exception("Fatal error in ingestor")
+        logger.exception("💥 Fatal error in ingestor")
         sys.exit(1)
 
 
@@ -164,7 +164,7 @@ def main() -> None:
 
     # Verify environment
     if not AMQP_CONNECTION:
-        logger.error("AMQP_CONNECTION_STRING environment variable not set")
+        logger.error("❌ AMQP_CONNECTION_STRING environment variable not set")
         sys.exit(1)
 
     asyncio.run(async_main())

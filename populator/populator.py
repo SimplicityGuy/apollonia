@@ -42,10 +42,10 @@ class Populator:
 
     async def __aenter__(self) -> Populator:
         """Set up connections."""
-        logger.info("Connecting to AMQP broker at %s", AMQP_CONNECTION)
+        logger.info("🔌 Connecting to AMQP broker at %s", AMQP_CONNECTION)
         self.amqp_connection = await connect_robust(AMQP_CONNECTION)
 
-        logger.info("Connecting to Neo4j at %s", NEO4J_URI)
+        logger.info("🔌 Connecting to Neo4j at %s", NEO4J_URI)
         self.neo4j_driver = AsyncGraphDatabase.driver(
             NEO4J_URI,
             auth=(NEO4J_USER, NEO4J_PASSWORD),
@@ -54,7 +54,7 @@ class Populator:
         # Verify Neo4j connection
         async with self.neo4j_driver.session() as session:
             await session.run("RETURN 1")
-        logger.info("Neo4j connection verified")
+        logger.info("✅ Neo4j connection verified")
 
         return self
 
@@ -67,15 +67,15 @@ class Populator:
         """Clean up connections."""
         if self.amqp_connection:
             await self.amqp_connection.close()
-            logger.info("AMQP connection closed")
+            logger.info("🔌 AMQP connection closed")
 
         if self.neo4j_driver:
             await self.neo4j_driver.close()
-            logger.info("Neo4j connection closed")
+            logger.info("🔌 Neo4j connection closed")
 
     def stop(self) -> None:
         """Signal the populator to stop."""
-        logger.info("Stopping populator")
+        logger.info("🛑 Stopping populator")
         self._running = False
 
     async def process_message(self, message: AbstractIncomingMessage) -> None:
@@ -88,13 +88,13 @@ class Populator:
             try:
                 # Parse message body
                 data = orjson.loads(message.body)
-                logger.info("Processing file: %s", data.get("file_path"))
+                logger.info("🔍 Processing file: %s", data.get("file_path"))
 
                 # Import to Neo4j
                 await self._import_to_neo4j(data)
 
             except Exception:
-                logger.exception("Error processing message")
+                logger.exception("💥 Error processing message")
                 # Message will be requeued due to exception in process context
 
     async def _import_to_neo4j(self, data: dict[str, Any]) -> None:
@@ -137,7 +137,7 @@ class Populator:
             file_record = await result.single()
 
             if file_record:
-                logger.debug("Created/updated file node: %s", data["file_path"])
+                logger.debug("✅ Created/updated file node: %s", data["file_path"])
 
             # Create relationships to neighbor files
             for neighbor_path in data.get("neighbors", []):
@@ -175,7 +175,7 @@ class Populator:
         )
         await queue.bind(exchange, routing_key=AMQP_ROUTING_KEY)
 
-        logger.info("Starting to consume messages from queue: %s", AMQP_QUEUE)
+        logger.info("📥 Starting to consume messages from queue: %s", AMQP_QUEUE)
 
         # Start consuming
         async with queue.iterator() as queue_iter:
@@ -218,7 +218,7 @@ async def async_main() -> None:
 
     def signal_handler(signum: int, _frame: Any) -> None:
         """Handle shutdown signals."""
-        logger.info("Received signal %s, shutting down gracefully", signum)
+        logger.info("⚡ Received signal %s, shutting down gracefully", signum)
         if populator:
             populator.stop()
 
@@ -230,9 +230,9 @@ async def async_main() -> None:
         async with Populator() as populator:
             await populator.consume()
     except KeyboardInterrupt:
-        logger.info("Interrupted by user")
+        logger.info("⌨️ Interrupted by user")
     except Exception:
-        logger.exception("Fatal error in populator")
+        logger.exception("💥 Fatal error in populator")
         sys.exit(1)
 
 
@@ -243,11 +243,11 @@ def main() -> None:
 
     # Verify environment
     if not AMQP_CONNECTION:
-        logger.error("AMQP_CONNECTION_STRING environment variable not set")
+        logger.error("❌ AMQP_CONNECTION_STRING environment variable not set")
         sys.exit(1)
 
     if not NEO4J_PASSWORD or NEO4J_PASSWORD == "password":  # noqa: S105
-        logger.warning("Using default Neo4j password - please change in production")
+        logger.warning("⚠️ Using default Neo4j password - please change in production")
 
     asyncio.run(async_main())
 

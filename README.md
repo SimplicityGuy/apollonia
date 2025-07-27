@@ -91,6 +91,33 @@ For detailed development instructions, see the
 
 ### Quick Development Setup
 
+The project uses [Just](https://just.systems/) as a command runner for all development tasks.
+
+```bash
+# Install Just (if not already installed)
+cargo install just
+
+# Or on macOS
+brew install just
+
+# Set up development environment
+just install
+
+# Start all services
+just up
+
+# Run tests
+just test
+
+# Run quality checks
+just check
+
+# See all available commands
+just --list
+```
+
+### Alternative Setup (without Just)
+
 ```bash
 # Install uv package manager
 curl -LsSf https://astral.sh/uv/install.sh | sh

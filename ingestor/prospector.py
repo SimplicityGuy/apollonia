@@ -45,13 +45,13 @@ class Prospector:
         Returns:
             Dictionary containing file metadata including hashes, timestamps, and related files.
         """
-        logger.debug("Prospecting file: %s", self.path)
+        logger.debug("🔍 Prospecting file: %s", self.path)
 
         # Get file stats
         try:
             stats = self.path.stat()
         except OSError:
-            logger.exception("Failed to stat file: %s", self.path)
+            logger.exception("💥 Failed to stat file: %s", self.path)
             stats = None
 
         data: dict[str, Any] = {
@@ -96,7 +96,7 @@ class Prospector:
                     hash_sha256.update(chunk)
                     hash_xxh128.update(chunk)
         except OSError:
-            logger.exception("Failed to read file for hashing: %s", self.path)
+            logger.exception("💥 Failed to read file for hashing: %s", self.path)
             return {"sha256": "", "xxh128": ""}
 
         return {
@@ -131,6 +131,6 @@ class Prospector:
                 ):
                     neighbors.append(str(file.absolute()))
         except OSError:
-            logger.exception("Failed to search for neighbors of: %s", self.path)
+            logger.exception("💥 Failed to search for neighbors of: %s", self.path)
 
         return neighbors[:10]  # Limit to 10 neighbors
