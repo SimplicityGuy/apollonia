@@ -16,7 +16,9 @@ export DOCKER_BUILDKIT := "1"
 python_version := "3.12"
 venv := ".venv"
 
-# ========== Development Setup ==========
+# Development environment setup and configuration
+
+# Complete development environment setup
 [group('setup')]
 install:
   #!/usr/bin/env bash
@@ -31,21 +33,26 @@ install:
   uv run pre-commit install
   echo "✅ Development environment ready!"
 
+# Install git pre-commit hooks
 [group('setup')]
 install-hooks:
   uv run pre-commit install
   uv run pre-commit install --hook-type commit-msg
 
+# Update and sync all dependencies
 [group('setup')]
 update-deps:
   uv lock --upgrade
   uv sync --all-extras
 
-# ========== Build Tasks ==========
+# Build services, frontend, and Docker images
+
+# Build all components (services + frontend)
 [group('build')]
 build: build-services build-frontend
   echo "✅ All components built successfully!"
 
+# Build only microservices
 [group('build')]
 build-services:
   #!/usr/bin/env bash
@@ -55,46 +62,56 @@ build-services:
     docker build -t apollonia-$service ./$service
   done
 
+# Build only frontend
 [group('build')]
 build-frontend:
   echo "🎨 Building frontend..."
   cd frontend && npm ci && npm run build
 
+# Build all Docker images
 [group('build')]
 build-docker:
   echo "🐳 Building all Docker images..."
   docker-compose build --parallel
 
+# Build Docker images without cache
 [group('build')]
 build-docker-no-cache:
   echo "🐳 Building all Docker images (no cache)..."
   docker-compose build --parallel --no-cache
 
-# ========== Test Tasks ==========
+# Run tests with coverage and different scopes
+
+# Run all tests
 [group('test')]
 test: test-python test-frontend
   echo "✅ All tests passed!"
 
+# Run Python tests
 [group('test')]
 test-python:
   echo "🧪 Running Python tests..."
   uv run pytest -v
 
+# Run Python tests in watch mode
 [group('test')]
 test-python-watch:
   echo "👁️ Running Python tests in watch mode..."
   uv run pytest-watch
 
+# Run tests with coverage report
 [group('test')]
 test-coverage:
   echo "📊 Running tests with coverage..."
   uv run pytest --cov=. --cov-report=html --cov-report=term
 
+# Run integration tests
 [group('test')]
 test-integration:
   echo "🔗 Running integration tests..."
   uv run pytest tests/integration -v
 
+# Run end-to-end tests
 [group('test')]
 test-e2e:
   echo "🌐 Running end-to-end tests..."
@@ -103,68 +120,82 @@ test-e2e:
   uv run pytest tests/e2e -v
   docker-compose down
 
+# Run frontend tests
 [group('test')]
 test-frontend:
   echo "🎨 Running frontend tests..."
   cd frontend && npm test
 
+# Run frontend tests in watch mode
 [group('test')]
 test-frontend-watch:
   echo "👁️ Running frontend tests in watch mode..."
   cd frontend && npm run test:watch
 
-# ========== Quality Checks ==========
+# Code quality checks, linting, and formatting
+
+# Run all quality checks
 [group('quality')]
 check: lint typecheck format-check
   echo "✅ All quality checks passed!"
 
+# Run linters
 [group('quality')]
 lint:
   echo "🔍 Running linters..."
   uv run ruff check .
   cd frontend && npm run lint
 
+# Fix linting issues
 [group('quality')]
 lint-fix:
   echo "🔧 Fixing linting issues..."
   uv run ruff check --fix .
   cd frontend && npm run lint -- --fix
 
+# Format all code
 [group('quality')]
 format:
   echo "💅 Formatting code..."
   uv run ruff format .
   cd frontend && npm run format
 
+# Check code formatting
 [group('quality')]
 format-check:
   echo "💅 Checking code formatting..."
   uv run ruff format --check .
   cd frontend && npm run format -- --check
 
+# Run type checkers
 [group('quality')]
 typecheck:
   echo "🔍 Running type checkers..."
   uv run mypy .
   cd frontend && npm run type-check
 
+# Run pre-commit hooks on all files
 [group('quality')]
 pre-commit:
   echo "🪝 Running pre-commit hooks..."
   uv run pre-commit run --all-files
 
-# ========== Docker & Services ==========
+# Docker compose and container management
+
+# Start all services
 [group('docker')]
 up:
   echo "🚀 Starting all services..."
   docker-compose up -d
   @just logs -f
 
+# Stop all services
 [group('docker')]
 down:
   echo "🛑 Stopping all services..."
   docker-compose down
 
+# Restart all or specific service
 [group('docker')]
 restart service="":
   #!/usr/bin/env bash
@@ -176,6 +207,7 @@ restart service="":
     docker-compose restart {{service}}
   fi
 
+# View logs
 [group('docker')]
 logs service="" *args="":
   #!/usr/bin/env bash
@@ -185,25 +217,31 @@ logs service="" *args="":
     docker-compose logs {{service}} {{args}}
   fi
 
+# List running containers
 [group('docker')]
 ps:
   docker-compose ps
 
+# Execute command in container
 [group('docker')]
 exec service *cmd:
   docker-compose exec {{service}} {{cmd}}
 
-# ========== Database Tasks ==========
+# Database migrations and connections
+
+# Run database migrations
 [group('db')]
 db-migrate:
   echo "🗄️ Running database migrations..."
   cd api && uv run alembic upgrade head
 
+# Rollback database migrations
 [group('db')]
 db-rollback steps="1":
   echo "⏮️ Rolling back {{steps}} migration(s)..."
   cd api && uv run alembic downgrade -{{steps}}
 
+# Reset database completely
 [group('db')]
 db-reset:
   echo "🔄 Resetting database..."
@@ -212,17 +250,21 @@ db-reset:
   sleep 5
   @just db-migrate
 
+# Connect to PostgreSQL
 [group('db')]
 db-shell:
   echo "🐘 Connecting to PostgreSQL..."
   docker-compose exec postgres psql -U apollonia -d apollonia
 
+# Connect to Neo4j
 [group('db')]
 neo4j-shell:
   echo "🔷 Connecting to Neo4j..."
   docker-compose exec neo4j cypher-shell -u neo4j -p apollonia
 
-# ========== Development Tasks ==========
+# Development workflow and service runners
+
+# Start development environment
 [group('dev')]
 dev:
   #!/usr/bin/env bash
@@ -250,36 +292,44 @@ dev:
     wait
   fi
 
+# Start API service
 [group('dev')]
 run-api:
   echo "🌐 Starting API service..."
   cd api && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
+# Start frontend dev server
 [group('dev')]
 run-frontend:
   echo "🎨 Starting frontend dev server..."
   cd frontend && npm run dev
 
+# Start media ingestor
 [group('dev')]
 run-ingestor:
   echo "👁️ Starting media ingestor..."
   uv run python -m ingestor
 
+# Start ML analyzer
 [group('dev')]
 run-analyzer:
   echo "🧠 Starting ML analyzer..."
   uv run python -m analyzer
 
+# Start database populator
 [group('dev')]
 run-populator:
   echo "💾 Starting database populator..."
   uv run python -m populator
 
-# ========== Cleanup Tasks ==========
+# Clean artifacts, cache, and temporary files
+
+# Clean all artifacts
 [group('clean')]
 clean: clean-python clean-frontend clean-docker
   echo "✨ Cleanup complete!"
 
+# Clean Python artifacts
 [group('clean')]
 clean-python:
   echo "🧹 Cleaning Python artifacts..."
@@ -292,33 +342,40 @@ clean-python:
   find . -type f -name ".coverage" -delete 2>/dev/null || true
   rm -rf htmlcov/ 2>/dev/null || true
 
+# Clean frontend artifacts
 [group('clean')]
 clean-frontend:
   echo "🧹 Cleaning frontend artifacts..."
   rm -rf frontend/node_modules frontend/dist frontend/.vite 2>/dev/null || true
 
+# Clean Docker artifacts
 [group('clean')]
 clean-docker:
   echo "🐳 Cleaning Docker artifacts..."
   docker-compose down -v --remove-orphans
   docker system prune -f
 
+# Deep clean everything
 [group('clean')]
 clean-all: clean
   echo "💥 Deep cleaning..."
   rm -rf .venv/ 2>/dev/null || true
   docker system prune -af --volumes
 
-# ========== Utility Tasks ==========
+# Project utilities and maintenance tools
+
+# Show project structure
 [group('util')]
 tree:
   tree -I '__pycache__|*.pyc|node_modules|.git|.venv|dist|build|*.egg-info' -a
 
+# Find TODOs in codebase
 [group('util')]
 todo:
   echo "📝 TODOs in codebase:"
   rg "TODO|FIXME|HACK|XXX" --type py --type ts --type tsx
 
+# Check for outdated dependencies
 [group('util')]
 outdated:
   echo "📦 Checking for outdated dependencies..."
@@ -327,12 +384,14 @@ outdated:
   echo -e "\nFrontend packages:"
   cd frontend && npm outdated
 
+# Run security checks
 [group('util')]
 security:
   echo "🔒 Running security checks..."
   uv run pip-audit
   cd frontend && npm audit
 
+# Generate .env template
 [group('util')]
 env-template:
   echo "📄 Generating .env.template..."
@@ -345,18 +404,23 @@ env-template:
     sort | uniq | \
     awk '{print $0"="}' >> .env.template
 
-# ========== Documentation ==========
+# Documentation building and serving
+
+# Serve documentation locally
 [group('docs')]
 docs-serve:
   echo "📚 Serving documentation..."
   cd docs && python -m http.server 8080
 
+# Build documentation
 [group('docs')]
 docs-build:
   echo "📚 Building documentation..."
   uv run mkdocs build
 
-# ========== Release Tasks ==========
+# Version management and release preparation
+
+# Bump version (patch/minor/major)
 [group('release')]
 version-bump part="patch":
   #!/usr/bin/env bash
@@ -370,11 +434,13 @@ version-bump part="patch":
   done
   echo "⚠️  Manual version bump required - update pyproject.toml files"
 
+# Generate changelog
 [group('release')]
 changelog:
   echo "📝 Generating changelog..."
   echo "⚠️  Manual changelog generation required"
 
+# Prepare release
 [group('release')]
 release: check test
   echo "🚀 Preparing release..."
@@ -385,7 +451,7 @@ release: check test
   echo "5. Push to repository"
   echo "⚠️  Manual release process required"
 
-# ========== Help & Info ==========
+# Help and information commands
 help:
   @just --list
 
