@@ -235,14 +235,13 @@ class TestIngestorIntegration:
         assert "video.srt" in neighbor_names
         assert "video.nfo" in neighbor_names
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Prospector not available on macOS")
     @pytest.mark.integration
     def test_prospector_with_real_files(self, temp_data_dir: Path) -> None:
         """Test prospector with real files."""
-        if sys.platform == "darwin":
-            pytest.skip("Prospector not available on macOS")
 
         # Create a test file
-        test_file = temp_data_dir / "test.bin"  # type: ignore[unreachable]
+        test_file = temp_data_dir / "test.bin"
         test_content = b"Binary content \x00\x01\x02\x03"
         test_file.write_bytes(test_content)
 
