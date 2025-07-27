@@ -96,6 +96,7 @@ all = [
 [tool.uv]
 # uv-specific configuration
 dev-dependencies = [
+    "aiohttp>=3.12.14",
     # Include all development dependencies
     "apollonia[dev]",
 ]
