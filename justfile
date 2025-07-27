@@ -80,7 +80,7 @@ build-docker-no-cache:
   echo "🐳 Building all Docker images (no cache)..."
   docker-compose build --parallel --no-cache
 
-# Run tests with coverage and different scopes
+# Test execution with coverage and different scopes
 
 # Run all tests
 [group('test')]
@@ -103,28 +103,49 @@ test-python-watch:
 [group('test')]
 test-coverage:
   echo "📊 Running tests with coverage..."
-  uv run pytest --cov=. --cov-report=html --cov-report=term
+  uv run pytest -v \
+    --cov=ingestor \
+    --cov=populator \
+    --cov=analyzer \
+    --cov=api \
+    --cov=shared \
+    --cov-report=xml \
+    --cov-report=term-missing \
+    --cov-report=html \
+    --junit-xml=pytest-results.xml \
+    tests/unit tests/ingestor tests/populator tests/analyzer
 
 # Run integration tests
 [group('test')]
 test-integration:
   echo "🔗 Running integration tests..."
-  uv run pytest tests/integration -v
+  uv run pytest -v \
+    --cov=ingestor \
+    --cov=populator \
+    --cov=analyzer \
+    --cov-report=xml \
+    --junit-xml=integration-results.xml \
+    tests/integration
 
 # Run end-to-end tests
 [group('test')]
 test-e2e:
   echo "🌐 Running end-to-end tests..."
+  echo "🚀 Starting services..."
   docker-compose up -d
-  sleep 10  # Wait for services to start
-  uv run pytest tests/e2e -v
-  docker-compose down
+  echo "⏳ Waiting for services to be ready..."
+  sleep 30
+  docker-compose ps
+  uv run pytest -v \
+    --junit-xml=e2e-results.xml \
+    tests/e2e
+  docker-compose down -v
 
 # Run frontend tests
 [group('test')]
 test-frontend:
   echo "🎨 Running frontend tests..."
-  cd frontend && npm test
+  cd frontend && npm run test:coverage
 
 # Run frontend tests in watch mode
 [group('test')]
@@ -452,9 +473,14 @@ release: check test
   echo "⚠️  Manual release process required"
 
 # Help and information commands
+
+# Display available commands
+[group('help')]
 help:
   @just --list
 
+# Show project information and quick start guide
+[group('help')]
 info:
   @echo "Apollonia Media Catalog System"
   @echo "=============================="
