@@ -205,6 +205,17 @@ Temporary Items
 *.vsix
 
 ###
+# Node.js
+###
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn/
+.pnp.js
+
+###
 # Project-specific
 ###
 # Data directory for local testing
