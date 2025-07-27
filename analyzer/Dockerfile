@@ -17,15 +17,9 @@ WORKDIR /app
 # Copy dependency files
 COPY analyzer/pyproject.toml .
 
-# Install dependencies based on architecture
+# Install dependencies (x86_64 only)
 RUN uv venv && \
-    if [ "$(uname -m)" = "x86_64" ]; then \
-        echo "Installing x86_64 dependencies including essentia-tensorflow"; \
-        uv sync --no-dev --extra x86_64; \
-    else \
-        echo "Installing base dependencies only (ARM64 detected)"; \
-        uv sync --no-dev; \
-    fi
+    uv sync --no-dev --extra x86_64
 
 # Runtime stage
 FROM python:3.12-slim

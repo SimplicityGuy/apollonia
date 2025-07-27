@@ -42,7 +42,7 @@ Comprehensive testing pipeline:
 Container build and deployment pipeline:
 
 - **Service Discovery**: Auto-detects services with Dockerfiles
-- **Multi-platform**: Builds for linux/amd64 and linux/arm64
+- **Platform**: Builds for linux/amd64 only
 - **Security**: Trivy vulnerability scanning
 - **Registry**: GitHub Container Registry (ghcr.io)
 - **Integration Testing**: Multi-service deployment validation

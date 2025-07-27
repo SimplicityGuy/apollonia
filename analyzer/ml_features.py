@@ -1,32 +1,30 @@
 """
-ML feature extraction with platform-specific handling.
+ML feature extraction for x86_64 platform.
 """
 
 import logging
-import platform
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Try to import essentia-tensorflow (x86_64 only)
-HAS_ESSENTIA_TF = False
+# Import essentia-tensorflow (x86_64 only)
 try:
     import essentia.tensorflow as estf  # noqa: F401
 
     HAS_ESSENTIA_TF = True
     logger.info("Essentia-tensorflow loaded successfully")
 except ImportError:
-    logger.warning(
-        f"Essentia-tensorflow not available on {platform.machine()}. "
-        "Advanced audio features will be limited."
-    )
+    HAS_ESSENTIA_TF = False
+    logger.error("Failed to import essentia-tensorflow. Please ensure it's installed.")
 
 
 class AudioFeatureExtractor:
-    """Extract audio features with fallback for platforms without essentia-tensorflow."""
+    """Extract audio features using essentia-tensorflow and librosa."""
 
     def __init__(self):
         self.has_essentia_tf = HAS_ESSENTIA_TF
+        if not self.has_essentia_tf:
+            logger.warning("Essentia-tensorflow not available. Advanced features disabled.")
 
     def extract_features(self, audio_path: str) -> dict[str, Any]:
         """
