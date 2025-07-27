@@ -235,6 +235,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 🐋 Install docker-compose
+        uses: alexellis/arkade-get@1eef818e467c387d3f50cfe0d2c565d1cbe82b03 # master
+        with:
+          docker-compose: latest
+
       - name: 🐳 Test multi-service deployment
         run: |
           echo "🚀 Starting integrated services test..."
