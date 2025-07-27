@@ -333,7 +333,7 @@ class TestMLAnalyzer:
             analyzer = MLAnalyzer()
             analyzer.amqp_channel = channel
             # Use setattr to avoid mypy method assignment error
-            analyzer.process_message = AsyncMock()
+            setattr(analyzer, "process_message", AsyncMock())  # noqa: B010
 
             # Stop after processing messages
             async def stop_after_messages() -> None:
@@ -348,7 +348,7 @@ class TestMLAnalyzer:
             channel.get_queue.assert_called_once_with(AMQP_QUEUE)
 
             # Verify messages were processed
-            mock_process = analyzer.process_message
+            mock_process = getattr(analyzer, "process_message")  # noqa: B009
             assert mock_process.call_count == 2
             mock_process.assert_any_call(mock_msg1)
             mock_process.assert_any_call(mock_msg2)

@@ -1,5 +1,6 @@
 """End-to-end integration tests for the complete Apollonia pipeline."""
 # mypy: disable-error-code="name-defined"
+# ruff: noqa: SIM117
 
 import asyncio
 import os
@@ -113,15 +114,14 @@ class TestEndToEnd:
         # Patch DATA_DIRECTORY for ingestor
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             # Start both services
-            async with (
-                Ingestor() as ingestor,
-                Populator() as populator,
-            ):  # Run services in background
-                ingest_task = asyncio.create_task(ingestor.ingest())
-                consume_task = asyncio.create_task(populator.consume())
+            with Ingestor() as ingestor:
+                async with Populator() as populator:
+                    # Run services in background
+                    ingest_task = asyncio.create_task(ingestor.ingest())
+                    consume_task = asyncio.create_task(populator.consume())
 
-                # Give services time to start
-                await asyncio.sleep(2)
+                    # Give services time to start
+                    await asyncio.sleep(2)
 
                 # Create test files
                 test_files = []
@@ -187,9 +187,11 @@ class TestEndToEnd:
         (temp_data_dir / "movie.jpg").write_text("thumbnail")
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:  # Run services
-                ingest_task = asyncio.create_task(ingestor.ingest())
-                consume_task = asyncio.create_task(populator.consume())
+            with Ingestor() as ingestor:
+                async with Populator() as populator:
+                    # Run services
+                    ingest_task = asyncio.create_task(ingestor.ingest())
+                    consume_task = asyncio.create_task(populator.consume())
 
                 # Give services time to start
                 await asyncio.sleep(2)
@@ -243,9 +245,11 @@ class TestEndToEnd:
         test_file.write_text("Initial content")
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:  # Run services
-                ingest_task = asyncio.create_task(ingestor.ingest())
-                consume_task = asyncio.create_task(populator.consume())
+            with Ingestor() as ingestor:
+                async with Populator() as populator:
+                    # Run services
+                    ingest_task = asyncio.create_task(ingestor.ingest())
+                    consume_task = asyncio.create_task(populator.consume())
 
                 # Give services time to start and process initial file
                 await asyncio.sleep(3)
@@ -294,9 +298,11 @@ class TestEndToEnd:
         num_files = 10
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:  # Run services
-                ingest_task = asyncio.create_task(ingestor.ingest())
-                consume_task = asyncio.create_task(populator.consume())
+            with Ingestor() as ingestor:
+                async with Populator() as populator:
+                    # Run services
+                    ingest_task = asyncio.create_task(ingestor.ingest())
+                    consume_task = asyncio.create_task(populator.consume())
 
                 # Give services time to start
                 await asyncio.sleep(2)
@@ -352,7 +358,7 @@ class TestEndToEnd:
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             # Start ingestor first
-            async with Ingestor() as ingestor:
+            with Ingestor() as ingestor:
                 ingest_task = asyncio.create_task(ingestor.ingest())
 
                 # Create file while populator is not running
@@ -463,9 +469,11 @@ class TestEndToEnd:
         large_file.write_bytes(large_content)
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:  # Run services
-                ingest_task = asyncio.create_task(ingestor.ingest())
-                consume_task = asyncio.create_task(populator.consume())
+            with Ingestor() as ingestor:
+                async with Populator() as populator:
+                    # Run services
+                    ingest_task = asyncio.create_task(ingestor.ingest())
+                    consume_task = asyncio.create_task(populator.consume())
 
                 # Give services time to start
                 await asyncio.sleep(2)

@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 import orjson
 import pytest
 from aio_pika import Message, connect_robust
+from aio_pika.abc import AbstractIncomingMessage
 from aio_pika.exceptions import AMQPConnectionError
 from neo4j import AsyncGraphDatabase
 from neo4j.exceptions import ServiceUnavailable
@@ -323,15 +324,15 @@ class TestPopulatorIntegration:
         processed = []
 
         # Mock process_message to track calls
-        async def mock_process(msg: Any) -> None:
-            processed.append(msg)
-            await original_process(msg)
+        async def mock_process(message: AbstractIncomingMessage) -> None:
+            processed.append(message)
+            await original_process(message)
 
         # Start populator
         async with Populator() as populator:
             original_process = populator.process_message
             # Use setattr to avoid mypy method assignment error
-            populator.process_message = mock_process
+            setattr(populator, "process_message", mock_process)  # noqa: B010
 
             # Run consumer in background
             consume_task = asyncio.create_task(populator.consume())
