@@ -215,6 +215,9 @@ yarn-error.log*
 .yarn/
 .pnp.js
 
+# Test coverage
+coverage/
+
 ###
 # Project-specific
 ###
