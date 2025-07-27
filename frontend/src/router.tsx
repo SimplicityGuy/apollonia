@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { RootLayout } from './components/layouts/RootLayout'
 import { ProtectedLayout } from './components/layouts/ProtectedLayout'
-import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { CatalogsPage } from './pages/CatalogsPage'

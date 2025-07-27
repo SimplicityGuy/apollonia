@@ -1,24 +1,20 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api'
-import {
-  ViewGridIcon,
-  ViewListIcon,
-  FolderIcon,
-  PlusIcon,
-} from '@heroicons/react/24/outline'
+import { ViewGridIcon, ViewListIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { Dialog } from '@headlessui/react'
 import toast from 'react-hot-toast'
+import type { CatalogResponse } from '@/types/catalog'
 
 export function CatalogsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newCatalogName, setNewCatalogName] = useState('')
 
-  const { data: catalogs, refetch } = useQuery({
+  const { data: catalogs, refetch } = useQuery<CatalogResponse>({
     queryKey: ['catalogs'],
     queryFn: async () => {
-      const response = await api.get('/catalogs')
+      const response = await api.get<CatalogResponse>('/catalogs')
       return response.data
     },
   })
@@ -45,7 +41,7 @@ export function CatalogsPage() {
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              className={`px-3 py-2 text-sm font-medium rounded-l-md ${
+              className={`rounded-l-md px-3 py-2 text-sm font-medium ${
                 viewMode === 'grid'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200'
@@ -56,7 +52,7 @@ export function CatalogsPage() {
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              className={`px-3 py-2 text-sm font-medium rounded-r-md ${
+              className={`rounded-r-md px-3 py-2 text-sm font-medium ${
                 viewMode === 'list'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200'
@@ -69,7 +65,7 @@ export function CatalogsPage() {
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
           >
             <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
             New Catalog
@@ -81,7 +77,7 @@ export function CatalogsPage() {
       <div className="mt-6">
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {catalogs?.items?.map((catalog: any) => (
+            {catalogs?.items?.map((catalog) => (
               <div
                 key={catalog.id}
                 className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
@@ -125,7 +121,7 @@ export function CatalogsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-                {catalogs?.items?.map((catalog: any) => (
+                {catalogs?.items?.map((catalog) => (
                   <tr key={catalog.id}>
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                       {catalog.name}
@@ -137,7 +133,10 @@ export function CatalogsPage() {
                       {new Date(catalog.created_at).toLocaleDateString()}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                      <a href={`/catalogs/${catalog.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400">
+                      <a
+                        href={`/catalogs/${catalog.id}`}
+                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400"
+                      >
                         View
                       </a>
                     </td>
@@ -165,7 +164,7 @@ export function CatalogsPage() {
                 value={newCatalogName}
                 onChange={(e) => setNewCatalogName(e.target.value)}
                 placeholder="Catalog name"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               />
             </div>
 

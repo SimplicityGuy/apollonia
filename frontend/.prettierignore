@@ -1,0 +1,21 @@
+# Build outputs
+dist
+build
+coverage
+
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Generated files
+*.d.ts
+src/gql/generated
+
+# Package files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

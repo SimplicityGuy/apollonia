@@ -41,11 +41,7 @@ export function UploadPage() {
 
     for (const file of files.filter((f) => f.status === 'pending')) {
       try {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === file.id ? { ...f, status: 'uploading' } : f
-          )
-        )
+        setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, status: 'uploading' } : f)))
 
         const formData = new FormData()
         formData.append('file', file)
@@ -58,28 +54,16 @@ export function UploadPage() {
             const progress = progressEvent.total
               ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
               : 0
-            setFiles((prev) =>
-              prev.map((f) =>
-                f.id === file.id ? { ...f, progress } : f
-              )
-            )
+            setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, progress } : f)))
           },
         })
 
         setFiles((prev) =>
-          prev.map((f) =>
-            f.id === file.id
-              ? { ...f, status: 'completed', progress: 100 }
-              : f
-          )
+          prev.map((f) => (f.id === file.id ? { ...f, status: 'completed', progress: 100 } : f))
         )
         toast.success(`Uploaded ${file.name}`)
       } catch (error) {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === file.id ? { ...f, status: 'error' } : f
-          )
-        )
+        setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, status: 'error' } : f)))
         toast.error(`Failed to upload ${file.name}`)
       }
     }
@@ -125,18 +109,18 @@ export function UploadPage() {
           </h2>
           <ul className="mt-4 divide-y divide-gray-200 dark:divide-gray-700">
             {files.map((file) => (
-              <li key={file.id} className="py-3 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <li key={file.id} className="flex items-center justify-between py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
                     {file.name}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {formatBytes(file.size)}
                   </p>
                   {file.status === 'uploading' && (
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                    <div className="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                       <div
-                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                        className="h-2 rounded-full bg-indigo-600 transition-all duration-300"
                         style={{ width: `${file.progress}%` }}
                       />
                     </div>
@@ -168,7 +152,7 @@ export function UploadPage() {
               <button
                 type="button"
                 onClick={uploadFiles}
-                className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 sm:w-auto"
               >
                 Upload {pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''}
               </button>

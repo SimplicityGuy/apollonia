@@ -24,11 +24,14 @@ export function Sidebar() {
     <>
       {/* Mobile sidebar */}
       <div className={`relative z-40 lg:hidden ${sidebarOpen ? '' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={() => setSidebarOpen(false)}
+        />
 
         <div className="fixed inset-0 flex">
           <div className="relative flex w-full max-w-xs flex-1 flex-col bg-gray-900">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
+            <div className="absolute right-0 top-0 -mr-12 pt-2">
               <button
                 type="button"
                 className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -39,7 +42,7 @@ export function Sidebar() {
               </button>
             </div>
 
-            <div className="h-0 flex-1 overflow-y-auto pt-5 pb-4">
+            <div className="h-0 flex-1 overflow-y-auto pb-4 pt-5">
               <div className="flex flex-shrink-0 items-center px-4">
                 <h1 className="text-xl font-bold text-white">Apollonia</h1>
               </div>

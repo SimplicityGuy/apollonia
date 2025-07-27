@@ -26,7 +26,8 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (username: string, password: string) => {
         try {
-          const response = await api.post('/auth/token',
+          const response = await api.post(
+            '/auth/token',
             new URLSearchParams({
               username,
               password,

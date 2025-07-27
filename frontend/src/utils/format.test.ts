@@ -43,10 +43,12 @@ describe('formatFileName', () => {
   it('formats file names correctly', () => {
     expect(formatFileName('short.txt')).toBe('short.txt')
     // maxLength(20) - ext.length(3) - 3 = 14 chars for name
-    expect(formatFileName('very-long-file-name-that-should-be-truncated.txt', 20))
-      .toBe('very-long-file...txt')
-    expect(formatFileName('file-without-extension-that-is-very-long', 20))
-      .toBe('file-without-exte...')
+    expect(formatFileName('very-long-file-name-that-should-be-truncated.txt', 20)).toBe(
+      'very-long-file...txt'
+    )
+    expect(formatFileName('file-without-extension-that-is-very-long', 20)).toBe(
+      'file-without-exte...'
+    )
   })
 
   it('handles edge cases', () => {

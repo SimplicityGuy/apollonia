@@ -1,23 +1,48 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api'
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid'
+import type { MediaFilesResponse } from '@/types/media'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
 const stats = [
-  { name: 'Total Media Files', stat: '71,897', previousStat: '70,946', change: '1.34%', changeType: 'increase' },
-  { name: 'Analyzed Files', stat: '58,234', previousStat: '56,573', change: '2.94%', changeType: 'increase' },
-  { name: 'Processing Queue', stat: '24', previousStat: '28', change: '14.29%', changeType: 'decrease' },
-  { name: 'Storage Used', stat: '2.4 TB', previousStat: '2.3 TB', change: '4.35%', changeType: 'increase' },
+  {
+    name: 'Total Media Files',
+    stat: '71,897',
+    previousStat: '70,946',
+    change: '1.34%',
+    changeType: 'increase',
+  },
+  {
+    name: 'Analyzed Files',
+    stat: '58,234',
+    previousStat: '56,573',
+    change: '2.94%',
+    changeType: 'increase',
+  },
+  {
+    name: 'Processing Queue',
+    stat: '24',
+    previousStat: '28',
+    change: '14.29%',
+    changeType: 'decrease',
+  },
+  {
+    name: 'Storage Used',
+    stat: '2.4 TB',
+    previousStat: '2.3 TB',
+    change: '4.35%',
+    changeType: 'increase',
+  },
 ]
 
 export function HomePage() {
-  const { data: recentFiles } = useQuery({
+  const { data: recentFiles } = useQuery<MediaFilesResponse>({
     queryKey: ['recent-files'],
     queryFn: async () => {
-      const response = await api.get('/media/files', {
+      const response = await api.get<MediaFilesResponse>('/media/files', {
         params: { limit: 10, sort: '-created_at' },
       })
       return response.data
@@ -34,7 +59,7 @@ export function HomePage() {
           {stats.map((item) => (
             <div
               key={item.name}
-              className="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow dark:bg-gray-800 sm:px-6 sm:pt-6"
+              className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6 dark:bg-gray-800"
             >
               <dt>
                 <div className="absolute rounded-md bg-indigo-500 p-3">
@@ -53,16 +78,28 @@ export function HomePage() {
                   )}
                 >
                   {item.changeType === 'increase' ? (
-                    <ArrowUpIcon className="h-5 w-5 flex-shrink-0 self-center text-green-500" aria-hidden="true" />
+                    <ArrowUpIcon
+                      className="h-5 w-5 flex-shrink-0 self-center text-green-500"
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <ArrowDownIcon className="h-5 w-5 flex-shrink-0 self-center text-red-500" aria-hidden="true" />
+                    <ArrowDownIcon
+                      className="h-5 w-5 flex-shrink-0 self-center text-red-500"
+                      aria-hidden="true"
+                    />
                   )}
-                  <span className="sr-only"> {item.changeType === 'increase' ? 'Increased' : 'Decreased'} by </span>
+                  <span className="sr-only">
+                    {' '}
+                    {item.changeType === 'increase' ? 'Increased' : 'Decreased'} by{' '}
+                  </span>
                   {item.change}
                 </p>
-                <div className="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 dark:bg-gray-700 sm:px-6">
+                <div className="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6 dark:bg-gray-700">
                   <div className="text-sm">
-                    <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                    <a
+                      href="#"
+                      className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                    >
                       View all<span className="sr-only"> {item.name} stats</span>
                     </a>
                   </div>
@@ -98,7 +135,7 @@ export function HomePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-              {recentFiles?.items?.map((file: any) => (
+              {recentFiles?.items?.map((file) => (
                 <tr key={file.id}>
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                     {file.filename}
@@ -115,8 +152,8 @@ export function HomePage() {
                         file.processing_status === 'completed'
                           ? 'bg-green-100 text-green-800'
                           : file.processing_status === 'processing'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800',
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800',
                         'inline-flex rounded-full px-2 text-xs font-semibold leading-5'
                       )}
                     >
@@ -124,7 +161,10 @@ export function HomePage() {
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                    <a href={`/files/${file.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400">
+                    <a
+                      href={`/files/${file.id}`}
+                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400"
+                    >
                       View
                     </a>
                   </td>

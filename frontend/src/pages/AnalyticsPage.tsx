@@ -108,9 +108,7 @@ export function AnalyticsPage() {
 
         {/* Processing Timeline */}
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-            Processing Timeline
-          </h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Processing Timeline</h2>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={processingData}>
@@ -119,12 +117,7 @@ export function AnalyticsPage() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="processed"
-                  stroke="#8b5cf6"
-                  name="Files Processed"
-                />
+                <Line type="monotone" dataKey="processed" stroke="#8b5cf6" name="Files Processed" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -132,9 +125,7 @@ export function AnalyticsPage() {
 
         {/* Storage Growth */}
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-            Storage Growth
-          </h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Storage Growth</h2>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={storageData}>
@@ -151,9 +142,7 @@ export function AnalyticsPage() {
 
         {/* Processing Status */}
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-            Processing Status
-          </h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Processing Status</h2>
           <div className="mt-4 space-y-4">
             <div>
               <div className="flex items-center justify-between">
@@ -164,14 +153,12 @@ export function AnalyticsPage() {
                   {analytics?.status?.completed || 0}
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full bg-gray-200 rounded-full dark:bg-gray-700">
+              <div className="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                 <div
-                  className="h-2 bg-green-500 rounded-full"
+                  className="h-2 rounded-full bg-green-500"
                   style={{
                     width: `${
-                      ((analytics?.status?.completed || 0) /
-                        (analytics?.total_files || 1)) *
-                      100
+                      ((analytics?.status?.completed || 0) / (analytics?.total_files || 1)) * 100
                     }%`,
                   }}
                 />
@@ -186,14 +173,12 @@ export function AnalyticsPage() {
                   {analytics?.status?.processing || 0}
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full bg-gray-200 rounded-full dark:bg-gray-700">
+              <div className="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                 <div
-                  className="h-2 bg-yellow-500 rounded-full"
+                  className="h-2 rounded-full bg-yellow-500"
                   style={{
                     width: `${
-                      ((analytics?.status?.processing || 0) /
-                        (analytics?.total_files || 1)) *
-                      100
+                      ((analytics?.status?.processing || 0) / (analytics?.total_files || 1)) * 100
                     }%`,
                   }}
                 />
@@ -201,21 +186,17 @@ export function AnalyticsPage() {
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Failed
-                </span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Failed</span>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   {analytics?.status?.failed || 0}
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full bg-gray-200 rounded-full dark:bg-gray-700">
+              <div className="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                 <div
-                  className="h-2 bg-red-500 rounded-full"
+                  className="h-2 rounded-full bg-red-500"
                   style={{
                     width: `${
-                      ((analytics?.status?.failed || 0) /
-                        (analytics?.total_files || 1)) *
-                      100
+                      ((analytics?.status?.failed || 0) / (analytics?.total_files || 1)) * 100
                     }%`,
                   }}
                 />
