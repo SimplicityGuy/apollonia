@@ -868,7 +868,7 @@ class PerformanceOptimizer {
 
 ```dockerfile
 # Dockerfile optimizations
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
 # Use multi-stage builds
 WORKDIR /app
