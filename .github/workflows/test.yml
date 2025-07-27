@@ -42,12 +42,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: 📦 Install dependencies
-        run: |
-          if [[ "${{ matrix.python-version }}" == "3.12" ]]; then
-            uv sync --all-extras
-          else
-            uv sync --frozen --all-extras
-          fi
+        run: uv sync --frozen --all-extras
 
       - name: 🧪 Run unit tests with coverage
         run: |
