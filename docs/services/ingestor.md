@@ -83,7 +83,7 @@ Maximum of 10 neighbors are returned per file.
 
 ### Dockerfile Features
 
-- **Base Image**: `python:3.13-alpine` (minimal size)
+- **Base Image**: `python:3.12-alpine` (minimal size)
 - **Multi-stage Build**: Separate build and runtime stages
 - **Non-root User**: Runs as `apollonia` user (UID 1001)
 - **Health Check**: Python-based liveness check

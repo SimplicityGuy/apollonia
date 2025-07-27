@@ -4,7 +4,7 @@ This guide covers the development setup and workflow for the Apollonia project.
 
 ## Prerequisites
 
-- Python 3.13+ (3.12 is tested for compatibility)
+- Python 3.12
 - Docker and Docker Compose
 - uv package manager
 - Git

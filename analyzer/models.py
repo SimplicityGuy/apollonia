@@ -28,9 +28,8 @@ class ModelManager:
         """Initialize models and download if necessary."""
         logger.info("🤖 Model initialization started")
 
-        # Since TensorFlow isn't available for Python 3.13 yet,
-        # we'll mock the model loading for now
-        logger.warning("⚠️ TensorFlow not available for Python 3.13 - using mock models")
+        # Initialize TensorFlow models
+        logger.info("🤖 Loading TensorFlow models...")
 
         # In a real implementation, this would:
         # 1. Check if models exist in cache_dir

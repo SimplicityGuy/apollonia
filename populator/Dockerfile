@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.13-alpine AS builder
+FROM python:3.12-alpine AS builder
 
 # Install uv for fast Python package management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system --no-deps .
 
 # Runtime stage
-FROM python:3.13-alpine
+FROM python:3.12-alpine
 
 # OCI Image annotations
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
@@ -38,7 +38,7 @@ LABEL org.opencontainers.image.title="Apollonia Populator" \
       org.opencontainers.image.source="https://github.com/SimplicityGuy/apollonia" \
       org.opencontainers.image.vendor="Robert Wlodarczyk" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.base.name="docker.io/library/python:3.13-alpine"
+      org.opencontainers.image.base.name="docker.io/library/python:3.12-alpine"
 
 # Install runtime dependencies
 RUN apk add --no-cache \
@@ -50,7 +50,7 @@ RUN addgroup -g 1001 -S apollonia && \
     adduser -u 1001 -S apollonia -G apollonia
 
 # Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/apollonia-populator /usr/local/bin/apollonia-populator
 
 # Switch to non-root user

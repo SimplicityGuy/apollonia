@@ -25,7 +25,7 @@ Fast feedback loop for code quality:
 - **Scope**: Python linting, formatting, type checking, frontend quality
 - **Tools**: Ruff, mypy, ESLint, Prettier, bandit
 - **Runtime**: ~3-5 minutes
-- **Parallel execution** across Python 3.12 and 3.13
+- **Testing** with Python 3.12
 
 ### Testing Suite (`test.yml`)
 
@@ -42,7 +42,7 @@ Comprehensive testing pipeline:
 Container build and deployment pipeline:
 
 - **Service Discovery**: Auto-detects services with Dockerfiles
-- **Platform**: Builds for linux/amd64 only
+- **Platform**: Builds for linux/amd64 only (x86_64)
 - **Security**: Trivy vulnerability scanning
 - **Registry**: GitHub Container Registry (ghcr.io)
 - **Integration Testing**: Multi-service deployment validation

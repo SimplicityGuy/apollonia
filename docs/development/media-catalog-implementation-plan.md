@@ -66,7 +66,7 @@ catalogger research project.
 
 ### Technology Stack
 
-- **Backend**: Python 3.13+
+- **Backend**: Python 3.12
 - **ML Framework**: TensorFlow + Essentia
 - **Message Queue**: RabbitMQ (AMQP)
 - **Database**: Neo4j (graph) + PostgreSQL (optional for specific data)
@@ -388,7 +388,7 @@ GET /api/v1/recommendations/{id}
 
 ```bash
 # System requirements
-- Python 3.13+
+- Python 3.12
 - Docker & Docker Compose
 - Node.js 18+
 - CUDA toolkit (optional, for GPU acceleration)

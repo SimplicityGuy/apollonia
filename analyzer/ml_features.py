@@ -30,7 +30,7 @@ class AudioFeatureExtractor:
         """
         Extract audio features from the given file.
 
-        Uses essentia-tensorflow on x86_64, fallback to librosa on ARM64.
+        Uses essentia-tensorflow (x86_64 only) and librosa for audio features.
         """
         features = {}
 

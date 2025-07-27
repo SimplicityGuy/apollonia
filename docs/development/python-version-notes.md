@@ -1,39 +1,30 @@
 # Python Version Configuration
 
-## Primary Target: Python 3.13
+## Target: Python 3.12
 
-The Apollonia project is configured to target Python 3.13 as its primary version:
+The Apollonia project is configured to target Python 3.12:
 
-- All `pyproject.toml` files specify `requires-python = ">=3.13"`
-- Docker images use `python:3.13-alpine`
-- Ruff is configured with `target-version = "py313"`
-- MyPy is set to `python_version = "3.13"`
+- All `pyproject.toml` files specify `requires-python = "~=3.12.0"`
+- Docker images use `python:3.12-alpine` or `python:3.12-slim`
+- Ruff is configured with `target-version = "py312"`
+- MyPy is set to `python_version = "3.12"`
 
-## Compatibility Testing: Python 3.12
+## TensorFlow Compatibility
 
-While the project targets Python 3.13, the CI/CD pipeline includes Python 3.12 in the test matrix to
-ensure backward compatibility:
+The primary reason for targeting Python 3.12 is TensorFlow compatibility. TensorFlow and related ML
+libraries (including essentia-tensorflow) do not yet support Python 3.13.
 
-```yaml
-python-version: ['3.12', '3.13']  # Test on 3.12 for compatibility, 3.13 as primary
-```
+## Benefits of Python 3.12
 
-The CI workflow handles this by:
-
-1. Testing both Python 3.12 and 3.13 in the matrix
-1. Using relaxed dependency resolution for Python 3.12 (`uv sync --all-extras`)
-1. Using frozen dependencies for Python 3.13 (`uv sync --frozen --all-extras`)
-
-## Rationale
-
-- **Python 3.13** provides the latest performance improvements and language features
-- **Python 3.12** compatibility ensures broader deployment options and smoother migration paths
-- The project uses no Python 3.13-specific syntax, maintaining compatibility
+- **Stable Ecosystem**: All required dependencies are available and well-tested
+- **Performance**: Python 3.12 includes significant performance improvements over earlier versions
+- **Type Improvements**: Enhanced type hinting capabilities for better static analysis
+- **Error Messages**: Improved error messages for easier debugging
 
 ## Future Considerations
 
-When Python 3.14 is released:
+When TensorFlow and essentia-tensorflow add support for Python 3.13:
 
-1. Add 3.14 to the CI test matrix
-1. Consider dropping 3.12 support after a transition period
-1. Update to target 3.14 when ecosystem support is mature
+1. Update all `pyproject.toml` files to support Python 3.13
+1. Add Python 3.13 to the CI test matrix
+1. Update Docker base images as appropriate

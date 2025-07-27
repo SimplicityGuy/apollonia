@@ -135,7 +135,7 @@ docker build -t apollonia-populator ./populator
 ```bash
 # Build with specific Python version
 docker build \
-  --build-arg PYTHON_VERSION=3.13 \
+  --build-arg PYTHON_VERSION=3.12 \
   -t apollonia-ingestor \
   ./ingestor
 ```

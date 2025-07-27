@@ -168,7 +168,7 @@ git commit -m "feat: add your feature description"
 
 ### Python Code Standards
 
-- **Python Version**: Python 3.12+ (primary: 3.13)
+- **Python Version**: Python 3.12
 - **Formatting**: Use `ruff format`
 - **Linting**: Use `ruff check`
 - **Type Checking**: Use `mypy`

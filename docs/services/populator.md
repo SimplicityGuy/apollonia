@@ -109,7 +109,7 @@ MERGE (f1)-[:NEIGHBOR]->(f2)
 
 ### Dockerfile Features
 
-- **Base Image**: `python:3.13-alpine`
+- **Base Image**: `python:3.12-alpine`
 - **Multi-stage Build**: Optimized size
 - **Non-root User**: Security best practice
 - **Health Check**: Service availability

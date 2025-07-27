@@ -5,10 +5,8 @@ repository.
 
 ## Project Overview
 
-Apollonia is a Python 3.13+ microservices architecture for file monitoring and processing, using
-AMQP message queuing for service communication. While the project targets Python 3.13 as its primary
-version, CI/CD tests maintain compatibility with Python 3.12. The project consists of two main
-services:
+Apollonia is a Python 3.12 microservices architecture for file monitoring and processing, using AMQP
+message queuing for service communication. The project consists of two main services:
 
 1. **Ingestor**: Monitors the `/data` directory for new files and publishes file metadata to AMQP
 1. **Populator**: Consumes messages from AMQP queue (appears designed for Neo4j import based on
@@ -186,7 +184,7 @@ The ingestor publishes messages with this structure:
 1. **Error Handling**: Both services implement graceful shutdown on SIGINT/SIGTERM
 1. **Message Persistence**: AMQP messages use delivery_mode=2 for persistence
 1. **Non-Root Execution**: Docker containers run as non-root user (UID 1001)
-1. **Multi-Platform Support**: CI builds for linux/amd64 and linux/arm64
+1. **Platform Support**: CI builds for linux/amd64 only
 
 ## Current Development State
 
@@ -194,7 +192,7 @@ The ingestor publishes messages with this structure:
 - **Populator service**: Complete with AMQP consumption and Neo4j graph import
 - **Development tooling**: Modern Python setup with uv, ruff, mypy, and taskipy
 - **Docker**: Multi-stage builds with OCI-compliant labels and health checks
-- **CI/CD**: GitHub Actions with Python testing, security scanning, and multi-platform builds
+- **CI/CD**: GitHub Actions with Python testing, security scanning, and x86_64 builds
 - **Testing**: Framework is set up, tests need to be implemented
 
 ## Development Workflow

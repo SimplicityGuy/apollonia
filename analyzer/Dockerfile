@@ -17,9 +17,9 @@ WORKDIR /app
 # Copy dependency files
 COPY analyzer/pyproject.toml .
 
-# Install dependencies (x86_64 only)
+# Install dependencies
 RUN uv venv && \
-    uv sync --no-dev --extra x86_64
+    uv sync --no-dev
 
 # Runtime stage
 FROM python:3.12-slim
