@@ -1,210 +1,173 @@
 ---
-name: apollonia
+name: CI/CD Pipeline
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   schedule:
     - cron: '0 1 * * 6'  # Weekly build on Saturday at 1 AM UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.actor }}/apollonia
 
 jobs:
-  # Run Python tests and linting
-  test:
+  # Quality checks (fast feedback)
+  quality:
+    name: Quality Checks
+    uses: ./.github/workflows/quality.yml
+
+  # Comprehensive testing
+  tests:
+    name: Test Suite
+    uses: ./.github/workflows/test.yml
+    needs: quality
+
+  # Docker builds and deployment
+  docker:
+    name: Docker Build & Deploy
+    uses: ./.github/workflows/docker.yml
+    needs: tests
+    secrets: inherit
+    with:
+      push_images: ${{ github.event_name != 'pull_request' }}
+
+  # Security scanning
+  security:
+    name: Security Scan
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.12', '3.13']  # Test on 3.12 for compatibility, 3.13 as primary
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v2
-        with:
-          enable-cache: true
-          cache-dependency-glob: "**/pyproject.toml"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          # For Python 3.12, we need to install with relaxed version constraints
-          if [[ "${{ matrix.python-version }}" == "3.12" ]]; then
-            uv sync --all-extras
-          else
-            uv sync --frozen --all-extras
-          fi
-
-      - name: Run linting
-        run: |
-          uv run task lint
-          uv run task typecheck
-
-      - name: Run tests with coverage
-        run: |
-          uv run pytest -v --cov=ingestor --cov=populator --cov-report=xml --cov-report=term-missing
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests
-          name: apollonia-coverage-${{ matrix.python-version }}
-          fail_ci_if_error: false
-
-  list-sub-projects:
-    runs-on: ubuntu-latest
-
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Get all sub-projects with Dockerfiles
-        id: set-matrix
-        run: |
-          dirs=$(find . -name Dockerfile -type f -exec dirname {} \; | sed 's|^\./||' | grep -v '^\.' | sort -u | jq -R -s -c 'split("\n")[:-1]')
-          echo "matrix=$dirs" >> $GITHUB_OUTPUT
-
-  # Integration tests with services
-  integration-test:
-    runs-on: ubuntu-latest
-    needs: test
-
-    services:
-      rabbitmq:
-        image: rabbitmq:3-management-alpine
-        ports:
-          - 5672:5672
-          - 15672:15672
-        env:
-          RABBITMQ_DEFAULT_USER: test
-          RABBITMQ_DEFAULT_PASS: test
-        options: >-
-          --health-cmd "rabbitmq-diagnostics ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      neo4j:
-        image: neo4j:5-community
-        ports:
-          - 7474:7474
-          - 7687:7687
-        env:
-          NEO4J_AUTH: neo4j/testpassword
-        options: >-
-          --health-cmd "neo4j status"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v2
-        with:
-          enable-cache: true
-
-      - name: Set up Python 3.13
-        run: uv python install 3.13
-
-      - name: Install dependencies
-        run: uv sync --frozen --all-extras
-
-      - name: Run integration tests
-        env:
-          AMQP_CONNECTION_STRING: amqp://test:test@localhost:5672/
-          NEO4J_URI: bolt://localhost:7687
-          NEO4J_USER: neo4j
-          NEO4J_PASSWORD: testpassword
-        run: |
-          uv run pytest -v tests/integration -m integration
-
-  build-apollonia:
-    needs: [list-sub-projects, test, integration-test]
-
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        sub-project: ${{ fromJson(needs.list-sub-projects.outputs.matrix) }}
+    needs: quality
 
     permissions:
       contents: read
-      packages: write
+      security-events: write
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: 🐍 Set up Python
+        run: uv python install 3.13
+
+      - name: 📦 Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: 🔒 Run pip-audit security scan
+        run: |
+          uv run pip-audit --format=json --output=pip-audit-report.json --progress-spinner=off || true
+
+      - name: 🔍 Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
-          submodules: true
+          languages: python, javascript
+          queries: security-and-quality
 
-      - name: Log in to the GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+      - name: 🔍 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          category: "/language:python"
 
-      - name: Anchore security scan - apollonia/${{ matrix.sub-project }}
-        uses: anchore/scan-action@v3
-        with:
-          path: ${{ matrix.sub-project }}
-          fail-build: false  # Don't fail on vulnerabilities for now
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.sub-project }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
-            type=ref,event=pr
-            type=schedule,pattern={{date 'YYYYMMDD'}}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: linux/amd64, linux/arm64
-
-      - name: Build and push Docker image to GitHub Container Registry - apollonia/${{ matrix.sub-project }}
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.sub-project }}
-          platforms: linux/amd64, linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          provenance: true
-          sbom: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Send notification to Discord
-        uses: sarisia/actions-status-discord@v1.13.0
+      - name: 📤 Upload security reports
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          title: apollonia/${{ matrix.sub-project }}
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          name: security-reports
+          path: |
+            pip-audit-report.json
+
+  # Dependency updates check
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          warn-only: false
+
+  # Performance benchmarks
+  benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: 🐍 Set up Python
+        run: uv python install 3.13
+
+      - name: 📦 Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: ⚡ Run performance benchmarks
+        run: |
+          if [ -d "benchmarks" ]; then
+            uv run pytest benchmarks/ --benchmark-json=benchmark-results.json
+          else
+            echo "ℹ️ No benchmark directory found, skipping performance tests"
+          fi
+
+      - name: 📊 Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        if: hashFiles('benchmark-results.json') != ''
+        with:
+          tool: 'pytest'
+          output-file-path: benchmark-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          comment-on-alert: true
+          summary-always: true
+
+  # Generate overall status
+  status:
+    name: CI/CD Status
+    runs-on: ubuntu-latest
+    needs: [quality, tests, docker, security]
+    if: always()
+
+    steps:
+      - name: 📊 Generate overall status
+        run: |
+          echo "## 🚀 CI/CD Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality Checks | ${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | ${{ needs.tests.result == 'success' && '✅ Passed' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker.result == 'success' && '✅ Passed' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Set overall status
+          if [[ "${{ needs.quality.result }}" == "success" && \
+                "${{ needs.tests.result }}" == "success" && \
+                "${{ needs.docker.result }}" == "success" && \
+                "${{ needs.security.result }}" == "success" ]]; then
+            echo "🎉 **Overall Status: ✅ SUCCESS**" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "⚠️ **Overall Status: ❌ FAILURE**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

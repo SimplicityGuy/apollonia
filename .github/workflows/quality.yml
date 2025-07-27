@@ -1,0 +1,119 @@
+---
+name: Quality Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Python code quality checks
+  python-quality:
+    name: Python Quality Checks
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13']
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: 📦 Install dependencies
+        run: |
+          if [[ "${{ matrix.python-version }}" == "3.12" ]]; then
+            uv sync --all-extras
+          else
+            uv sync --frozen --all-extras
+          fi
+
+      - name: 🔍 Run Ruff linting
+        run: uv run ruff check . --output-format=github
+
+      - name: 💅 Check code formatting
+        run: uv run ruff format --check .
+
+      - name: 🔍 Run mypy type checking
+        run: uv run mypy .
+
+      - name: 🔒 Security scan with bandit
+        run: uv run bandit -r . -f json -o bandit-report.json || true
+
+      - name: 📤 Upload bandit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report-py${{ matrix.python-version }}
+          path: bandit-report.json
+
+  # Frontend code quality checks
+  frontend-quality:
+    name: Frontend Quality Checks
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Run ESLint
+        run: npm run lint
+
+      - name: 💅 Check Prettier formatting
+        run: npm run format -- --check
+
+      - name: 🔍 Run TypeScript type checking
+        run: npm run type-check
+
+      - name: 🔒 Audit dependencies
+        run: npm audit --audit-level=moderate
+
+  # Pre-commit hooks validation
+  pre-commit:
+    name: Pre-commit Hooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: 🐍 Set up Python
+        run: uv python install 3.13
+
+      - name: 📦 Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: 🪝 Run pre-commit hooks
+        run: uv run pre-commit run --all-files

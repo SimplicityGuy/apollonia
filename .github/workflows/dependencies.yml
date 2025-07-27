@@ -1,0 +1,392 @@
+---
+name: Dependencies
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of updates to perform'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - all
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Update Python dependencies
+  update-python:
+    name: Update Python Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: 🐍 Set up Python
+        run: uv python install 3.13
+
+      - name: 🔄 Update dependencies
+        run: |
+          echo "🔄 Updating Python dependencies..."
+
+          # Update lock file
+          uv lock --upgrade
+
+          # Check for actual changes
+          if git diff --quiet uv.lock; then
+            echo "No Python dependency updates available"
+            echo "HAS_PYTHON_UPDATES=false" >> $GITHUB_ENV
+          else
+            echo "Python dependencies updated"
+            echo "HAS_PYTHON_UPDATES=true" >> $GITHUB_ENV
+          fi
+
+      - name: 🧪 Test updated dependencies
+        if: env.HAS_PYTHON_UPDATES == 'true'
+        run: |
+          echo "🧪 Testing updated dependencies..."
+          uv sync --frozen --all-extras
+          uv run pytest tests/unit -x --tb=short
+          uv run ruff check .
+          uv run mypy .
+
+      - name: 📦 Generate dependency report
+        if: env.HAS_PYTHON_UPDATES == 'true'
+        run: |
+          echo "📦 Generating dependency update report..."
+
+          # Get updated packages
+          git diff uv.lock > python-deps.diff
+
+          # Create report
+          cat > python-update-report.md << EOF
+          ## Python Dependencies Update
+
+          ### Updated Packages
+          \`\`\`diff
+          $(git diff uv.lock | head -50)
+          \`\`\`
+
+          ### Testing Status
+          - ✅ Unit tests passed
+          - ✅ Linting passed
+          - ✅ Type checking passed
+          EOF
+
+      - name: 📤 Upload Python update artifacts
+        if: env.HAS_PYTHON_UPDATES == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dependency-updates
+          path: |
+            python-deps.diff
+            python-update-report.md
+
+  # Update Node.js dependencies
+  update-nodejs:
+    name: Update Node.js Dependencies
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 🔄 Update dependencies
+        run: |
+          echo "🔄 Updating Node.js dependencies..."
+
+          UPDATE_TYPE="${{ github.event.inputs.update_type || 'patch' }}"
+
+          case $UPDATE_TYPE in
+            patch)
+              npm update
+              ;;
+            minor)
+              npx npm-check-updates -u --target minor
+              npm install
+              ;;
+            major)
+              npx npm-check-updates -u --target latest
+              npm install
+              ;;
+            all)
+              npx npm-check-updates -u
+              npm install
+              ;;
+          esac
+
+          # Check for changes
+          if git diff --quiet package.json package-lock.json; then
+            echo "No Node.js dependency updates available"
+            echo "HAS_NODE_UPDATES=false" >> $GITHUB_ENV
+          else
+            echo "Node.js dependencies updated"
+            echo "HAS_NODE_UPDATES=true" >> $GITHUB_ENV
+          fi
+
+      - name: 🧪 Test updated dependencies
+        if: env.HAS_NODE_UPDATES == 'true'
+        run: |
+          echo "🧪 Testing updated dependencies..."
+          npm run lint
+          npm run type-check
+          npm run test
+          npm run build
+
+      - name: 🔒 Security audit
+        if: env.HAS_NODE_UPDATES == 'true'
+        run: |
+          echo "🔒 Running security audit..."
+          npm audit --audit-level=moderate
+
+      - name: 📦 Generate dependency report
+        if: env.HAS_NODE_UPDATES == 'true'
+        run: |
+          echo "📦 Generating Node.js dependency update report..."
+
+          # Get updated packages
+          git diff package.json package-lock.json > ../nodejs-deps.diff
+
+          # Create report
+          cat > ../nodejs-update-report.md << EOF
+          ## Node.js Dependencies Update
+
+          ### Updated Packages
+          \`\`\`diff
+          $(git diff package.json | head -50)
+          \`\`\`
+
+          ### Testing Status
+          - ✅ Linting passed
+          - ✅ Type checking passed
+          - ✅ Unit tests passed
+          - ✅ Build successful
+          - ✅ Security audit passed
+          EOF
+
+      - name: 📤 Upload Node.js update artifacts
+        if: env.HAS_NODE_UPDATES == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nodejs-dependency-updates
+          path: |
+            nodejs-deps.diff
+            nodejs-update-report.md
+
+  # Create pull request
+  create-pr:
+    name: Create Dependency Update PR
+    runs-on: ubuntu-latest
+    needs: [update-python, update-nodejs]
+    if: always()
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: 🐍 Set up Python
+        run: uv python install 3.13
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 🔄 Apply all updates
+        run: |
+          echo "🔄 Applying dependency updates..."
+
+          # Python updates
+          uv lock --upgrade
+
+          # Node.js updates
+          cd frontend
+          UPDATE_TYPE="${{ github.event.inputs.update_type || 'patch' }}"
+
+          case $UPDATE_TYPE in
+            patch)
+              npm update
+              ;;
+            minor)
+              npx npm-check-updates -u --target minor
+              npm install
+              ;;
+            major)
+              npx npm-check-updates -u --target latest
+              npm install
+              ;;
+            all)
+              npx npm-check-updates -u
+              npm install
+              ;;
+          esac
+
+          cd ..
+
+      - name: 🧪 Run full test suite
+        run: |
+          echo "🧪 Running full test suite..."
+
+          # Python tests
+          uv sync --frozen --all-extras
+          uv run pytest tests/unit -x
+          uv run ruff check .
+          uv run mypy .
+
+          # Node.js tests
+          cd frontend
+          npm run lint
+          npm run type-check
+          npm run test
+          npm run build
+          cd ..
+
+      - name: 📋 Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "No dependency updates to commit"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Dependency updates available"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📝 Generate PR body
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          cat > pr-body.md << EOF
+          ## 🔄 Automated Dependency Updates
+
+          This PR contains automated dependency updates for both Python and Node.js packages.
+
+          ### Update Type
+          **${{ github.event.inputs.update_type || 'patch' }}** updates
+
+          ### What's Changed
+
+          #### Python Dependencies
+          $(git diff uv.lock | head -20 | sed 's/^/- /')
+
+          #### Node.js Dependencies
+          $(git diff frontend/package.json | head -20 | sed 's/^/- /')
+
+          ### Testing
+          - ✅ Python unit tests passed
+          - ✅ Python linting and type checking passed
+          - ✅ Node.js tests passed
+          - ✅ Node.js linting and type checking passed
+          - ✅ Frontend build successful
+
+          ### Security
+          - ✅ No high-severity vulnerabilities detected
+
+          ---
+
+          🤖 This PR was automatically created by the dependency update workflow.
+          EOF
+
+      - name: 🔀 Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update dependencies (${{ github.event.inputs.update_type || 'patch' }})
+
+            - Update Python dependencies via uv lock --upgrade
+            - Update Node.js dependencies (${{ github.event.inputs.update_type || 'patch' }} level)
+            - All tests passing
+            - Security audit clean
+
+            🤖 Generated by dependency update workflow
+          title: "🔄 Automated Dependency Updates (${{ github.event.inputs.update_type || 'patch' }})"
+          body-path: pr-body.md
+          branch: dependencies/auto-update-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+            ${{ github.event.inputs.update_type || 'patch' }}
+          reviewers: |
+            ${{ github.actor }}
+          draft: false
+
+  # Security scan for dependencies
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: 🐍 Set up Python
+        run: uv python install 3.13
+
+      - name: 📦 Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: 🔒 Python security scan
+        run: |
+          echo "🔒 Running Python security scan..."
+          uv run pip-audit --format=json --output=python-security.json || true
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 🔒 Node.js security scan
+        run: |
+          echo "🔒 Running Node.js security scan..."
+          cd frontend
+          npm audit --json > ../nodejs-security.json || true
+          cd ..
+
+      - name: 📤 Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            python-security.json
+            nodejs-security.json

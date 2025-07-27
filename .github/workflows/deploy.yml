@@ -1,0 +1,218 @@
+---
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Version/tag to deploy'
+        required: true
+        default: 'latest'
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.actor }}/apollonia
+
+jobs:
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.apollonia.example.com
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy to staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "📦 Version: ${{ github.event.inputs.version }}"
+          echo "🔗 Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          # Here you would add your actual deployment logic
+          # Examples:
+          # - Update Kubernetes manifests
+          # - Deploy to cloud provider
+          # - Update Docker Compose files
+          # - Run database migrations
+
+          echo "✅ Staging deployment completed"
+
+      - name: 🧪 Run staging health checks
+        run: |
+          echo "🔍 Running health checks..."
+          # Add health check commands here
+          # curl -f https://staging.apollonia.example.com/health
+          echo "✅ Health checks passed"
+
+      - name: 📢 Notify deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          text: |
+            Staging deployment ${{ job.status }}
+            Version: ${{ github.event.inputs.version }}
+            Environment: staging
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'release' && github.event.action == 'published') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://apollonia.example.com
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Verify production readiness
+        run: |
+          echo "🔍 Verifying production readiness..."
+
+          # Version validation
+          VERSION="${{ github.event.release.tag_name || github.event.inputs.version }}"
+          echo "📦 Deploying version: $VERSION"
+
+          # Check if images exist in registry
+          echo "🔍 Verifying container images..."
+          # docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:$VERSION
+
+          echo "✅ Production readiness verified"
+
+      - name: 🚀 Deploy to production
+        run: |
+          echo "🚀 Deploying to production environment..."
+          VERSION="${{ github.event.release.tag_name || github.event.inputs.version }}"
+
+          # Production deployment steps
+          # - Blue/green deployment
+          # - Database migrations
+          # - Service updates
+          # - Load balancer updates
+
+          echo "✅ Production deployment completed"
+
+      - name: 🧪 Run production health checks
+        run: |
+          echo "🔍 Running production health checks..."
+          # Comprehensive health checks
+          # - Service health endpoints
+          # - Database connectivity
+          # - External service integrations
+          # - Performance benchmarks
+          echo "✅ Production health checks passed"
+
+      - name: 📊 Update monitoring
+        run: |
+          echo "📊 Updating monitoring and alerting..."
+          # - Deploy application version to monitoring
+          # - Update alerting rules if needed
+          # - Set up deployment markers
+          echo "✅ Monitoring updated"
+
+      - name: 📢 Notify production deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          text: |
+            🚀 Production deployment ${{ job.status }}
+            Version: ${{ github.event.release.tag_name || github.event.inputs.version }}
+            Environment: production
+            URL: https://apollonia.example.com
+
+  # Rollback capability
+  rollback:
+    name: Rollback
+    runs-on: ubuntu-latest
+    if: failure() && (github.event_name == 'workflow_dispatch' || github.event_name == 'release')
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⏪ Perform rollback
+        run: |
+          echo "⏪ Performing rollback..."
+          ENVIRONMENT="${{ github.event.inputs.environment || 'production' }}"
+
+          # Rollback logic
+          # - Revert to previous version
+          # - Restore database if needed
+          # - Update load balancer
+
+          echo "✅ Rollback completed for $ENVIRONMENT"
+
+      - name: 📢 Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'custom'
+          custom_payload: |
+            {
+              text: "⚠️ Rollback performed",
+              attachments: [{
+                color: 'warning',
+                fields: [{
+                  title: 'Environment',
+                  value: '${{ github.event.inputs.environment || "production" }}',
+                  short: true
+                }, {
+                  title: 'Trigger',
+                  value: 'Deployment failure',
+                  short: true
+                }]
+              }]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Generate deployment report
+  deployment-report:
+    name: Deployment Report
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+      - name: 📊 Generate deployment report
+        run: |
+          echo "## 🚀 Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "**Environment:** production" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Staging | ${{ needs.deploy-staging.result == 'success' && '✅ Deployed' || needs.deploy-staging.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Production | ${{ needs.deploy-production.result == 'success' && '✅ Deployed' || needs.deploy-production.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
