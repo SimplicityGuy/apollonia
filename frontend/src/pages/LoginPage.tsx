@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
@@ -20,7 +20,7 @@ export function LoginPage() {
       await login(formData.username, formData.password)
       toast.success('Welcome back!')
       navigate('/')
-    } catch (error) {
+    } catch (_error) {
       toast.error('Invalid username or password')
     } finally {
       setIsLoading(false)

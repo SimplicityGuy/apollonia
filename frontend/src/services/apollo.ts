@@ -18,7 +18,7 @@ const authLink = setContext((_, { headers }) => {
           authorization: parsed.state?.token ? `Bearer ${parsed.state.token}` : '',
         },
       }
-    } catch (e) {
+    } catch (_e) {
       return { headers }
     }
   }

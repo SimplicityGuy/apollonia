@@ -11,6 +11,7 @@ import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+from typing import Any
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
@@ -29,7 +30,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop]:
 
 
 # Configure pytest
-def pytest_configure(config):
+def pytest_configure(config: Any) -> None:
     """Configure pytest with custom markers."""
     config.addinivalue_line("markers", "integration: mark test as integration test")
     config.addinivalue_line("markers", "docker: mark test as requiring Docker")
@@ -39,7 +40,7 @@ def pytest_configure(config):
 
 
 # Configure test collection
-def pytest_collection_modifyitems(config, items):  # noqa: ARG001
+def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:  # noqa: ARG001
     """Modify test collection to add markers based on test location."""
     for item in items:
         # Add markers based on test file location
@@ -64,7 +65,7 @@ def pytest_collection_modifyitems(config, items):  # noqa: ARG001
 
 # Test environment configuration
 @pytest.fixture(scope="session")
-def test_env():
+def test_env() -> dict[str, Any]:
     """Provide test environment configuration."""
     return {
         "rabbitmq_host": "localhost",
@@ -83,7 +84,7 @@ def test_env():
 
 # Logging configuration for tests
 @pytest.fixture(autouse=True)
-def configure_logging():
+def configure_logging() -> None:
     """Configure logging for tests."""
     import logging
 
@@ -101,18 +102,18 @@ def configure_logging():
 
 # Performance monitoring
 @pytest.fixture
-def benchmark_timer():
+def benchmark_timer() -> Any:
     """Simple benchmark timer for performance testing."""
     import time
 
     class Timer:
-        def __init__(self):
-            self.times = {}
+        def __init__(self) -> None:
+            self.times: dict[str, float] = {}
 
-        def start(self, name):
+        def start(self, name: str) -> None:
             self.times[name] = time.time()
 
-        def stop(self, name):
+        def stop(self, name: str) -> float | None:
             if name in self.times:
                 duration = time.time() - self.times[name]
                 print(f"\n{name} took {duration:.3f} seconds")
@@ -124,7 +125,7 @@ def benchmark_timer():
 
 # Test data cleanup
 @pytest.fixture(autouse=True)
-def cleanup_test_data(request, test_env):  # noqa: ARG001
+def cleanup_test_data(request: Any, test_env: dict[str, Any]) -> Generator[None, None, None]:  # noqa: ARG001
     """Ensure test data is cleaned up after tests."""
     yield
 
@@ -137,7 +138,7 @@ def cleanup_test_data(request, test_env):  # noqa: ARG001
 
 
 # Platform-specific test skipping
-def pytest_runtest_setup(item):
+def pytest_runtest_setup(item: Any) -> None:
     """Skip tests based on platform requirements."""
     if "linux_only" in item.keywords and sys.platform != "linux":
         pytest.skip("Test requires Linux")
@@ -147,7 +148,7 @@ def pytest_runtest_setup(item):
 
 
 # Test reporting
-def pytest_report_header(config):  # noqa: ARG001
+def pytest_report_header(config: Any) -> list[str]:  # noqa: ARG001
     """Add custom information to test report header."""
     import platform
 

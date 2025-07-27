@@ -62,7 +62,7 @@ export function UploadPage() {
           prev.map((f) => (f.id === file.id ? { ...f, status: 'completed', progress: 100 } : f))
         )
         toast.success(`Uploaded ${file.name}`)
-      } catch (error) {
+      } catch (_error) {
         setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, status: 'error' } : f)))
         toast.error(`Failed to upload ${file.name}`)
       }

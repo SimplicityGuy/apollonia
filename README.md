@@ -1,4 +1,4 @@
-# apollonia
+# Apollonia - Intelligent Media Catalog System
 
 ## 🚀 CI/CD Status
 
@@ -133,6 +133,15 @@ The system consists of several specialized services:
 
 ## Quick Start
 
+### Prerequisites
+
+- Docker and Docker Compose (v2.0+)
+- Git
+- 8GB RAM minimum (16GB recommended for ML features)
+- 20GB free disk space
+
+### Installation
+
 1. **Clone the repository**:
 
    ```bash
@@ -146,6 +155,15 @@ The system consists of several specialized services:
    docker-compose up -d
    ```
 
+   This will start:
+
+   - PostgreSQL database
+   - RabbitMQ message broker
+   - Redis cache
+   - Neo4j graph database
+   - All microservices
+   - Frontend web application
+
 1. **Monitor the logs**:
 
    ```bash
@@ -158,8 +176,8 @@ The system consists of several specialized services:
 
    Default credentials:
 
-   - Username: admin
-   - Password: admin123
+   - Username: `admin`
+   - Password: `admin123`
 
 1. **Add media files**:
 
@@ -170,6 +188,14 @@ The system consists of several specialized services:
 
    # Or use the web interface upload feature
    ```
+
+   The system will automatically:
+
+   - Detect new files
+   - Extract metadata
+   - Analyze content using ML models
+   - Index for searching
+   - Generate thumbnails and previews
 
 ## Development
 

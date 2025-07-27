@@ -4,7 +4,9 @@ import asyncio
 import sys
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock, patch
 
 import orjson
@@ -30,12 +32,20 @@ else:
     DATA_DIRECTORY = "/data"
     ROUTING_KEY = "file.created"
 
+    # Define stub classes for type checking
+    class Ingestor:  # type: ignore[no-redef]
+        pass
+
+    class Prospector:  # type: ignore[no-redef]
+        def __init__(self, path: Any) -> None:
+            pass
+
 
 class TestIngestorIntegration:
     """Integration tests for ingestor service."""
 
     @pytest.fixture
-    def rabbitmq_available(self):
+    def rabbitmq_available(self) -> bool:
         """Check if RabbitMQ is available."""
         try:
             connection = BlockingConnection(URLParameters(AMQP_CONNECTION))
@@ -45,13 +55,15 @@ class TestIngestorIntegration:
             return False
 
     @pytest.fixture
-    def temp_data_dir(self):
+    def temp_data_dir(self) -> Generator[Path, None, None]:
         """Create a temporary data directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
     @pytest.fixture
-    def amqp_consumer(self, rabbitmq_available):
+    def amqp_consumer(
+        self, rabbitmq_available: bool
+    ) -> Generator[tuple[Channel, list[Any]], None, None]:
         """Create an AMQP consumer for testing."""
         if not rabbitmq_available:
             pytest.skip("RabbitMQ not available")
@@ -77,7 +89,7 @@ class TestIngestorIntegration:
         # Collected messages
         messages = []
 
-        def callback(ch, method, properties, body):  # noqa: ARG001
+        def callback(ch: Any, method: Any, properties: Any, body: bytes) -> None:  # noqa: ARG001
             messages.append(orjson.loads(body))
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -92,7 +104,9 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
-    async def test_ingestor_publishes_file_events(self, temp_data_dir, amqp_consumer):
+    async def test_ingestor_publishes_file_events(
+        self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
+    ) -> None:
         """Test that ingestor publishes file events to AMQP."""
         channel, messages = amqp_consumer
 
@@ -131,7 +145,9 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
-    async def test_ingestor_handles_multiple_files(self, temp_data_dir, amqp_consumer):
+    async def test_ingestor_handles_multiple_files(
+        self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
+    ) -> None:
         """Test that ingestor handles multiple file events."""
         channel, messages = amqp_consumer
 
@@ -171,7 +187,9 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
-    async def test_ingestor_finds_neighbors(self, temp_data_dir, amqp_consumer):
+    async def test_ingestor_finds_neighbors(
+        self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
+    ) -> None:
         """Test that ingestor correctly identifies neighbor files."""
         channel, messages = amqp_consumer
 
@@ -214,7 +232,7 @@ class TestIngestorIntegration:
         assert "video.nfo" in neighbor_names
 
     @pytest.mark.integration
-    def test_prospector_with_real_files(self, temp_data_dir):
+    def test_prospector_with_real_files(self, temp_data_dir: Path) -> None:
         """Test prospector with real files."""
         if sys.platform == "darwin":
             pytest.skip("Prospector not available on macOS")
@@ -245,7 +263,7 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
-    async def test_ingestor_handles_amqp_disconnection(self, temp_data_dir):
+    async def test_ingestor_handles_amqp_disconnection(self, temp_data_dir: Path) -> None:
         """Test that ingestor handles AMQP disconnection gracefully."""
         # Mock connection that fails after first channel creation
         mock_connection = Mock(spec=BlockingConnection)
@@ -253,7 +271,7 @@ class TestIngestorIntegration:
 
         call_count = 0
 
-        def channel_side_effect():
+        def channel_side_effect() -> Mock:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -281,7 +299,9 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
-    async def test_ingestor_processes_existing_files_on_startup(self, temp_data_dir, amqp_consumer):
+    async def test_ingestor_processes_existing_files_on_startup(
+        self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
+    ) -> None:
         """Test that ingestor can be configured to process existing files."""
         channel, messages = amqp_consumer
 
@@ -316,7 +336,7 @@ class TestIngestorIntegration:
         assert messages[0]["file_path"] == str(new_file.absolute())
 
     @pytest.mark.integration
-    def test_amqp_message_properties(self, rabbitmq_available):
+    def test_amqp_message_properties(self, rabbitmq_available: bool) -> None:
         """Test AMQP message properties are set correctly."""
         if not rabbitmq_available:
             pytest.skip("RabbitMQ not available")
@@ -339,7 +359,7 @@ class TestIngestorIntegration:
 
         received_properties = None
 
-        def callback(ch, method, properties, body):  # noqa: ARG001
+        def callback(ch: Any, method: Any, properties: Any, body: bytes) -> None:  # noqa: ARG001
             nonlocal received_properties
             received_properties = properties
             ch.basic_ack(delivery_tag=method.delivery_tag)

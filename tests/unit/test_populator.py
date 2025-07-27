@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import signal
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import orjson
@@ -15,7 +16,7 @@ class TestPopulator:
     """Test cases for the Populator class."""
 
     @pytest.fixture
-    def mock_amqp_connection(self):
+    def mock_amqp_connection(self) -> tuple[AsyncMock, AsyncMock, AsyncMock, AsyncMock]:
         """Create a mock AMQP connection."""
         connection = AsyncMock(spec=AbstractRobustConnection)
         channel = AsyncMock()
@@ -31,7 +32,7 @@ class TestPopulator:
         return connection, channel, exchange, queue
 
     @pytest.fixture
-    def mock_neo4j_driver(self):
+    def mock_neo4j_driver(self) -> tuple[AsyncMock, AsyncMock]:
         """Create a mock Neo4j driver."""
         driver = AsyncMock(spec=AsyncDriver)
         session = AsyncMock()
@@ -46,7 +47,7 @@ class TestPopulator:
         return driver, session
 
     @pytest.fixture
-    def mock_message(self):
+    def mock_message(self) -> AsyncMock:
         """Create a mock AMQP message."""
         message = AsyncMock(spec=AbstractIncomingMessage)
         message.body = orjson.dumps(
@@ -73,7 +74,7 @@ class TestPopulator:
         return message
 
     @pytest.mark.asyncio
-    async def test_populator_initialization(self):
+    async def test_populator_initialization(self) -> None:
         """Test that Populator can be initialized."""
         from populator.populator import Populator
 
@@ -83,7 +84,7 @@ class TestPopulator:
         assert populator._running is True
 
     @pytest.mark.asyncio
-    async def test_populator_context_manager_enter(self):
+    async def test_populator_context_manager_enter(self) -> None:
         """Test __aenter__ sets up connections properly."""
         with (
             patch("populator.populator.connect_robust") as mock_connect,
@@ -124,7 +125,7 @@ class TestPopulator:
             neo4j_session.run.assert_called_once_with("RETURN 1")
 
     @pytest.mark.asyncio
-    async def test_populator_context_manager_exit(self):
+    async def test_populator_context_manager_exit(self) -> None:
         """Test __aexit__ closes connections properly."""
         from populator.populator import Populator
 
@@ -140,7 +141,7 @@ class TestPopulator:
         populator.amqp_connection.close.assert_called_once()
         populator.neo4j_driver.close.assert_called_once()
 
-    def test_stop(self):
+    def test_stop(self) -> None:
         """Test stop method sets _running to False."""
         from populator.populator import Populator
 
@@ -150,7 +151,9 @@ class TestPopulator:
         assert populator._running is False
 
     @pytest.mark.asyncio
-    async def test_process_message_success(self, mock_neo4j_driver, mock_message):
+    async def test_process_message_success(
+        self, mock_neo4j_driver: tuple[AsyncMock, AsyncMock], mock_message: AsyncMock
+    ) -> None:
         """Test successful message processing."""
         from populator.populator import Populator
 
@@ -184,7 +187,9 @@ class TestPopulator:
             assert "MERGE (f1)-[:NEIGHBOR]->(f2)" in call[0][0]
 
     @pytest.mark.asyncio
-    async def test_process_message_error_handling(self, mock_neo4j_driver, mock_message):
+    async def test_process_message_error_handling(
+        self, mock_neo4j_driver: tuple[AsyncMock, AsyncMock], mock_message: AsyncMock
+    ) -> None:
         """Test message processing handles errors gracefully."""
         from populator.populator import Populator
 
@@ -204,7 +209,7 @@ class TestPopulator:
         mock_message.process.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_import_to_neo4j_no_driver(self, mock_message):
+    async def test_import_to_neo4j_no_driver(self, mock_message: AsyncMock) -> None:
         """Test _import_to_neo4j returns early when no driver."""
         from populator.populator import Populator
 
@@ -216,7 +221,9 @@ class TestPopulator:
         await populator._import_to_neo4j(data)
 
     @pytest.mark.asyncio
-    async def test_import_to_neo4j_with_minimal_data(self, mock_neo4j_driver):
+    async def test_import_to_neo4j_with_minimal_data(
+        self, mock_neo4j_driver: tuple[AsyncMock, AsyncMock]
+    ) -> None:
         """Test _import_to_neo4j handles minimal data correctly."""
         from populator.populator import Populator
 
@@ -238,7 +245,9 @@ class TestPopulator:
         assert file_query_call[1]["size"] == 0
 
     @pytest.mark.asyncio
-    async def test_consume_setup_and_iteration(self, mock_amqp_connection):
+    async def test_consume_setup_and_iteration(
+        self, mock_amqp_connection: tuple[AsyncMock, AsyncMock, AsyncMock, AsyncMock]
+    ) -> None:
         """Test consume sets up queue and processes messages."""
         from populator.populator import AMQP_EXCHANGE, AMQP_QUEUE, AMQP_ROUTING_KEY, Populator
 
@@ -250,7 +259,7 @@ class TestPopulator:
         messages = [mock_msg1, mock_msg2]
 
         # Create async iterator for queue
-        async def message_iterator():
+        async def message_iterator() -> Any:
             for msg in messages:
                 if not populator._running:
                     return
@@ -264,7 +273,7 @@ class TestPopulator:
         populator.process_message = AsyncMock()
 
         # Stop after processing messages
-        async def stop_after_messages():
+        async def stop_after_messages() -> None:
             await asyncio.sleep(0.1)
             populator.stop()
 
@@ -286,7 +295,7 @@ class TestPopulator:
         populator.process_message.assert_any_call(mock_msg2)
 
     @pytest.mark.asyncio
-    async def test_consume_no_connection(self):
+    async def test_consume_no_connection(self) -> None:
         """Test consume returns early when no connection."""
         from populator.populator import Populator
 
@@ -296,7 +305,7 @@ class TestPopulator:
         # Should not raise exception
         await populator.consume()
 
-    def test_setup_logging(self):
+    def test_setup_logging(self) -> None:
         """Test logging setup."""
         with patch("populator.populator.logging.basicConfig") as mock_config:
             from populator.populator import setup_logging
@@ -309,7 +318,7 @@ class TestPopulator:
             assert "%(asctime)s" in args.kwargs["format"]
             assert len(args.kwargs["handlers"]) == 1
 
-    def test_print_banner(self, capsys):
+    def test_print_banner(self, capsys: Any) -> None:
         """Test banner printing."""
         from populator.populator import print_banner
 
@@ -320,7 +329,7 @@ class TestPopulator:
         assert "populator" in captured.out.lower()
 
     @pytest.mark.asyncio
-    async def test_async_main_signal_handling(self):
+    async def test_async_main_signal_handling(self) -> None:
         """Test async_main sets up signal handlers correctly."""
         with (
             patch("populator.populator.signal.signal") as mock_signal,
@@ -344,7 +353,7 @@ class TestPopulator:
             assert signal.SIGTERM in signals_registered
 
     @pytest.mark.asyncio
-    async def test_async_main_keyboard_interrupt(self):
+    async def test_async_main_keyboard_interrupt(self) -> None:
         """Test async_main handles KeyboardInterrupt gracefully."""
         with patch("populator.populator.Populator") as mock_populator_class:
             from populator.populator import async_main
@@ -359,7 +368,7 @@ class TestPopulator:
             await async_main()
 
     @pytest.mark.asyncio
-    async def test_async_main_fatal_error(self):
+    async def test_async_main_fatal_error(self) -> None:
         """Test async_main handles fatal errors."""
         with (
             patch("populator.populator.Populator") as mock_populator_class,
@@ -379,7 +388,7 @@ class TestPopulator:
             # Verify exit was called
             mock_exit.assert_called_once_with(1)
 
-    def test_main_missing_amqp_connection(self):
+    def test_main_missing_amqp_connection(self) -> None:
         """Test main exits when AMQP connection string is missing."""
         with (
             patch("populator.populator.setup_logging"),
@@ -393,7 +402,7 @@ class TestPopulator:
 
             mock_exit.assert_called_once_with(1)
 
-    def test_main_default_neo4j_password_warning(self, caplog):
+    def test_main_default_neo4j_password_warning(self, caplog: Any) -> None:
         """Test main warns about default Neo4j password."""
         with (
             patch("populator.populator.setup_logging"),
@@ -411,7 +420,7 @@ class TestPopulator:
             assert "Using default Neo4j password" in caplog.text
             mock_run.assert_called_once()
 
-    def test_main_successful_run(self):
+    def test_main_successful_run(self) -> None:
         """Test main runs successfully with proper configuration."""
         with (
             patch("populator.populator.setup_logging"),

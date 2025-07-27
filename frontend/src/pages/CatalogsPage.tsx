@@ -26,7 +26,7 @@ export function CatalogsPage() {
       setIsCreateOpen(false)
       setNewCatalogName('')
       refetch()
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to create catalog')
     }
   }

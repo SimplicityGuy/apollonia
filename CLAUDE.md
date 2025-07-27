@@ -5,12 +5,16 @@ repository.
 
 ## Project Overview
 
-Apollonia is a Python 3.12 microservices architecture for file monitoring and processing, using AMQP
-message queuing for service communication. The project consists of two main services:
+Apollonia is a Python 3.12 microservices architecture for media file monitoring, processing, and
+cataloging. It uses AMQP message queuing for service communication and includes machine learning
+capabilities for media analysis. The project consists of several main services:
 
-1. **Ingestor**: Monitors the `/data` directory for new files and publishes file metadata to AMQP
-1. **Populator**: Consumes messages from AMQP queue (appears designed for Neo4j import based on
-   dependencies)
+1. **Ingestor**: Monitors the `/data` directory for new media files and publishes file metadata to
+   AMQP
+1. **Populator**: Consumes messages from AMQP queue and stores file metadata in Neo4j graph database
+1. **Analyzer**: Performs ML-based analysis on audio/video files using TensorFlow and Essentia
+1. **API**: Provides REST and GraphQL endpoints for accessing the catalog
+1. **Frontend**: React-based web interface for browsing and managing media
 
 ## Development Commands
 
@@ -190,10 +194,13 @@ The ingestor publishes messages with this structure:
 
 - **Ingestor service**: Complete with async file monitoring, hashing, and AMQP publishing
 - **Populator service**: Complete with AMQP consumption and Neo4j graph import
+- **Analyzer service**: ML models for audio/video analysis with TensorFlow/Essentia integration
+- **API service**: FastAPI with REST endpoints and Strawberry GraphQL
+- **Frontend**: React 18 with TypeScript, Tailwind CSS, and real-time updates
 - **Development tooling**: Modern Python setup with uv, ruff, mypy, and taskipy
 - **Docker**: Multi-stage builds with OCI-compliant labels and health checks
 - **CI/CD**: GitHub Actions with Python testing, security scanning, and x86_64 builds
-- **Testing**: Framework is set up, tests need to be implemented
+- **Testing**: Comprehensive test suite with unit, integration, and E2E tests
 
 ## Development Workflow
 
@@ -221,3 +228,57 @@ The ingestor publishes messages with this structure:
    docker-compose up
    # Copy test files to ./data directory
    ```
+
+## Test-Specific Guidelines
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run with coverage
+uv run pytest --cov
+
+# Run specific test categories
+uv run pytest -m "not integration and not e2e"  # Unit tests only
+uv run pytest -m integration                     # Integration tests
+uv run pytest -m e2e                            # End-to-end tests
+
+# Run tests for specific service
+uv run pytest tests/unit/test_ingestor.py
+uv run pytest tests/unit/test_populator.py
+
+# Frontend tests
+cd frontend && npm test
+```
+
+### Platform-Specific Notes
+
+- **asyncinotify**: Only works on Linux. Tests using it are automatically skipped on macOS with
+  `@pytest.mark.skipif(sys.platform == "darwin")`
+- **Docker tests**: Require Docker to be running. Use `@pytest.mark.docker` marker
+- **Integration tests**: May require services (RabbitMQ, Neo4j) to be running
+
+### Test Structure
+
+```
+tests/
+├── unit/               # Fast, isolated unit tests
+├── integration/        # Tests requiring service dependencies
+├── e2e/               # End-to-end tests with full stack
+├── fixtures.py        # Shared test fixtures and utilities
+└── conftest.py        # pytest configuration
+```
+
+## Important Development Guidelines
+
+When working with this codebase:
+
+1. **Preserve test functionality** - Ensure tests continue to pass after changes
+1. **Handle platform differences** - Add appropriate skip markers for platform-specific code
+1. **Use existing patterns** - Follow the project's established testing patterns
+1. **Minimize pragma usage** - Only use `# noqa` comments when absolutely necessary
+1. **Document why** - When adding pragmas or workarounds, explain why they're needed
+1. **Run quality checks** - Always run `uv run task check-all` before committing
+1. **Update documentation** - Keep docs in sync with code changes

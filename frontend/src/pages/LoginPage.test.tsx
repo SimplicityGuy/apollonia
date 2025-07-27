@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import React from 'react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { BrowserRouter, useNavigate } from 'react-router-dom'
 import { LoginPage } from './LoginPage'
@@ -25,7 +26,7 @@ const mockLogin = vi.fn()
 const mockNavigate = vi.fn()
 
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: (selector: any) => {
+  useAuthStore: (selector?: (state: { login: typeof mockLogin }) => any) => {
     const state = {
       login: mockLogin,
     }
@@ -138,7 +139,7 @@ describe('LoginPage', () => {
     const user = userEvent.setup()
 
     // Create a promise that we can control
-    let resolveLogin: () => void
+    let resolveLogin: (() => void) | undefined
     const loginPromise = new Promise<void>((resolve) => {
       resolveLogin = resolve
     })
@@ -162,7 +163,7 @@ describe('LoginPage', () => {
     })
 
     // Resolve the login
-    resolveLogin!()
+    resolveLogin?.()
 
     // Button should be enabled again
     await waitFor(() => {
@@ -265,7 +266,7 @@ describe('LoginPage', () => {
     const user = userEvent.setup()
 
     // Create a promise that we can control
-    let resolveLogin: () => void
+    let resolveLogin: (() => void) | undefined
     const loginPromise = new Promise<void>((resolve) => {
       resolveLogin = resolve
     })
@@ -285,6 +286,6 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Password')).toHaveValue('testpass123')
 
     // Resolve the login
-    resolveLogin!()
+    resolveLogin?.()
   })
 })

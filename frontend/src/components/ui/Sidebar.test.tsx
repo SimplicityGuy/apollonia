@@ -1,21 +1,16 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import React from 'react'
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { BrowserRouter, useLocation } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import userEvent from '@testing-library/user-event'
 
-// Mock react-router-dom hooks
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
-  return {
-    ...actual,
-    useLocation: vi.fn(),
-  }
-})
-
 const renderWithRouter = (component: React.ReactElement, route = '/') => {
-  ;(useLocation as any).mockReturnValue({ pathname: route })
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <MemoryRouter initialEntries={[route]}>
+      {component}
+    </MemoryRouter>
+  )
 }
 
 describe('Sidebar', () => {
@@ -113,8 +108,8 @@ describe('Sidebar', () => {
   })
 
   it('closes mobile sidebar when close button is clicked', async () => {
-    const user = userEvent.setup()
-    const { container } = renderWithRouter(<Sidebar />)
+    const _user = userEvent.setup()
+    const { container: _container } = renderWithRouter(<Sidebar />)
 
     // The close button exists and is functional
     const closeButton = screen.getByRole('button', { name: /close sidebar/i })
@@ -125,17 +120,18 @@ describe('Sidebar', () => {
   })
 
   it('closes mobile sidebar when overlay is clicked', async () => {
-    const { container } = renderWithRouter(<Sidebar />)
+    const { container: _container } = renderWithRouter(<Sidebar />)
 
     // The overlay exists within the mobile sidebar
-    const overlay = container.querySelector('.fixed.inset-0.bg-gray-600')
+    const overlay = _container.querySelector('.fixed.inset-0.bg-gray-600')
     expect(overlay).toBeInTheDocument()
 
     // Note: Testing the actual click behavior would require the sidebar to be open
   })
 
   it('applies hover styles to navigation items', () => {
-    renderWithRouter(<Sidebar />)
+    // Render at a route that doesn't match any nav item to see hover styles
+    renderWithRouter(<Sidebar />, '/other')
 
     const dashboardLinks = screen.getAllByText('Dashboard')
     dashboardLinks.forEach(link => {
@@ -161,24 +157,21 @@ describe('Sidebar', () => {
   })
 
   it('maintains sidebar state when navigating', async () => {
-    const user = userEvent.setup()
-    const { rerender } = renderWithRouter(<Sidebar />, '/')
+    // Test navigation by rendering at different routes
 
-    // Click on Catalogs
+    // First, test dashboard route
+    const { unmount } = renderWithRouter(<Sidebar />, '/')
+    const dashboardLinks = screen.getAllByText('Dashboard')
+    expect(dashboardLinks[1].closest('a')).toHaveClass('bg-gray-800', 'text-white')
+
+    unmount()
+
+    // Then test catalogs route
+    renderWithRouter(<Sidebar />, '/catalogs')
     const catalogLinks = screen.getAllByText('Catalogs')
-    await user.click(catalogLinks[1]) // Click desktop version
-
-    // Simulate navigation
-    ;(useLocation as any).mockReturnValue({ pathname: '/catalogs' })
-    rerender(<BrowserRouter><Sidebar /></BrowserRouter>)
-
-    // Catalogs should now be active
-    const updatedCatalogLinks = screen.getAllByText('Catalogs')
-    updatedCatalogLinks.forEach(link => {
+    catalogLinks.forEach(link => {
       const linkElement = link.closest('a')
-      const className = linkElement?.className || ''
-      expect(className).toContain('bg-gray-800')
-      expect(className).toContain('text-white')
+      expect(linkElement).toHaveClass('bg-gray-800', 'text-white')
     })
   })
 

@@ -3,6 +3,8 @@
 import logging
 import signal
 import sys
+from collections.abc import AsyncGenerator, Generator
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import orjson
@@ -15,14 +17,14 @@ class TestIngestor:
     """Test cases for the Ingestor class."""
 
     @pytest.fixture
-    def mock_amqp_connection(self):
+    def mock_amqp_connection(self) -> Mock:
         """Create a mock AMQP connection."""
         connection = Mock(spec=BlockingConnection)
         connection.is_closed = False
         return connection
 
     @pytest.fixture
-    def mock_amqp_channel(self):
+    def mock_amqp_channel(self) -> Mock:
         """Create a mock AMQP channel."""
         channel = Mock()
         channel.exchange_declare = Mock()
@@ -30,7 +32,7 @@ class TestIngestor:
         return channel
 
     @pytest.fixture
-    def mock_inotify(self):
+    def mock_inotify(self) -> Generator[tuple[Mock, AsyncMock], None, None]:
         """Create a mock Inotify instance."""
         with patch("ingestor.ingestor.Inotify") as mock:
             inotify_instance = AsyncMock()
@@ -39,7 +41,7 @@ class TestIngestor:
             yield mock, inotify_instance
 
     @pytest.fixture
-    def mock_prospector(self):
+    def mock_prospector(self) -> Generator[tuple[Mock, Mock], None, None]:
         """Create a mock Prospector."""
         with patch("ingestor.ingestor.Prospector") as mock:
             prospector_instance = Mock()
@@ -58,7 +60,7 @@ class TestIngestor:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
-    async def test_ingestor_initialization(self):
+    async def test_ingestor_initialization(self) -> None:
         """Test that Ingestor can be initialized."""
         # Mock all the dependencies before importing
         with (
@@ -75,7 +77,9 @@ class TestIngestor:
             assert ingestor.amqp_properties.delivery_mode == DeliveryMode.Persistent
             assert ingestor.amqp_properties.content_encoding == "application/json"
 
-    def test_ingestor_context_manager_enter(self, mock_amqp_connection, mock_amqp_channel):
+    def test_ingestor_context_manager_enter(
+        self, mock_amqp_connection: Mock, mock_amqp_channel: Mock
+    ) -> None:
         """Test __enter__ sets up AMQP connection properly."""
         with (
             patch("ingestor.ingestor.BlockingConnection") as mock_conn_class,
@@ -106,7 +110,7 @@ class TestIngestor:
             assert ingestor.amqp_connection is mock_amqp_connection
             assert ingestor.amqp_channel is mock_amqp_channel
 
-    def test_ingestor_context_manager_exit(self, mock_amqp_connection):
+    def test_ingestor_context_manager_exit(self, mock_amqp_connection: Mock) -> None:
         """Test __exit__ closes AMQP connection properly."""
         with (
             patch("ingestor.ingestor.asyncinotify.Inotify"),
@@ -127,7 +131,7 @@ class TestIngestor:
             ingestor.__exit__(None, None, None)
             mock_amqp_connection.close.assert_not_called()
 
-    def test_stop(self):
+    def test_stop(self) -> None:
         """Test stop method sets _running to False."""
         with (
             patch("ingestor.ingestor.asyncinotify.Inotify"),
@@ -142,7 +146,9 @@ class TestIngestor:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
-    async def test_ingest_creates_directory(self, mock_inotify, mock_prospector):  # noqa: ARG002
+    async def test_ingest_creates_directory(
+        self, mock_inotify: tuple[Mock, AsyncMock], _mock_prospector: tuple[Mock, Mock]
+    ) -> None:
         """Test ingest creates data directory if it doesn't exist."""
         with (
             patch("ingestor.ingestor.Path") as mock_path_class,
@@ -156,7 +162,7 @@ class TestIngestor:
             _, inotify_instance = mock_inotify
 
             # Make inotify return no events (empty async iterator)
-            async def empty_generator():
+            async def empty_generator() -> AsyncGenerator[None, None]:
                 return
                 yield  # Make it a generator
 
@@ -172,7 +178,12 @@ class TestIngestor:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
-    async def test_ingest_processes_events(self, mock_inotify, mock_prospector, mock_amqp_channel):
+    async def test_ingest_processes_events(
+        self,
+        mock_inotify: tuple[Mock, AsyncMock],
+        mock_prospector: tuple[Mock, Mock],
+        mock_amqp_channel: Mock,
+    ) -> None:
         """Test ingest processes file events and publishes to AMQP."""
         with patch("ingestor.ingestor.asyncinotify.Mask"):
             from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY, Ingestor
@@ -194,7 +205,7 @@ class TestIngestor:
             events = [mock_event1, mock_event2]
             event_index = 0
 
-            async def event_generator():
+            async def event_generator() -> AsyncGenerator[Mock, None]:
                 nonlocal event_index
                 for event in events:
                     if event_index >= len(events) or not ingestor._running:
@@ -209,7 +220,7 @@ class TestIngestor:
             ingestor.amqp_channel = mock_amqp_channel
 
             # Run ingest in a task and stop after processing events
-            async def run_and_stop():
+            async def run_and_stop() -> None:
                 await asyncio.sleep(0.1)  # Let it process events
                 ingestor.stop()
 
@@ -220,9 +231,10 @@ class TestIngestor:
             await task
 
             # Verify prospector was called for each event
-            assert mock_prospector.call_count == 2
-            mock_prospector.assert_any_call("/test/file1.txt")
-            mock_prospector.assert_any_call("/test/file2.txt")
+            _, prospector_instance = mock_prospector
+            assert mock_prospector[0].call_count == 2
+            mock_prospector[0].assert_any_call("/test/file1.txt")
+            mock_prospector[0].assert_any_call("/test/file2.txt")
 
             # Verify AMQP publishes
             assert mock_amqp_channel.basic_publish.call_count == 2
@@ -241,8 +253,11 @@ class TestIngestor:
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     async def test_ingest_handles_processing_errors(
-        self, mock_inotify, mock_prospector, mock_amqp_channel
-    ):
+        self,
+        mock_inotify: tuple[Mock, AsyncMock],
+        mock_prospector: tuple[Mock, Mock],
+        mock_amqp_channel: Mock,
+    ) -> None:
         """Test ingest handles errors during event processing gracefully."""
         with patch("ingestor.ingestor.asyncinotify.Mask"):
             from ingestor.ingestor import Ingestor
@@ -259,7 +274,7 @@ class TestIngestor:
             mock_event.path = "/test/error.txt"
             mock_event.mask = "IN_CREATE"
 
-            async def event_generator():
+            async def event_generator() -> AsyncGenerator[Mock, None]:
                 yield mock_event
                 ingestor.stop()
 
@@ -273,12 +288,12 @@ class TestIngestor:
             await ingestor.ingest()
 
             # Verify prospector was called
-            mock_prospector.assert_called_once_with("/test/error.txt")
+            mock_prospector[0].assert_called_once_with("/test/error.txt")
 
             # Verify no AMQP publish due to error
             mock_amqp_channel.basic_publish.assert_not_called()
 
-    def test_setup_logging(self):
+    def test_setup_logging(self) -> None:
         """Test logging setup."""
         with patch("ingestor.ingestor.logging.basicConfig") as mock_config:
             from ingestor.ingestor import setup_logging
@@ -291,7 +306,7 @@ class TestIngestor:
             assert "%(asctime)s" in args.kwargs["format"]
             assert len(args.kwargs["handlers"]) == 1
 
-    def test_print_banner(self, capsys):
+    def test_print_banner(self, capsys: Any) -> None:
         """Test banner printing."""
         from ingestor.ingestor import print_banner
 
@@ -302,7 +317,7 @@ class TestIngestor:
         assert "ingestor" in captured.out.lower()
 
     @pytest.mark.asyncio
-    async def test_async_main_signal_handling(self):
+    async def test_async_main_signal_handling(self) -> None:
         """Test async_main sets up signal handlers correctly."""
         with (
             patch("ingestor.ingestor.signal.signal") as mock_signal,
@@ -328,7 +343,7 @@ class TestIngestor:
             assert signal.SIGINT in signals_registered
             assert signal.SIGTERM in signals_registered
 
-    def test_main_missing_amqp_connection(self):
+    def test_main_missing_amqp_connection(self) -> None:
         """Test main exits when AMQP connection string is missing."""
         with (
             patch("ingestor.ingestor.setup_logging"),
@@ -342,7 +357,7 @@ class TestIngestor:
 
             mock_exit.assert_called_once_with(1)
 
-    def test_main_successful_run(self):
+    def test_main_successful_run(self) -> None:
         """Test main runs successfully with proper configuration."""
         with (
             patch("ingestor.ingestor.setup_logging"),

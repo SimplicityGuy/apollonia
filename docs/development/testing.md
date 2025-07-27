@@ -53,30 +53,40 @@ Apollonia follows a comprehensive testing strategy based on the testing pyramid:
 
 ```
 tests/
-├── unit/                    # Unit tests
-│   ├── test_ingestor.py    # Ingestor service tests
-│   ├── test_populator.py   # Populator service tests
-│   ├── test_analyzer.py    # ML Analyzer tests
-│   ├── test_api.py         # API service tests
-│   └── test_shared.py      # Shared utilities tests
-├── integration/             # Integration tests
-│   ├── test_amqp_flow.py   # Message queue integration
-│   ├── test_database.py    # Database operations
-│   ├── test_file_flow.py   # File processing pipeline
-│   └── test_api_services.py # API service integration
-├── e2e/                     # End-to-end tests
-│   ├── test_full_workflow.py # Complete user workflows
-│   ├── test_web_interface.py # Frontend functionality
-│   └── test_api_endpoints.py # API endpoint testing
-├── performance/             # Performance tests
-│   ├── test_load.py        # Load testing
-│   ├── test_stress.py      # Stress testing
-│   └── test_benchmarks.py  # Performance benchmarks
-├── fixtures/                # Test data and fixtures
-│   ├── media/              # Sample media files
-│   ├── config/             # Test configurations
-│   └── data/               # Test datasets
-└── conftest.py             # Pytest configuration
+├── unit/                        # Unit tests
+│   ├── test_ingestor.py        # Ingestor service tests
+│   ├── test_populator.py       # Populator service tests
+│   └── test_shared.py          # Shared utilities tests
+├── integration/                 # Integration tests
+│   ├── test_ingestor_integration.py    # Ingestor with AMQP
+│   ├── test_populator_integration.py   # Populator with Neo4j
+│   ├── test_neo4j_integration.py       # Neo4j operations
+│   └── test_end_to_end.py             # Full pipeline tests
+├── e2e/                         # End-to-end tests
+│   ├── test_docker_e2e.py      # Docker deployment tests
+│   └── test_frontend_e2e.py    # Frontend E2E tests
+├── ingestor/                    # Service-specific tests
+│   └── test_prospector.py      # File prospector tests
+├── fixtures.py                  # Shared test fixtures
+├── conftest.py                 # Pytest configuration
+└── README.md                   # Test documentation
+```
+
+### Frontend Tests
+
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   └── ui/
+│   │       ├── Navbar.test.tsx    # Navbar component tests
+│   │       └── Sidebar.test.tsx   # Sidebar component tests
+│   ├── pages/
+│   │   ├── HomePage.test.tsx      # Home page tests
+│   │   └── LoginPage.test.tsx     # Login page tests
+│   └── utils/
+│       └── format.test.ts         # Utility function tests
+└── vitest.config.ts              # Vitest configuration
 ```
 
 ## Running Tests
@@ -111,22 +121,46 @@ just test -m "not slow"  # Skip slow tests
 
 ```bash
 # Install test dependencies
-uv sync --group test
+uv sync --all-extras
 
 # Run all tests
 uv run pytest
 
 # Run with coverage
-uv run pytest --cov=src --cov-report=html --cov-report=term
+uv run pytest --cov --cov-report=html --cov-report=term
 
 # Run specific tests
 uv run pytest tests/unit/test_ingestor.py -v
 
 # Run with specific markers
-uv run pytest -m "integration" -v
+uv run pytest -m "not integration and not e2e"  # Unit tests only
+uv run pytest -m integration -v                  # Integration tests
+uv run pytest -m e2e -v                         # End-to-end tests
+
+# Run tests for specific platform
+uv run pytest -m "not linux_only"               # Skip Linux-only tests on macOS
 
 # Run in parallel
 uv run pytest -n auto
+```
+
+### Frontend Testing with Vitest
+
+```bash
+# Install dependencies
+cd frontend && npm install
+
+# Run all tests
+npm test
+
+# Run in watch mode
+npm run test:watch
+
+# Run with coverage
+npm run test:coverage
+
+# Run specific test file
+npm test HomePage.test.tsx
 ```
 
 ### Test Environment Setup

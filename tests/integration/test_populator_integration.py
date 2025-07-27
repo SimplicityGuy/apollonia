@@ -1,6 +1,8 @@
 """Integration tests for the populator service."""
 
 import asyncio
+from collections.abc import AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import orjson
@@ -25,7 +27,7 @@ class TestPopulatorIntegration:
     """Integration tests for populator service."""
 
     @pytest.fixture
-    async def rabbitmq_available(self):
+    async def rabbitmq_available(self) -> bool:
         """Check if RabbitMQ is available."""
         try:
             connection = await connect_robust(AMQP_CONNECTION)
@@ -35,7 +37,7 @@ class TestPopulatorIntegration:
             return False
 
     @pytest.fixture
-    async def neo4j_available(self):
+    async def neo4j_available(self) -> bool:
         """Check if Neo4j is available."""
         try:
             driver = AsyncGraphDatabase.driver(
@@ -50,7 +52,9 @@ class TestPopulatorIntegration:
             return False
 
     @pytest.fixture
-    async def amqp_publisher(self, rabbitmq_available):
+    async def amqp_publisher(
+        self, rabbitmq_available: bool
+    ) -> AsyncGenerator[tuple[Any, Any], None]:
         """Create an AMQP publisher for testing."""
         if not rabbitmq_available:
             pytest.skip("RabbitMQ not available")
@@ -71,7 +75,7 @@ class TestPopulatorIntegration:
         await connection.close()
 
     @pytest.fixture
-    async def neo4j_driver(self, neo4j_available):
+    async def neo4j_driver(self, neo4j_available: bool) -> AsyncGenerator[Any, None]:
         """Create a Neo4j driver for testing."""
         if not neo4j_available:
             pytest.skip("Neo4j not available")
@@ -95,7 +99,9 @@ class TestPopulatorIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_populator_processes_messages(self, amqp_publisher, neo4j_driver):
+    async def test_populator_processes_messages(
+        self, amqp_publisher: tuple[Any, Any], neo4j_driver: Any
+    ) -> None:
         """Test that populator processes messages and creates nodes in Neo4j."""
         channel, exchange = amqp_publisher
 
@@ -165,7 +171,9 @@ class TestPopulatorIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_populator_handles_multiple_messages(self, amqp_publisher, neo4j_driver):
+    async def test_populator_handles_multiple_messages(
+        self, amqp_publisher: tuple[Any, Any], neo4j_driver: Any
+    ) -> None:
         """Test that populator can handle multiple messages in sequence."""
         channel, exchange = amqp_publisher
 
@@ -226,7 +234,9 @@ class TestPopulatorIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_populator_updates_existing_nodes(self, amqp_publisher, neo4j_driver):
+    async def test_populator_updates_existing_nodes(
+        self, amqp_publisher: tuple[Any, Any], neo4j_driver: Any
+    ) -> None:
         """Test that populator updates existing nodes correctly."""
         channel, exchange = amqp_publisher
 
@@ -298,7 +308,7 @@ class TestPopulatorIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_populator_handles_message_errors(self, amqp_publisher):
+    async def test_populator_handles_message_errors(self, amqp_publisher: tuple[Any, Any]) -> None:
         """Test that populator handles malformed messages gracefully."""
         channel, exchange = amqp_publisher
 
@@ -313,7 +323,7 @@ class TestPopulatorIntegration:
         processed = []
 
         # Mock process_message to track calls
-        async def mock_process(msg):
+        async def mock_process(msg: Any) -> None:
             processed.append(msg)
             await original_process(msg)
 
@@ -348,20 +358,20 @@ class TestPopulatorIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_populator_reconnects_to_services(self):
+    async def test_populator_reconnects_to_services(self) -> None:
         """Test that populator can reconnect to services after disconnection."""
         # Mock connections that fail initially then succeed
         amqp_connect_attempts = 0
         neo4j_connect_attempts = 0
 
-        async def mock_amqp_connect(*args, **kwargs):  # noqa: ARG001
+        async def mock_amqp_connect(*args: Any, **kwargs: Any) -> AsyncMock:  # noqa: ARG001
             nonlocal amqp_connect_attempts
             amqp_connect_attempts += 1
             if amqp_connect_attempts == 1:
                 raise AMQPConnectionError("Connection failed")
             return AsyncMock()
 
-        def mock_neo4j_driver(*args, **kwargs):  # noqa: ARG001
+        def mock_neo4j_driver(*args: Any, **kwargs: Any) -> AsyncMock:  # noqa: ARG001
             nonlocal neo4j_connect_attempts
             neo4j_connect_attempts += 1
             if neo4j_connect_attempts == 1:
@@ -389,7 +399,9 @@ class TestPopulatorIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_populator_creates_complex_graph(self, amqp_publisher, neo4j_driver):
+    async def test_populator_creates_complex_graph(
+        self, amqp_publisher: tuple[Any, Any], neo4j_driver: Any
+    ) -> None:
         """Test that populator correctly creates complex file relationships."""
         channel, exchange = amqp_publisher
 
@@ -471,7 +483,9 @@ class TestPopulatorIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_populator_handles_concurrent_messages(self, amqp_publisher, neo4j_driver):
+    async def test_populator_handles_concurrent_messages(
+        self, amqp_publisher: tuple[Any, Any], neo4j_driver: Any
+    ) -> None:
         """Test that populator correctly handles concurrent message processing."""
         channel, exchange = amqp_publisher
 

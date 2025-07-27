@@ -21,9 +21,12 @@ graph TD
     I[API Service] -->|Query| G
     I -->|Query| H
     I -->|Cache| F
-    J[Frontend] -->|HTTP/GraphQL| I
+    I -->|WebSocket| J[Frontend]
+    J -->|HTTP/GraphQL| I
     K[User] -->|Browse| J
     L[User] -->|Upload| J
+    M[Monitoring] -->|Prometheus| N[All Services]
+    O[Jaeger] -->|Traces| N
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#bbf,stroke:#333,stroke-width:2px
@@ -35,6 +38,8 @@ graph TD
     style H fill:#bfb,stroke:#333,stroke-width:2px
     style I fill:#ffb,stroke:#333,stroke-width:2px
     style J fill:#bff,stroke:#333,stroke-width:2px
+    style M fill:#ffd,stroke:#333,stroke-width:2px
+    style O fill:#ffd,stroke:#333,stroke-width:2px
 ```
 
 ## Core Components
@@ -214,26 +219,44 @@ MERGE (f1)-[:NEIGHBOR]->(f2)
 
 ```yaml
 services:
+  # Infrastructure
+  postgres:    # Primary datastore
   rabbitmq:    # Message broker
+  redis:       # Cache layer
   neo4j:       # Graph database
+
+  # Core Services
   ingestor:    # File monitor
+  analyzer:    # ML processor
   populator:   # Data importer
+  api:         # REST/GraphQL API
+  frontend:    # React web app
+
+  # Monitoring
+  prometheus:  # Metrics collection
+  grafana:     # Metrics visualization
+  jaeger:      # Distributed tracing
 ```
 
 ### Container Features
 
-- **Multi-stage Builds**: Optimized image sizes
-- **Non-root Users**: Security best practice
+- **Multi-stage Builds**: Optimized image sizes (~100MB per service)
+- **Non-root Users**: Security best practice (UID 1001)
 - **Health Checks**: Container orchestration support
 - **Volume Mounts**: Persistent data storage
+- **Network Isolation**: Service-specific networks
+- **Resource Limits**: CPU and memory constraints
 
 ## Scalability Considerations
 
 ### Horizontal Scaling
 
 - **Ingestor**: Can monitor different directories
+- **Analyzer**: Multiple instances for parallel ML processing
 - **Populator**: Multiple instances process messages concurrently
+- **API**: Load balanced instances with shared cache
 - **RabbitMQ**: Clustered deployment for HA
+- **PostgreSQL**: Read replicas with connection pooling
 - **Neo4j**: Read replicas for query scaling
 
 ### Performance Optimization
@@ -247,15 +270,19 @@ services:
 
 ### Authentication & Authorization
 
+- **API**: JWT tokens with OAuth2 flow
 - **AMQP**: Username/password authentication
+- **PostgreSQL**: Role-based access control
 - **Neo4j**: User-based access control
 - **Docker**: Non-root container execution
 
 ### Data Protection
 
 - **Message Encryption**: TLS for AMQP connections
-- **Database Encryption**: Neo4j encryption at rest
+- **API Encryption**: HTTPS with TLS 1.3
+- **Database Encryption**: PostgreSQL and Neo4j encryption at rest
 - **Network Isolation**: Docker network segmentation
+- **Secret Management**: Environment variables for sensitive data
 
 ## Monitoring & Observability
 
@@ -270,9 +297,34 @@ services:
 - **Service Health**: Uptime and availability
 - **Performance**: Message processing rates
 - **Resource Usage**: CPU, memory, disk I/O
+- **Application Metrics**: Request rates, response times
+- **Business Metrics**: Files processed, ML analysis completion
 
 ### Tracing
 
 - **Message Flow**: Track messages through system
 - **Error Tracking**: Failed message processing
 - **Latency Analysis**: End-to-end processing time
+- **Distributed Tracing**: Jaeger integration
+- **Request Correlation**: Trace IDs across services
+
+## Technology Stack Summary
+
+### Languages & Frameworks
+
+- **Backend**: Python 3.12 (FastAPI, SQLAlchemy, aio-pika)
+- **Frontend**: TypeScript, React 18, Vite
+- **ML/AI**: TensorFlow, Essentia, Librosa
+
+### Data Storage
+
+- **PostgreSQL**: Structured metadata
+- **Neo4j**: Graph relationships
+- **Redis**: Caching and sessions
+
+### Infrastructure
+
+- **Docker**: Containerization
+- **RabbitMQ**: Message broker
+- **GitHub Actions**: CI/CD
+- **Prometheus/Grafana**: Monitoring

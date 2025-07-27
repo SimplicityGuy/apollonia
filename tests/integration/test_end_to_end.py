@@ -4,6 +4,7 @@ import asyncio
 import os
 import sys
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import patch
 
@@ -41,7 +42,7 @@ class TestEndToEnd:
     """End-to-end tests for the complete pipeline."""
 
     @pytest.fixture
-    def services_available(self):
+    def services_available(self) -> bool:
         """Check if all required services are available."""
         # Check RabbitMQ
         try:
@@ -58,7 +59,7 @@ class TestEndToEnd:
                 auth=(NEO4J_USER, NEO4J_PASSWORD),
             )
 
-            async def check_neo4j():
+            async def check_neo4j() -> None:
                 async with driver.session() as session:
                     await session.run("RETURN 1")
                 await driver.close()
@@ -76,13 +77,13 @@ class TestEndToEnd:
         return True
 
     @pytest.fixture
-    def temp_data_dir(self):
+    def temp_data_dir(self) -> Generator[Path, None, None]:
         """Create a temporary data directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
     @pytest.fixture
-    async def clean_neo4j(self, services_available):  # noqa: ARG002
+    async def clean_neo4j(self, services_available: bool) -> Generator[None, None, None]:  # noqa: ARG002
         """Clean up Neo4j before and after tests."""
         driver = AsyncGraphDatabase.driver(
             NEO4J_URI,
@@ -104,7 +105,9 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_file_ingestion_to_neo4j(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
+    async def test_file_ingestion_to_neo4j(
+        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+    ) -> None:
         """Test complete pipeline from file creation to Neo4j storage."""
         # Patch DATA_DIRECTORY for ingestor
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
@@ -169,10 +172,10 @@ class TestEndToEnd:
     @pytest.mark.asyncio
     async def test_neighbor_file_relationships(
         self,
-        services_available,  # noqa: ARG002
-        temp_data_dir,
-        clean_neo4j,  # noqa: ARG002
-    ):
+        services_available: bool,  # noqa: ARG002
+        temp_data_dir: Path,
+        clean_neo4j: None,  # noqa: ARG002
+    ) -> None:
         """Test that neighbor file relationships are correctly created."""
         # Create neighbor files
         (temp_data_dir / "movie.mp4").write_text("video content")
@@ -230,7 +233,9 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_file_update_handling(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
+    async def test_file_update_handling(
+        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+    ) -> None:
         """Test that file updates are correctly handled."""
         test_file = temp_data_dir / "update_test.txt"
         test_file.write_text("Initial content")
@@ -281,7 +286,9 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_concurrent_file_processing(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
+    async def test_concurrent_file_processing(
+        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+    ) -> None:
         """Test that multiple files can be processed concurrently."""
         num_files = 10
 
@@ -337,7 +344,9 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_service_resilience(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
+    async def test_service_resilience(
+        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+    ) -> None:
         """Test that services can recover from temporary failures."""
         test_file = temp_data_dir / "resilience_test.txt"
 
@@ -395,7 +404,7 @@ class TestEndToEnd:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_message_persistence(self, services_available):  # noqa: ARG002
+    async def test_message_persistence(self, services_available: bool) -> None:  # noqa: ARG002
         """Test that messages are persisted in RabbitMQ."""
         # This test verifies RabbitMQ configuration
         connection = BlockingConnection(URLParameters(INGESTOR_AMQP))
@@ -444,7 +453,9 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_large_file_handling(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
+    async def test_large_file_handling(
+        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+    ) -> None:
         """Test handling of large files."""
         # Create a 10MB file
         large_file = temp_data_dir / "large_file.bin"

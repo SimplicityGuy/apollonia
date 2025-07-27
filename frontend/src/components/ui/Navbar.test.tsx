@@ -1,8 +1,10 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import React from 'react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { BrowserRouter, useNavigate } from 'react-router-dom'
 import { Navbar } from './Navbar'
 import userEvent from '@testing-library/user-event'
+import { useAuthStore } from '@/stores/authStore'
 
 // Mock react-router-dom
 vi.mock('react-router-dom', async () => {
@@ -18,10 +20,7 @@ const mockLogout = vi.fn()
 const mockUser = { username: 'testuser', email: 'test@example.com' }
 
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    user: mockUser,
-    logout: mockLogout,
-  }),
+  useAuthStore: vi.fn(),
 }))
 
 const renderWithRouter = (component: React.ReactElement) => {
@@ -33,7 +32,11 @@ describe('Navbar', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useNavigate as any).mockReturnValue(mockNavigate)
+    ;(useNavigate as vi.MockedFunction<typeof useNavigate>).mockReturnValue(mockNavigate)
+    ;(useAuthStore as vi.MockedFunction<typeof useAuthStore>).mockReturnValue({
+      user: mockUser,
+      logout: mockLogout,
+    })
   })
 
   afterEach(() => {
@@ -164,14 +167,14 @@ describe('Navbar', () => {
     const signOutButton = await screen.findByText('Sign out')
 
     // Check initial state
-    expect(settingsLink.parentElement).toHaveClass('text-gray-900')
+    expect(settingsLink).toHaveClass('text-gray-900')
     expect(signOutButton).toHaveClass('text-gray-900')
   })
 
   it('handles missing user gracefully', () => {
     // Override the mock for this test by temporarily changing the mock implementation
-    const originalMock = (useAuthStore as any).mockImplementation
-    ;(useAuthStore as any).mockImplementation(() => ({
+    const originalMock = (useAuthStore as vi.MockedFunction<typeof useAuthStore>).mockImplementation
+    ;(useAuthStore as vi.MockedFunction<typeof useAuthStore>).mockImplementation(() => ({
       user: null,
       logout: mockLogout,
     }))
@@ -182,7 +185,7 @@ describe('Navbar', () => {
     expect(screen.getByText('User')).toBeInTheDocument()
 
     // Restore the original mock
-    ;(useAuthStore as any).mockImplementation = originalMock
+    ;(useAuthStore as vi.MockedFunction<typeof useAuthStore>).mockImplementation = originalMock
   })
 
   it('menu closes when clicking outside', async () => {

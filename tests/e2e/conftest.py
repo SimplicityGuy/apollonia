@@ -3,13 +3,15 @@
 import os
 import subprocess
 import time
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 
 @pytest.fixture(scope="session")
-def frontend_server():
+def frontend_server() -> Generator[str, None, None]:
     """Start the frontend development server for testing."""
     frontend_dir = Path(__file__).parent.parent.parent / "frontend"
 
@@ -50,7 +52,7 @@ def frontend_server():
 
 
 @pytest.fixture(scope="session")
-def backend_server():
+def backend_server() -> Generator[str, None, None]:
     """Start the backend API server for testing."""
     backend_dir = Path(__file__).parent.parent.parent
 
@@ -91,7 +93,7 @@ def backend_server():
 
 
 @pytest.fixture(scope="session")
-def browser_context_args(browser_context_args):
+def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, Any]:
     """Configure browser context for testing."""
     return {
         **browser_context_args,
@@ -101,7 +103,7 @@ def browser_context_args(browser_context_args):
 
 
 @pytest.fixture(scope="function")
-def authenticated_page(page, backend_server):  # noqa: ARG001
+def authenticated_page(page: Any, backend_server: str) -> Any:  # noqa: ARG001
     """Provide a page with authenticated user."""
     # Mock authentication
     page.route(
@@ -138,7 +140,7 @@ def authenticated_page(page, backend_server):  # noqa: ARG001
 
 
 @pytest.fixture(scope="session")
-def test_data():
+def test_data() -> dict[str, Any]:
     """Provide test data for e2e tests."""
     return {
         "users": [{"username": "testuser", "password": "testpass123", "email": "test@example.com"}],
@@ -169,7 +171,7 @@ def test_data():
 
 
 @pytest.fixture
-def mock_api_responses(page, test_data):
+def mock_api_responses(page: Any, test_data: dict[str, Any]) -> Any:
     """Mock common API responses."""
     # Mock file listing
     page.route(
@@ -200,7 +202,7 @@ def mock_api_responses(page, test_data):
 
 
 # Playwright pytest plugin configuration
-def pytest_configure(config):
+def pytest_configure(config: Any) -> None:
     """Configure pytest with custom markers."""
     config.addinivalue_line("markers", "e2e: mark test as end-to-end test")
     config.addinivalue_line("markers", "slow: mark test as slow running")

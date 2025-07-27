@@ -1,7 +1,8 @@
 # API Documentation
 
-Apollonia provides comprehensive REST and GraphQL APIs for programmatic access to the media catalog
-system.
+Apollonia provides REST and GraphQL APIs for programmatic access to the intelligent media catalog
+system. The API enables file management, ML-powered analysis retrieval, and real-time processing
+updates.
 
 ## Table of Contents
 
@@ -18,9 +19,9 @@ system.
 
 The Apollonia API offers multiple interfaces for different use cases:
 
-- **REST API**: Standard HTTP endpoints for CRUD operations
-- **GraphQL API**: Flexible query interface for complex data retrieval
-- **WebSocket API**: Real-time updates and streaming
+- **REST API**: Standard HTTP endpoints for CRUD operations on media files
+- **GraphQL API**: Flexible query interface for complex data retrieval and relationships
+- **WebSocket API**: Real-time updates for file processing and ML analysis
 - **Admin API**: Administrative functions and system management
 
 ### Base URLs
@@ -30,6 +31,16 @@ The Apollonia API offers multiple interfaces for different use cases:
 - **GraphQL Endpoint**: `/graphql`
 - **REST API Base**: `/api/v1`
 - **WebSocket**: `/ws`
+
+### Current Implementation Status
+
+- ✅ **FastAPI Service**: RESTful API with automatic OpenAPI documentation
+- ✅ **GraphQL with Strawberry**: Type-safe GraphQL schema and resolvers
+- ✅ **JWT Authentication**: Secure token-based authentication
+- ✅ **File Upload**: Multipart form uploads with metadata
+- ✅ **Real-time Updates**: WebSocket support for processing status
+- 🚧 **ML Feature Endpoints**: Audio/video analysis results (in progress)
+- 🚧 **Search API**: Full-text and similarity search (planned)
 
 ## Authentication
 
@@ -147,6 +158,8 @@ GET /api/v1/media/{id}
   "bit_rate": 1411,
   "sample_rate": 44100,
   "channels": 2,
+  "sha256_hash": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
+  "xxh128_hash": "a94a8fe5ccb19ba61c4c",
   "created_at": "2024-01-01T12:00:00Z",
   "updated_at": "2024-01-01T12:00:00Z",
   "audio_features": {
@@ -171,8 +184,8 @@ GET /api/v1/media/{id}
   "neighbors": [
     {
       "id": "neighbor_uuid",
-      "title": "A Love Supreme",
-      "similarity": 0.89
+      "path": "/data/music/a_love_supreme.flac",
+      "relationship": "NEIGHBOR"
     }
   ]
 }
@@ -292,22 +305,21 @@ POST /graphql
 ### Schema Overview
 
 ```graphql
-type Media {
+type File {
   id: ID!
-  title: String!
-  artist: String
-  album: String
-  genre: String
-  duration: Int
-  filePath: String!
-  format: String!
-  fileSize: Int
+  path: String!
+  size: Int!
+  sha256Hash: String!
+  xxh128Hash: String!
+  modifiedTime: DateTime!
+  accessedTime: DateTime!
+  changedTime: DateTime!
   createdAt: DateTime!
+  eventType: String!
   audioFeatures: AudioFeatures
-  technicalAnalysis: TechnicalAnalysis
+  videoFeatures: VideoFeatures
   tags: [String!]!
-  collections: [Collection!]!
-  neighbors(limit: Int = 5): [MediaSimilarity!]!
+  neighbors: [File!]!
 }
 
 type AudioFeatures {
@@ -321,93 +333,121 @@ type AudioFeatures {
   instrumentalness: Float
   liveness: Float
   speechiness: Float
+  spectralCentroid: Float
+  spectralRolloff: Float
+  zeroCrossingRate: Float
+  mfcc: [Float!]
 }
 
-type Collection {
-  id: ID!
-  name: String!
-  description: String
-  isPublic: Boolean!
-  media: [Media!]!
-  createdAt: DateTime!
+type VideoFeatures {
+  duration: Float
+  frameRate: Float
+  resolution: String
+  codec: String
+  bitRate: Int
+  aspectRatio: String
+}
+
+type ProcessingStatus {
+  fileId: ID!
+  stage: String!
+  progress: Float!
+  message: String
+  completed: Boolean!
+  error: String
 }
 
 type Query {
-  media(id: ID): Media
-  allMedia(
+  file(id: ID!): File
+  fileByPath(path: String!): File
+  files(
     limit: Int = 50
     offset: Int = 0
-    filter: MediaFilter
-    sort: MediaSort
-  ): MediaConnection!
-  searchMedia(query: String!, limit: Int = 50): [Media!]!
-  collections: [Collection!]!
-  stats: CollectionStats!
+    eventType: String
+    startDate: DateTime
+    endDate: DateTime
+  ): FileConnection!
+  searchFiles(query: String!, limit: Int = 50): [File!]!
+  processingQueue: [ProcessingStatus!]!
+  systemStats: SystemStats!
 }
 
 type Mutation {
-  createCollection(input: CreateCollectionInput!): Collection!
-  updateMedia(id: ID!, input: UpdateMediaInput!): Media!
-  addToCollection(collectionId: ID!, mediaId: ID!): Collection!
+  uploadFile(file: Upload!, metadata: String): File!
+  updateFileTags(fileId: ID!, tags: [String!]!): File!
+  reprocessFile(fileId: ID!): ProcessingStatus!
+  deleteFile(fileId: ID!): Boolean!
 }
 
 type Subscription {
-  mediaAdded: Media!
-  processingStatus(mediaId: ID!): ProcessingStatus!
+  fileAdded: File!
+  processingStatus(fileId: ID!): ProcessingStatus!
+  systemStatus: SystemStats!
 }
 ```
 
 ### Example Queries
 
-#### Get Media with Features
+#### Get File with Features
 
 ```graphql
-query GetMediaWithFeatures($limit: Int = 10) {
-  allMedia(limit: $limit) {
-    edges {
-      node {
-        id
-        title
-        artist
-        genre
-        duration
-        audioFeatures {
-          tempo
-          energy
-          valence
-        }
-        tags
-      }
+query GetFileWithFeatures($fileId: ID!) {
+  file(id: $fileId) {
+    id
+    path
+    size
+    sha256Hash
+    xxh128Hash
+    audioFeatures {
+      tempo
+      energy
+      valence
+      spectralCentroid
+      mfcc
     }
-    pageInfo {
-      hasNextPage
-      endCursor
+    neighbors {
+      path
+      size
     }
+    tags
   }
 }
 ```
 
-#### Search with Filters
+#### Search Files by Path Pattern
 
 ```graphql
-query SearchJazzMusic($query: String!) {
-  searchMedia(query: $query) {
+query SearchFiles($query: String!) {
+  searchFiles(query: $query) {
     id
-    title
-    artist
-    album
+    path
+    size
+    eventType
     audioFeatures {
       tempo
       key
       energy
     }
-    neighbors(limit: 3) {
-      media {
-        title
-        artist
-      }
-      similarity
+    videoFeatures {
+      duration
+      resolution
+      frameRate
     }
+  }
+}
+```
+
+#### Get Processing Queue Status
+
+```graphql
+query GetProcessingQueue {
+  processingQueue {
+    fileId
+    stage
+    progress
+    message
+    completed
+    error
   }
 }
 ```
@@ -415,12 +455,13 @@ query SearchJazzMusic($query: String!) {
 #### Real-time Processing Updates
 
 ```graphql
-subscription ProcessingUpdates($mediaId: ID!) {
-  processingStatus(mediaId: $mediaId) {
+subscription ProcessingUpdates($fileId: ID!) {
+  processingStatus(fileId: $fileId) {
     stage
     progress
     message
     completed
+    error
   }
 }
 ```
@@ -438,16 +479,17 @@ const ws = new WebSocket('ws://localhost:8000/ws?token=YOUR_JWT_TOKEN');
 
 ### Event Types
 
-#### Media Events
+#### File Events
 
 ```javascript
-// New media added
+// New file detected
 {
-  "type": "media.added",
+  "type": "file.detected",
   "data": {
     "id": "uuid",
-    "title": "New Song",
-    "artist": "Artist Name"
+    "path": "/data/music/new_song.mp3",
+    "size": 4567890,
+    "event_type": "IN_CREATE"
   }
 }
 
@@ -455,7 +497,7 @@ const ws = new WebSocket('ws://localhost:8000/ws?token=YOUR_JWT_TOKEN');
 {
   "type": "processing.update",
   "data": {
-    "media_id": "uuid",
+    "file_id": "uuid",
     "stage": "feature_extraction",
     "progress": 75,
     "message": "Extracting audio features..."
@@ -466,9 +508,19 @@ const ws = new WebSocket('ws://localhost:8000/ws?token=YOUR_JWT_TOKEN');
 {
   "type": "analysis.completed",
   "data": {
-    "media_id": "uuid",
-    "features": { ... },
-    "technical_analysis": { ... }
+    "file_id": "uuid",
+    "audio_features": { ... },
+    "video_features": { ... }
+  }
+}
+
+// Neighbor relationship detected
+{
+  "type": "neighbor.detected",
+  "data": {
+    "file_id": "uuid",
+    "neighbor_id": "neighbor_uuid",
+    "relationship": "NEIGHBOR"
   }
 }
 ```
@@ -485,8 +537,22 @@ const ws = new WebSocket('ws://localhost:8000/ws?token=YOUR_JWT_TOKEN');
     "services": {
       "ingestor": "healthy",
       "analyzer": "healthy",
-      "populator": "healthy"
-    }
+      "populator": "healthy",
+      "api": "healthy"
+    },
+    "amqp_status": "connected",
+    "neo4j_status": "connected",
+    "postgres_status": "connected"
+  }
+}
+
+// Service health change
+{
+  "type": "service.health",
+  "data": {
+    "service": "analyzer",
+    "status": "unhealthy",
+    "message": "Memory usage exceeded threshold"
   }
 }
 ```
