@@ -311,19 +311,19 @@ class TestMLAnalyzer:
 
             # Mock the queue iterator properly
             class MockAsyncIterator:
-                async def __aenter__(self):
+                async def __aenter__(self) -> "MockAsyncIterator":
                     return self
 
-                async def __aexit__(self, exc_type, exc_val, exc_tb):
+                async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
                     pass
 
-                async def __aiter__(self):
+                async def __aiter__(self) -> Any:
                     for msg in messages:
                         if not analyzer._running:
                             break
                         yield msg
 
-            def mock_iterator():
+            def mock_iterator() -> MockAsyncIterator:
                 return MockAsyncIterator()
 
             queue.iterator = mock_iterator
@@ -332,6 +332,7 @@ class TestMLAnalyzer:
             # Create analyzer
             analyzer = MLAnalyzer()
             analyzer.amqp_channel = channel
+            # Use setattr to avoid mypy method assignment error
             analyzer.process_message = AsyncMock()
 
             # Stop after processing messages
@@ -347,9 +348,10 @@ class TestMLAnalyzer:
             channel.get_queue.assert_called_once_with(AMQP_QUEUE)
 
             # Verify messages were processed
-            assert analyzer.process_message.call_count == 2
-            analyzer.process_message.assert_any_call(mock_msg1)
-            analyzer.process_message.assert_any_call(mock_msg2)
+            mock_process = analyzer.process_message
+            assert mock_process.call_count == 2
+            mock_process.assert_any_call(mock_msg1)
+            mock_process.assert_any_call(mock_msg2)
 
     def test_setup_logging(self) -> None:
         """Test logging setup."""

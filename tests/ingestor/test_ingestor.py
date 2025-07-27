@@ -1,4 +1,5 @@
 """Tests for the Ingestor service."""
+# mypy: disable-error-code="name-defined"
 
 from __future__ import annotations
 

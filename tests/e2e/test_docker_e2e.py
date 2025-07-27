@@ -3,6 +3,7 @@
 import os
 import subprocess
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,7 @@ class TestDockerE2E:
     """End-to-end tests for the complete system running in Docker."""
 
     @pytest.fixture(scope="class")
-    def docker_compose_up(self):
+    def docker_compose_up(self) -> Iterator[None]:
         """Start all services using docker-compose."""
         project_root = Path(__file__).parent.parent.parent
 
@@ -42,7 +43,7 @@ class TestDockerE2E:
             check=True,
         )
 
-    def _wait_for_services(self, timeout=60):
+    def _wait_for_services(self, timeout: int = 60) -> None:
         """Wait for all services to be ready."""
         start_time = time.time()
 
@@ -71,7 +72,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_complete_file_processing_pipeline(self, docker_compose_up):  # noqa: ARG002
+    def test_complete_file_processing_pipeline(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test the complete pipeline from file creation to Neo4j storage."""
         # Create a test file in the data directory
         data_dir = Path("./data")
@@ -106,7 +107,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_rabbitmq_message_flow(self, docker_compose_up):  # noqa: ARG002
+    def test_rabbitmq_message_flow(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that messages flow through RabbitMQ correctly."""
         import pika
 
@@ -132,7 +133,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_service_health_endpoints(self, docker_compose_up):  # noqa: ARG002
+    def test_service_health_endpoints(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that all services have working health endpoints."""
         # RabbitMQ Management API
         response = requests.get(
@@ -146,13 +147,13 @@ class TestDockerE2E:
             with driver.session() as session:
                 result = session.run("RETURN 1 as health")
                 record = result.single()
-                assert record["health"] == 1
+                assert record is not None and record["health"] == 1
         finally:
             driver.close()
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_multiple_file_processing(self, docker_compose_up):  # noqa: ARG002
+    def test_multiple_file_processing(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test processing multiple files concurrently."""
         data_dir = Path("./data")
         data_dir.mkdir(exist_ok=True)
@@ -176,7 +177,9 @@ class TestDockerE2E:
                     "MATCH (f:File) WHERE f.path CONTAINS 'docker_test_' RETURN count(f) as count"
                 )
                 record = result.single()
-                assert record["count"] == 5, f"Expected 5 files, found {record['count']}"
+                assert record is not None and record["count"] == 5, (
+                    f"Expected 5 files, found {record['count'] if record else 'None'}"
+                )
 
         finally:
             driver.close()
@@ -186,7 +189,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_neighbor_file_relationships_docker(self, docker_compose_up):  # noqa: ARG002
+    def test_neighbor_file_relationships_docker(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test neighbor file relationships in Docker environment."""
         data_dir = Path("./data")
         data_dir.mkdir(exist_ok=True)
@@ -230,7 +233,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_service_restart_resilience(self, docker_compose_up):  # noqa: ARG002
+    def test_service_restart_resilience(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that system recovers from service restarts."""
         data_dir = Path("./data")
         data_dir.mkdir(exist_ok=True)
@@ -280,7 +283,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_docker_volume_persistence(self, docker_compose_up):  # noqa: ARG002
+    def test_docker_volume_persistence(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that data persists across container restarts."""
         data_dir = Path("./data")
         data_dir.mkdir(exist_ok=True)
@@ -302,6 +305,7 @@ class TestDockerE2E:
                     "RETURN f.sha256 as hash"
                 )
                 record = result.single()
+                assert record is not None
                 original_hash = record["hash"]
 
             # Restart all services
@@ -327,7 +331,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_docker_logs_availability(self, docker_compose_up):  # noqa: ARG002
+    def test_docker_logs_availability(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that service logs are available and contain expected entries."""
         # Get logs from each service
         services = ["rabbitmq", "neo4j", "ingestor", "populator"]
@@ -352,7 +356,7 @@ class TestDockerE2E:
 
     @pytest.mark.docker
     @pytest.mark.slow
-    def test_resource_usage_monitoring(self, docker_compose_up):  # noqa: ARG002
+    def test_resource_usage_monitoring(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that containers are not using excessive resources."""
         # Get container stats
         result = subprocess.run(

@@ -1,4 +1,5 @@
 """Integration tests for the ingestor service."""
+# mypy: disable-error-code="name-defined,attr-defined"
 
 import asyncio
 import sys
@@ -33,10 +34,10 @@ else:
     ROUTING_KEY = "file.created"
 
     # Define stub classes for type checking
-    class Ingestor:  # type: ignore[no-redef]
+    class Ingestor:
         pass
 
-    class Prospector:  # type: ignore[no-redef]
+    class Prospector:
         def __init__(self, path: Any) -> None:
             pass
 
@@ -111,8 +112,10 @@ class TestIngestorIntegration:
         channel, messages = amqp_consumer
 
         # Patch DATA_DIRECTORY to use temp dir and create ingestor
-        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)), Ingestor() as ingestor:
-            # Run ingestor in background
+        with (
+            patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)),
+            Ingestor() as ingestor,
+        ):  # Run ingestor in background
             ingest_task = asyncio.create_task(ingestor.ingest())
 
             # Allow ingestor to start watching
@@ -151,8 +154,10 @@ class TestIngestorIntegration:
         """Test that ingestor handles multiple file events."""
         channel, messages = amqp_consumer
 
-        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)), Ingestor() as ingestor:
-            # Run ingestor in background
+        with (
+            patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)),
+            Ingestor() as ingestor,
+        ):  # Run ingestor in background
             ingest_task = asyncio.create_task(ingestor.ingest())
 
             # Allow ingestor to start watching
@@ -198,8 +203,7 @@ class TestIngestorIntegration:
             (temp_data_dir / "video.srt").write_text("subtitles")
             (temp_data_dir / "video.nfo").write_text("info")
 
-            with Ingestor() as ingestor:
-                # Run ingestor in background
+            with Ingestor() as ingestor:  # Run ingestor in background
                 ingest_task = asyncio.create_task(ingestor.ingest())
 
                 # Allow ingestor to start watching
@@ -238,7 +242,7 @@ class TestIngestorIntegration:
             pytest.skip("Prospector not available on macOS")
 
         # Create a test file
-        test_file = temp_data_dir / "test.bin"
+        test_file = temp_data_dir / "test.bin"  # type: ignore[unreachable]
         test_content = b"Binary content \x00\x01\x02\x03"
         test_file.write_bytes(test_content)
 
@@ -309,8 +313,10 @@ class TestIngestorIntegration:
         existing_file = temp_data_dir / "existing.txt"
         existing_file.write_text("Already here")
 
-        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)), Ingestor() as ingestor:
-            # Run ingestor in background
+        with (
+            patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)),
+            Ingestor() as ingestor,
+        ):  # Run ingestor in background
             ingest_task = asyncio.create_task(ingestor.ingest())
 
             # Allow ingestor to start

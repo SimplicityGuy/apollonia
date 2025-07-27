@@ -1,9 +1,11 @@
 """Unit tests for the Prospector class."""
+# mypy: disable-error-code="name-defined"
 
 import hashlib
 import os
 import sys
 import tempfile
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
@@ -23,20 +25,20 @@ class TestProspector:
     """Test cases for the Prospector class."""
 
     @pytest.fixture
-    def temp_dir(self):
+    def temp_dir(self) -> Iterator[Path]:
         """Create a temporary directory for testing."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
     @pytest.fixture
-    def test_file(self, temp_dir):
+    def test_file(self, temp_dir: Path) -> Path:
         """Create a test file."""
         file_path = temp_dir / "test_file.txt"
         file_path.write_text("Hello, World!")
         return file_path
 
     @pytest.fixture
-    def test_file_with_neighbors(self, temp_dir):
+    def test_file_with_neighbors(self, temp_dir: Path) -> Path:
         """Create a test file with neighbor files."""
         # Main file
         main_file = temp_dir / "video.mp4"
@@ -56,14 +58,14 @@ class TestProspector:
         return main_file
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_prospector_initialization_with_string(self):
+    def test_prospector_initialization_with_string(self) -> None:
         """Test Prospector can be initialized with string path."""
         prospector = Prospector("/test/path/file.txt")
         assert isinstance(prospector.path, Path)
         assert str(prospector.path) == "/test/path/file.txt"
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_prospector_initialization_with_path(self):
+    def test_prospector_initialization_with_path(self) -> None:
         """Test Prospector can be initialized with Path object."""
         path = Path("/test/path/file.txt")
         prospector = Prospector(path)
@@ -72,7 +74,7 @@ class TestProspector:
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
     @freeze_time("2024-01-01 12:00:00")
-    async def test_prospect_successful(self, test_file):
+    async def test_prospect_successful(self, test_file: Path) -> None:
         """Test successful file prospecting."""
         prospector = Prospector(test_file)
         result = await prospector.prospect()
@@ -103,7 +105,7 @@ class TestProspector:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    async def test_prospect_missing_file(self, temp_dir):
+    async def test_prospect_missing_file(self, temp_dir: Path) -> None:
         """Test prospecting a non-existent file."""
         missing_file = temp_dir / "missing.txt"
         prospector = Prospector(missing_file)
@@ -128,7 +130,7 @@ class TestProspector:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    async def test_prospect_permission_error(self, temp_dir):
+    async def test_prospect_permission_error(self, temp_dir: Path) -> None:
         """Test prospecting handles permission errors gracefully."""
         test_file = temp_dir / "restricted.txt"
         test_file.write_text("content")
@@ -145,7 +147,7 @@ class TestProspector:
             assert "size" not in result
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_compute_hashes_successful(self, test_file):
+    def test_compute_hashes_successful(self, test_file: Path) -> None:
         """Test hash computation for a regular file."""
         prospector = Prospector(test_file)
         hashes = prospector._compute_hashes()
@@ -157,7 +159,7 @@ class TestProspector:
         assert hashes["xxh128"] == expected_xxh128
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_compute_hashes_large_file(self, temp_dir):
+    def test_compute_hashes_large_file(self, temp_dir: Path) -> None:
         """Test hash computation handles large files with chunking."""
         # Create a file larger than chunk size (64KB)
         large_file = temp_dir / "large.bin"
@@ -174,7 +176,7 @@ class TestProspector:
         assert hashes["xxh128"] == expected_xxh128
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_compute_hashes_read_error(self, temp_dir):
+    def test_compute_hashes_read_error(self, temp_dir: Path) -> None:
         """Test hash computation handles read errors."""
         test_file = temp_dir / "error.txt"
         test_file.write_text("content")
@@ -187,7 +189,7 @@ class TestProspector:
             assert hashes["xxh128"] == ""
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_find_neighbors_with_matches(self, test_file_with_neighbors):
+    def test_find_neighbors_with_matches(self, test_file_with_neighbors: Path) -> None:
         """Test finding neighbor files."""
         prospector = Prospector(test_file_with_neighbors)
         neighbors = prospector._find_neighbors()
@@ -205,7 +207,7 @@ class TestProspector:
         assert "ab.txt" not in neighbor_names  # Too short stem
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_find_neighbors_no_parent(self):
+    def test_find_neighbors_no_parent(self) -> None:
         """Test finding neighbors when parent directory doesn't exist."""
         prospector = Prospector("/non/existent/path/file.txt")
         neighbors = prospector._find_neighbors()
@@ -213,7 +215,7 @@ class TestProspector:
         assert neighbors == []
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_find_neighbors_limit(self, temp_dir):
+    def test_find_neighbors_limit(self, temp_dir: Path) -> None:
         """Test neighbor limit of 10 files."""
         # Create main file
         main_file = temp_dir / "main.txt"
@@ -230,7 +232,7 @@ class TestProspector:
         assert len(neighbors) == 10
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_find_neighbors_directory_error(self, temp_dir):
+    def test_find_neighbors_directory_error(self, temp_dir: Path) -> None:
         """Test finding neighbors handles directory errors."""
         test_file = temp_dir / "test.txt"
         test_file.write_text("content")
@@ -242,7 +244,7 @@ class TestProspector:
             assert neighbors == []
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_find_neighbors_case_insensitive_special_names(self, temp_dir):
+    def test_find_neighbors_case_insensitive_special_names(self, temp_dir: Path) -> None:
         """Test finding neighbors matches special names case-insensitively."""
         # Create main file
         main_file = temp_dir / "video.mp4"
@@ -264,7 +266,7 @@ class TestProspector:
         assert "ReadMe.md" in neighbor_names
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    def test_find_neighbors_excludes_directories(self, temp_dir):
+    def test_find_neighbors_excludes_directories(self, temp_dir: Path) -> None:
         """Test that directories are excluded from neighbors."""
         # Create main file
         main_file = temp_dir / "video.mp4"
@@ -285,7 +287,7 @@ class TestProspector:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    async def test_prospect_with_string_path(self):
+    async def test_prospect_with_string_path(self) -> None:
         """Test prospector with string path instead of Path object."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as tf:
             tf.write("string path test")
@@ -302,7 +304,7 @@ class TestProspector:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    async def test_prospect_symlink(self, temp_dir):
+    async def test_prospect_symlink(self, temp_dir: Path) -> None:
         """Test prospector with symbolic links."""
         # Create real file
         real_file = temp_dir / "real.txt"
@@ -322,7 +324,7 @@ class TestProspector:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    async def test_prospect_file_permissions_unix(self, test_file):
+    async def test_prospect_file_permissions_unix(self, test_file: Path) -> None:
         """Test prospector with a file that has read permission issues on Unix."""
         if not hasattr(os, "chmod"):
             pytest.skip("chmod not available on this platform")
@@ -343,7 +345,7 @@ class TestProspector:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
-    async def test_prospect_integration(self, test_file_with_neighbors):
+    async def test_prospect_integration(self, test_file_with_neighbors: Path) -> None:
         """Test complete prospect workflow with neighbors."""
         prospector = Prospector(test_file_with_neighbors)
         result = await prospector.prospect()

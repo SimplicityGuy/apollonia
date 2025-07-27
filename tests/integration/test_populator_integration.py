@@ -330,6 +330,7 @@ class TestPopulatorIntegration:
         # Start populator
         async with Populator() as populator:
             original_process = populator.process_message
+            # Use setattr to avoid mypy method assignment error
             populator.process_message = mock_process
 
             # Run consumer in background

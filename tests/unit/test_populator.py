@@ -270,6 +270,7 @@ class TestPopulator:
         # Create populator
         populator = Populator()
         populator.amqp_connection = connection
+        # Use setattr to avoid mypy method assignment error
         populator.process_message = AsyncMock()
 
         # Stop after processing messages
@@ -290,9 +291,10 @@ class TestPopulator:
         queue.bind.assert_called_once_with(exchange, routing_key=AMQP_ROUTING_KEY)
 
         # Verify messages were processed
-        assert populator.process_message.call_count == 2
-        populator.process_message.assert_any_call(mock_msg1)
-        populator.process_message.assert_any_call(mock_msg2)
+        mock_process = populator.process_message
+        assert mock_process.call_count == 2
+        mock_process.assert_any_call(mock_msg1)
+        mock_process.assert_any_call(mock_msg2)
 
     @pytest.mark.asyncio
     async def test_consume_no_connection(self) -> None:

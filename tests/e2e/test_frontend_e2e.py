@@ -2,7 +2,9 @@
 
 import os
 import re
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from playwright.sync_api import Page, expect
@@ -12,17 +14,17 @@ class TestFrontendE2E:
     """End-to-end tests for the frontend application."""
 
     @pytest.fixture
-    def base_url(self):
+    def base_url(self) -> str:
         """Get the base URL for the frontend."""
         return os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     @pytest.fixture
-    def api_url(self):
+    def api_url(self) -> str:
         """Get the API URL."""
         return os.getenv("API_URL", "http://localhost:8000")
 
     @pytest.fixture(autouse=True)
-    def setup_teardown(self, page: Page):
+    def setup_teardown(self, page: Page) -> Iterator[None]:
         """Setup and teardown for each test."""
         # Clear local storage before each test
         page.goto("http://localhost:3000")
@@ -30,7 +32,7 @@ class TestFrontendE2E:
         yield
         # Cleanup after test if needed
 
-    def test_homepage_loads(self, page: Page, base_url: str):
+    def test_homepage_loads(self, page: Page, base_url: str) -> None:
         """Test that the homepage loads successfully."""
         page.goto(base_url)
 
@@ -46,7 +48,7 @@ class TestFrontendE2E:
         expect(page.locator("text=Processing Queue")).to_be_visible()
         expect(page.locator("text=Storage Used")).to_be_visible()
 
-    def test_navigation_menu(self, page: Page, base_url: str):
+    def test_navigation_menu(self, page: Page, base_url: str) -> None:
         """Test navigation menu functionality."""
         page.goto(base_url)
 
@@ -65,7 +67,7 @@ class TestFrontendE2E:
         page.click("text=Upload")
         expect(page).to_have_url(f"{base_url}/upload")
 
-    def test_search_functionality(self, page: Page, base_url: str):
+    def test_search_functionality(self, page: Page, base_url: str) -> None:
         """Test search bar functionality."""
         page.goto(base_url)
 
@@ -81,7 +83,7 @@ class TestFrontendE2E:
         # Should navigate to search page
         expect(page).to_have_url(f"{base_url}/search?q=test+video")
 
-    def test_user_authentication_flow(self, page: Page, base_url: str):
+    def test_user_authentication_flow(self, page: Page, base_url: str) -> None:
         """Test user login and logout flow."""
         # Go to login page
         page.goto(f"{base_url}/login")
@@ -125,7 +127,7 @@ class TestFrontendE2E:
         # Should redirect to login
         expect(page).to_have_url(f"{base_url}/login")
 
-    def test_file_upload_page(self, page: Page, base_url: str):
+    def test_file_upload_page(self, page: Page, base_url: str) -> None:
         """Test file upload functionality."""
         page.goto(f"{base_url}/upload")
 
@@ -159,7 +161,7 @@ class TestFrontendE2E:
         # Cleanup
         test_file.unlink()
 
-    def test_recent_files_table(self, page: Page, base_url: str):
+    def test_recent_files_table(self, page: Page, base_url: str) -> None:
         """Test recent files table on homepage."""
         # Mock API response for recent files
         page.route(
@@ -215,7 +217,7 @@ class TestFrontendE2E:
         page.click("a:has-text('View'):first")
         expect(page).to_have_url(f"{base_url}/files/1")
 
-    def test_responsive_design(self, page: Page, base_url: str):
+    def test_responsive_design(self, page: Page, base_url: str) -> None:
         """Test responsive design on different viewport sizes."""
         page.goto(base_url)
 
@@ -233,7 +235,7 @@ class TestFrontendE2E:
         # Mobile sidebar should be visible
         expect(page.locator(".lg\\:hidden .relative.z-40")).to_be_visible()
 
-    def test_dark_mode_toggle(self, page: Page, base_url: str):
+    def test_dark_mode_toggle(self, page: Page, base_url: str) -> None:
         """Test dark mode toggle functionality."""
         page.goto(f"{base_url}/settings")
 
@@ -251,7 +253,7 @@ class TestFrontendE2E:
             dark_mode_toggle.click()
             expect(page.locator("html")).not_to_have_class(re.compile(r"dark"))
 
-    def test_error_handling(self, page: Page, base_url: str):
+    def test_error_handling(self, page: Page, base_url: str) -> None:
         """Test error handling and error pages."""
         # Navigate to non-existent page
         page.goto(f"{base_url}/non-existent-page")
@@ -271,7 +273,7 @@ class TestFrontendE2E:
         # Should handle error gracefully
         # (Exact behavior depends on error handling implementation)
 
-    def test_catalog_page_functionality(self, page: Page, base_url: str):
+    def test_catalog_page_functionality(self, page: Page, base_url: str) -> None:
         """Test catalog listing and interaction."""
         # Mock catalog API response
         page.route(
@@ -312,7 +314,7 @@ class TestFrontendE2E:
         page.click("text=Movies")
         expect(page).to_have_url(f"{base_url}/catalogs/1")
 
-    def test_keyboard_navigation(self, page: Page, base_url: str):
+    def test_keyboard_navigation(self, page: Page, base_url: str) -> None:
         """Test keyboard navigation and accessibility."""
         page.goto(base_url)
 
@@ -328,14 +330,15 @@ class TestFrontendE2E:
 
         # Should navigate based on focused element
 
-    def test_loading_states(self, page: Page, base_url: str):
+    def test_loading_states(self, page: Page, base_url: str) -> None:
         """Test loading states for async operations."""
+
         # Delay API response to see loading state
-        page.route(
-            "**/api/media/files*",
-            lambda route: page.wait_for_timeout(2000)
-            or route.fulfill(status=200, json={"items": [], "total": 0}),
-        )
+        def delayed_route(route: Any) -> None:
+            page.wait_for_timeout(2000)  # This returns None but we don't need the return value
+            route.fulfill(status=200, json={"items": [], "total": 0})
+
+        page.route("**/api/media/files*", delayed_route)
 
         page.goto(base_url)
 

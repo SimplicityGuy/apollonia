@@ -1,10 +1,11 @@
 """End-to-end integration tests for the complete Apollonia pipeline."""
+# mypy: disable-error-code="name-defined"
 
 import asyncio
 import os
 import sys
 import tempfile
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 from unittest.mock import patch
 
@@ -83,7 +84,7 @@ class TestEndToEnd:
             yield Path(tmpdir)
 
     @pytest.fixture
-    async def clean_neo4j(self, services_available: bool) -> Generator[None, None, None]:  # noqa: ARG002
+    async def clean_neo4j(self, services_available: bool) -> AsyncGenerator[None, None]:  # noqa: ARG002
         """Clean up Neo4j before and after tests."""
         driver = AsyncGraphDatabase.driver(
             NEO4J_URI,
@@ -112,8 +113,10 @@ class TestEndToEnd:
         # Patch DATA_DIRECTORY for ingestor
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             # Start both services
-            async with Ingestor() as ingestor, Populator() as populator:
-                # Run services in background
+            async with (
+                Ingestor() as ingestor,
+                Populator() as populator,
+            ):  # Run services in background
                 ingest_task = asyncio.create_task(ingestor.ingest())
                 consume_task = asyncio.create_task(populator.consume())
 
@@ -149,7 +152,7 @@ class TestEndToEnd:
                 "MATCH (f:File) WHERE f.path CONTAINS 'test_file_' RETURN count(f) as count"
             )
             record = await result.single()
-            assert record["count"] == 3
+            assert record is not None and record["count"] == 3
 
             # Verify file properties
             for i, test_file in enumerate(test_files):
@@ -184,8 +187,7 @@ class TestEndToEnd:
         (temp_data_dir / "movie.jpg").write_text("thumbnail")
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:
-                # Run services
+            async with Ingestor() as ingestor, Populator() as populator:  # Run services
                 ingest_task = asyncio.create_task(ingestor.ingest())
                 consume_task = asyncio.create_task(populator.consume())
 
@@ -241,8 +243,7 @@ class TestEndToEnd:
         test_file.write_text("Initial content")
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:
-                # Run services
+            async with Ingestor() as ingestor, Populator() as populator:  # Run services
                 ingest_task = asyncio.create_task(ingestor.ingest())
                 consume_task = asyncio.create_task(populator.consume())
 
@@ -293,8 +294,7 @@ class TestEndToEnd:
         num_files = 10
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:
-                # Run services
+            async with Ingestor() as ingestor, Populator() as populator:  # Run services
                 ingest_task = asyncio.create_task(ingestor.ingest())
                 consume_task = asyncio.create_task(populator.consume())
 
@@ -328,7 +328,7 @@ class TestEndToEnd:
                 "MATCH (f:File) WHERE f.path CONTAINS 'concurrent_' RETURN count(f) as count"
             )
             record = await result.single()
-            assert record["count"] == num_files
+            assert record is not None and record["count"] == num_files
 
             # Verify each file has correct size
             for test_file in test_files:
@@ -337,7 +337,7 @@ class TestEndToEnd:
                     path=str(test_file.absolute()),
                 )
                 record = await result.single()
-                assert record["size"] == 1024
+                assert record is not None and record["size"] == 1024
 
         await driver.close()
 
@@ -463,8 +463,7 @@ class TestEndToEnd:
         large_file.write_bytes(large_content)
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
-            async with Ingestor() as ingestor, Populator() as populator:
-                # Run services
+            async with Ingestor() as ingestor, Populator() as populator:  # Run services
                 ingest_task = asyncio.create_task(ingestor.ingest())
                 consume_task = asyncio.create_task(populator.consume())
 
