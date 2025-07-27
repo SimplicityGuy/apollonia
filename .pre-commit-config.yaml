@@ -9,7 +9,9 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: check-toml
       - id: check-yaml
+        args: [--unsafe]  # Allow custom tags like GitHub Actions
       - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: mixed-line-ending
