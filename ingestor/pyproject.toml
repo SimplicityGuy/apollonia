@@ -32,8 +32,6 @@ dev = [
     "mypy>=1.10.0",
 ]
 
-[project.scripts]
-apollonia-ingestor = "ingestor.ingestor:main"
 
 [project.urls]
 Homepage = "https://github.com/SimplicityGuy/apollonia"
