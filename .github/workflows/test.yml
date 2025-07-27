@@ -111,8 +111,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 📦 Install dependencies
-        run: cd frontend && npm install
+      - name: 📦 Install frontend dependencies
+        run: just install-frontend
 
       - name: 🧪 Run tests with coverage
         run: just test-frontend

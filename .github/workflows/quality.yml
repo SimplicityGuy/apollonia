@@ -13,9 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Python code quality checks
-  python-quality:
-    name: Python Quality Checks
+  # Backend code quality checks
+  backend-quality:
+    name: Backend Quality Checks
     runs-on: ubuntu-latest
 
     permissions:
@@ -48,17 +48,17 @@ jobs:
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras
 
-      - name: 🔍 Run linting checks
-        run: just lint
+      - name: 🔍 Run backend linting checks
+        run: just lint-backend
 
-      - name: 💅 Check code formatting
-        run: just format-check
+      - name: 💅 Check backend code formatting
+        run: just format-check-backend
 
-      - name: 🔍 Run type checking
-        run: just typecheck
+      - name: 🔍 Run backend type checking
+        run: just typecheck-backend
 
-      - name: 🔒 Security scan with bandit
-        run: uv run bandit -r . -f json -o bandit-report.json || true
+      - name: 🔒 Run backend security checks
+        run: just security-backend
 
       - name: 📤 Upload bandit results
         uses: actions/upload-artifact@v4
@@ -94,20 +94,20 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 📦 Install dependencies
-        run: cd frontend && npm install
+      - name: 📦 Install frontend dependencies
+        run: just install-frontend
 
-      - name: 🔍 Run linting checks
-        run: just lint
+      - name: 🔍 Run frontend linting checks
+        run: just lint-frontend
 
-      - name: 💅 Check code formatting
-        run: just format-check
+      - name: 💅 Check frontend code formatting
+        run: just format-check-frontend
 
-      - name: 🔍 Run type checking
-        run: just typecheck
+      - name: 🔍 Run frontend type checking
+        run: just typecheck-frontend
 
-      - name: 🔒 Audit dependencies
-        run: npm audit --audit-level=moderate
+      - name: 🔒 Audit frontend dependencies
+        run: just security-frontend
 
   # Pre-commit hooks validation
   pre-commit:

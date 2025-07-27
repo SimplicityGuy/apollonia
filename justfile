@@ -45,6 +45,12 @@ update-deps:
   uv lock --upgrade
   uv sync --all-extras
 
+# Install frontend dependencies
+[group('setup')]
+install-frontend:
+  echo "📦 Installing frontend dependencies..."
+  cd frontend && npm install
+
 # Build services, frontend, and Docker images
 
 # Build all components (services + frontend)
@@ -160,40 +166,90 @@ test-frontend-watch:
 check: lint typecheck format-check
   echo "✅ All quality checks passed!"
 
-# Run linters
+# Run backend linters
 [group('quality')]
-lint:
-  echo "🔍 Running linters..."
+lint-backend:
+  echo "🔍 Running backend linters..."
   uv run ruff check .
+
+# Run frontend linters
+[group('quality')]
+lint-frontend:
+  echo "🔍 Running frontend linters..."
   cd frontend && npm run lint
 
-# Fix linting issues
+# Run all linters (backend + frontend)
 [group('quality')]
-lint-fix:
-  echo "🔧 Fixing linting issues..."
+lint: lint-backend lint-frontend
+  echo "✅ All linting completed!"
+
+# Fix backend linting issues
+[group('quality')]
+lint-fix-backend:
+  echo "🔧 Fixing backend linting issues..."
   uv run ruff check --fix .
+
+# Fix frontend linting issues
+[group('quality')]
+lint-fix-frontend:
+  echo "🔧 Fixing frontend linting issues..."
   cd frontend && npm run lint -- --fix
 
-# Format all code
+# Fix all linting issues
 [group('quality')]
-format:
-  echo "💅 Formatting code..."
+lint-fix: lint-fix-backend lint-fix-frontend
+  echo "✅ All linting fixes completed!"
+
+# Format backend code
+[group('quality')]
+format-backend:
+  echo "💅 Formatting backend code..."
   uv run ruff format .
+
+# Format frontend code
+[group('quality')]
+format-frontend:
+  echo "💅 Formatting frontend code..."
   cd frontend && npm run format
 
-# Check code formatting
+# Format all code (backend + frontend)
 [group('quality')]
-format-check:
-  echo "💅 Checking code formatting..."
+format: format-backend format-frontend
+  echo "✅ All formatting completed!"
+
+# Check backend code formatting
+[group('quality')]
+format-check-backend:
+  echo "💅 Checking backend code formatting..."
   uv run ruff format --check .
+
+# Check frontend code formatting
+[group('quality')]
+format-check-frontend:
+  echo "💅 Checking frontend code formatting..."
   cd frontend && npm run format -- --check
 
-# Run type checkers
+# Check all code formatting
 [group('quality')]
-typecheck:
-  echo "🔍 Running type checkers..."
+format-check: format-check-backend format-check-frontend
+  echo "✅ All formatting checks completed!"
+
+# Run backend type checking
+[group('quality')]
+typecheck-backend:
+  echo "🔍 Running backend type checking..."
   uv run mypy .
+
+# Run frontend type checking
+[group('quality')]
+typecheck-frontend:
+  echo "🔍 Running frontend type checking..."
   cd frontend && npm run type-check
+
+# Run all type checkers (backend + frontend)
+[group('quality')]
+typecheck: typecheck-backend typecheck-frontend
+  echo "✅ All type checking completed!"
 
 # Run pre-commit hooks on all files
 [group('quality')]
@@ -405,12 +461,23 @@ outdated:
   echo -e "\nFrontend packages:"
   cd frontend && npm outdated
 
-# Run security checks
+# Run backend security checks
 [group('util')]
-security:
-  echo "🔒 Running security checks..."
+security-backend:
+  echo "🔒 Running backend security checks..."
   uv run pip-audit
+  uv run bandit -r . -f json -o bandit-report.json || true
+
+# Run frontend security checks
+[group('util')]
+security-frontend:
+  echo "🔒 Running frontend security checks..."
   cd frontend && npm audit
+
+# Run all security checks (backend + frontend)
+[group('util')]
+security: security-backend security-frontend
+  echo "✅ All security checks completed!"
 
 # Generate .env template
 [group('util')]
