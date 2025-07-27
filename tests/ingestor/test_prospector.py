@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -10,7 +11,11 @@ from pathlib import Path
 import pytest
 import xxhash
 
-from ingestor.prospector import Prospector
+# Skip on macOS as the ingestor module uses asyncinotify which is Linux-only
+pytestmark = pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
+
+if sys.platform != "darwin":
+    from ingestor.prospector import Prospector
 
 
 @pytest.mark.asyncio

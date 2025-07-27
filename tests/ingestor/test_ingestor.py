@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -11,9 +12,14 @@ if TYPE_CHECKING:
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from asyncinotify import Mask
 
-from ingestor.ingestor import Ingestor, main, print_banner, setup_logging
+# Skip on macOS as asyncinotify is Linux-only
+pytestmark = pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
+
+if sys.platform != "darwin":
+    from asyncinotify import Mask
+
+    from ingestor.ingestor import Ingestor, main, print_banner, setup_logging
 
 
 class TestIngestor:
