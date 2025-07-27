@@ -1,7 +1,7 @@
 """Prometheus metrics middleware."""
 
 import time
-from collections.abc import Callable
+from typing import Callable, Awaitable
 
 from fastapi import Request, Response
 from prometheus_client import Counter, Gauge, Histogram
@@ -29,7 +29,9 @@ ACTIVE_REQUESTS = Gauge(
 class MetricsMiddleware(BaseHTTPMiddleware):
     """Middleware for Prometheus metrics collection."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process request and collect metrics."""
         # Skip metrics endpoint
         if request.url.path == "/metrics":

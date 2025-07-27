@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import strawberry
 from strawberry import field
+
+# Type alias for JSON fields in GraphQL
+JSON = Any
 
 
 @strawberry.type
@@ -18,7 +22,7 @@ class Catalog:
     name: str
     description: str | None
     media_count: int
-    settings: strawberry.scalars.JSON
+    settings: JSON
     created_at: datetime
     updated_at: datetime
 
@@ -55,7 +59,7 @@ class MediaFile:
     mime_type: str | None
     hash_sha256: str | None
     hash_xxh128: str | None
-    metadata: strawberry.scalars.JSON
+    metadata: JSON
     status: str
     created_at: datetime
     updated_at: datetime
@@ -80,7 +84,7 @@ class MediaAnalysis:
     id: UUID
     media_file_id: UUID
     status: str
-    results: strawberry.scalars.JSON
+    results: JSON
     error: str | None
     created_at: datetime
     updated_at: datetime
@@ -166,8 +170,8 @@ class SearchResultItem:
     mime_type: str | None
     created_at: datetime
     updated_at: datetime
-    metadata: strawberry.scalars.JSON
-    analysis: strawberry.scalars.JSON | None
+    metadata: JSON
+    analysis: JSON | None
 
 
 @strawberry.type

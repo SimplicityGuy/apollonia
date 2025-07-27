@@ -9,6 +9,7 @@ export interface MediaFile {
   updated_at: string
   analyzed_at?: string
   catalog_id?: string
+  processing_status?: string  // Optional for backward compatibility
 }
 
 export interface MediaFilesResponse {

@@ -5,15 +5,19 @@ from __future__ import annotations
 import asyncio
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import docker
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 pytestmark = pytest.mark.e2e
 
 
 @pytest.fixture(scope="session")
-def docker_client():
+def docker_client() -> docker.DockerClient:
     """Create Docker client."""
     try:
         client = docker.from_env()
@@ -24,7 +28,7 @@ def docker_client():
 
 
 @pytest.fixture(scope="session")
-def docker_compose_project(_docker_client):
+def docker_compose_project(_docker_client: docker.DockerClient) -> Iterator[str]:
     """Start docker-compose services for testing."""
     import subprocess
 
@@ -59,7 +63,9 @@ def docker_compose_project(_docker_client):
 class TestEndToEnd:
     """End-to-end tests for the complete system."""
 
-    def test_docker_services_running(self, docker_client, _docker_compose_project):
+    def test_docker_services_running(
+        self, docker_client: docker.DockerClient, docker_compose_project: str
+    ) -> None:
         """Test that all services are running."""
         containers = docker_client.containers.list()
         container_names = [c.name for c in containers]
@@ -75,7 +81,9 @@ class TestEndToEnd:
         for service in required_services:
             assert any(service in name for name in container_names), f"{service} not running"
 
-    def test_file_processing_flow(self, docker_client, _docker_compose_project):
+    def test_file_processing_flow(
+        self, docker_client: docker.DockerClient, docker_compose_project: str
+    ) -> None:
         """Test complete file processing flow."""
         # Get the data volume path
         ingestor_container = None
@@ -115,7 +123,7 @@ class TestEndToEnd:
             assert "Processing file" in populator_logs or test_filename in populator_logs
 
     @pytest.mark.asyncio
-    async def test_neo4j_data_verification(self, _docker_compose_project):
+    async def test_neo4j_data_verification(self, _docker_compose_project: str) -> None:
         """Verify data was stored in Neo4j."""
         from neo4j import AsyncGraphDatabase
 
@@ -132,6 +140,7 @@ class TestEndToEnd:
                 record = await result.single()
 
                 # Should have at least one file from our test
+                assert record is not None
                 assert record["count"] > 0
 
                 # Check for recent files
@@ -149,7 +158,9 @@ class TestEndToEnd:
         finally:
             await driver.close()
 
-    def test_health_checks(self, docker_client, _docker_compose_project):
+    def test_health_checks(
+        self, docker_client: docker.DockerClient, docker_compose_project: str
+    ) -> None:
         """Test that health checks are passing."""
         unhealthy_containers = []
 
@@ -171,7 +182,9 @@ class TestEndToEnd:
 
         assert len(unhealthy_containers) == 0, f"Unhealthy containers: {unhealthy_containers}"
 
-    def test_service_restart_recovery(self, docker_client, _docker_compose_project):
+    def test_service_restart_recovery(
+        self, docker_client: docker.DockerClient, docker_compose_project: str
+    ) -> None:
         """Test that services recover from restart."""
         # Find and restart the ingestor
         ingestor_container = None

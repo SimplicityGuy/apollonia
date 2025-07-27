@@ -65,6 +65,8 @@ async def get_catalog(info: Info, id: UUID) -> Catalog | None:
             updated_at=catalog.updated_at,
         )
 
+    return None
+
 
 async def get_catalogs(
     info: Info,
@@ -106,7 +108,7 @@ async def get_catalogs(
 
         # Get total count
         count_query = select(func.count()).select_from(query.subquery())
-        total = await session.scalar(count_query)
+        total = await session.scalar(count_query) or 0
 
         # Get results
         query = query.order_by(CatalogModel.id).limit(first + 1)
@@ -151,6 +153,18 @@ async def get_catalogs(
             total_count=total,
         )
 
+    # Should never reach here, but satisfy type checker
+    return CatalogConnection(
+        edges=[],
+        page_info=PageInfo(
+            has_next_page=False,
+            has_previous_page=False,
+            start_cursor=None,
+            end_cursor=None,
+        ),
+        total_count=0,
+    )
+
 
 async def get_media_file(info: Info, id: UUID) -> MediaFile | None:
     """Get a single media file by ID."""
@@ -189,6 +203,8 @@ async def get_media_file(info: Info, id: UUID) -> MediaFile | None:
             created_at=media_file.created_at,
             updated_at=media_file.updated_at,
         )
+
+    return None
 
 
 async def get_media_files(
@@ -237,7 +253,7 @@ async def get_media_files(
 
         # Get total count
         count_query = select(func.count()).select_from(query.subquery())
-        total = await session.scalar(count_query)
+        total = await session.scalar(count_query) or 0
 
         # Get results
         query = query.order_by(MediaFileModel.id).limit(first + 1)
@@ -286,6 +302,18 @@ async def get_media_files(
             page_info=page_info,
             total_count=total,
         )
+
+    # Should never reach here, but satisfy type checker
+    return MediaFileConnection(
+        edges=[],
+        page_info=PageInfo(
+            has_next_page=False,
+            has_previous_page=False,
+            start_cursor=None,
+            end_cursor=None,
+        ),
+        total_count=0,
+    )
 
 
 async def search_media(info: Info, input: SearchInput) -> SearchResult:
@@ -338,7 +366,7 @@ async def search_media(info: Info, input: SearchInput) -> SearchResult:
 
         # Count total
         count_query = select(func.count()).select_from(query.subquery())
-        total = await session.scalar(count_query)
+        total = await session.scalar(count_query) or 0
 
         # Apply pagination
         offset = (input.page - 1) * input.size
@@ -375,3 +403,12 @@ async def search_media(info: Info, input: SearchInput) -> SearchResult:
             size=input.size,
             pages=pages,
         )
+
+    # Should never reach here, but satisfy type checker
+    return SearchResult(
+        results=[],
+        total=0,
+        page=input.page,
+        size=input.size,
+        pages=0,
+    )

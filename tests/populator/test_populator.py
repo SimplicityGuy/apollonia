@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 import orjson
 import pytest
@@ -25,7 +28,7 @@ class MockMessage(AbstractIncomingMessage):
         self._locked = False
 
     @property
-    def body(self) -> bytes:
+    def body(self) -> bytes:  # type: ignore[override]
         return self._body
 
     @property
@@ -33,7 +36,7 @@ class MockMessage(AbstractIncomingMessage):
         return self._processed
 
     @property
-    def properties(self):
+    def properties(self) -> Any:
         return None
 
     @property
@@ -43,7 +46,7 @@ class MockMessage(AbstractIncomingMessage):
     def lock(self) -> None:
         self._locked = True
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         return iter([])
 
     async def ack(self, _multiple: bool = False) -> None:
@@ -55,18 +58,23 @@ class MockMessage(AbstractIncomingMessage):
     async def reject(self, _requeue: bool = False) -> None:
         self.rejected = True
 
-    def process(self, *_args, **_kwargs):
+    def process(self, *_args: Any, **_kwargs: Any) -> Any:
         """Context manager for processing."""
 
         class ProcessContext:
-            async def __aenter__(self_):
+            async def __aenter__(self_: ProcessContext) -> ProcessContext:
                 return self_
 
-            async def __aexit__(self_, exc_type, exc_val, exc_tb):
+            async def __aexit__(
+                self_: ProcessContext,
+                exc_type: type[BaseException] | None,
+                exc_val: BaseException | None,
+                exc_tb: Any,
+            ) -> bool:
                 if exc_type is None:
                     await self.ack()
                 else:
-                    await self.nack(requeue=True)
+                    await self.nack(_requeue=True)
                 # Don't suppress the exception
                 return False
 
@@ -74,7 +82,7 @@ class MockMessage(AbstractIncomingMessage):
 
     # Required properties for AbstractIncomingMessage
     @property
-    def message_count(self) -> int:
+    def message_count(self) -> int:  # type: ignore[override]
         return 0
 
     @property
@@ -82,7 +90,7 @@ class MockMessage(AbstractIncomingMessage):
         return Mock()
 
     @property
-    def redelivered(self) -> bool:
+    def redelivered(self) -> bool:  # type: ignore[override]
         return False
 
     @property
@@ -175,7 +183,7 @@ class TestPopulator:
 
         # Create populator with mocked import method
         populator = Populator()
-        populator._import_to_neo4j = AsyncMock()
+        populator._import_to_neo4j = AsyncMock()  # type: ignore[method-assign]
 
         await populator.process_message(message)
 
@@ -191,7 +199,7 @@ class TestPopulator:
         message = MockMessage(b"invalid json")
 
         populator = Populator()
-        populator._import_to_neo4j = AsyncMock()
+        populator._import_to_neo4j = AsyncMock()  # type: ignore[method-assign]
 
         # Process should handle error gracefully
         # The process_message doesn't re-raise the exception, it just logs it
@@ -302,7 +310,7 @@ class TestPopulator:
         ]
 
         # Setup async iteration
-        async def mock_aiter(_self):
+        async def mock_aiter(_self: Any) -> AsyncIterator[MockMessage]:
             for msg in messages:
                 if not populator._running:
                     break
@@ -326,7 +334,7 @@ class TestPopulator:
 
         populator = Populator()
         populator.amqp_connection = mock_connection
-        populator.process_message = AsyncMock()
+        populator.process_message = AsyncMock()  # type: ignore[method-assign]
 
         await populator.consume()
 
@@ -434,7 +442,7 @@ class TestMainFunctions:
         # Capture the signal handler
         signal_handler = None
 
-        def capture_handler(sig, handler):
+        def capture_handler(sig: int, handler: Any) -> None:
             nonlocal signal_handler
             if sig == 2:  # SIGINT
                 signal_handler = handler

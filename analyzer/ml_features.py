@@ -21,7 +21,7 @@ except ImportError:
 class AudioFeatureExtractor:
     """Extract audio features using essentia-tensorflow and librosa."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.has_essentia_tf = HAS_ESSENTIA_TF
         if not self.has_essentia_tf:
             logger.warning("Essentia-tensorflow not available. Advanced features disabled.")

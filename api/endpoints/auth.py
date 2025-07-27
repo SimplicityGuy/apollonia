@@ -65,12 +65,12 @@ fake_users_db = {
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bool(pwd_context.verify(plain_password, hashed_password))
 
 
 def get_password_hash(password: str) -> str:
     """Generate password hash."""
-    return pwd_context.hash(password)
+    return str(pwd_context.hash(password))
 
 
 def create_access_token(
@@ -92,7 +92,7 @@ def create_access_token(
         to_encode, settings.secret_key, algorithm=settings.algorithm
     )
 
-    return encoded_jwt
+    return str(encoded_jwt)
 
 
 async def get_user(username: str) -> UserInDB | None:
@@ -133,6 +133,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     except JWTError:
         raise credentials_exception from None
 
+    if token_data.username is None:
+        raise credentials_exception
     user = await get_user(username=token_data.username)
     if user is None:
         raise credentials_exception

@@ -231,7 +231,7 @@ class TestAMQPIntegration:
                 async with connection.channel() as consumer_channel:
                     consumer_queue = await consumer_channel.get_queue("apollonia-concurrent-queue")
 
-                    async for message in consumer_queue:
+                    async for message in consumer_queue:  # type: ignore[attr-defined]
                         async with message.process():
                             data = orjson.loads(message.body)
                             consumed_messages.append((consumer_id, data["id"]))

@@ -56,7 +56,7 @@ async def readiness_check() -> dict[str, Any]:
     # Determine overall status
     all_ok = all(status == "ok" for status in checks.values())
 
-    response = {
+    response: dict[str, Any] = {
         "status": "ready" if all_ok else "not ready",
         "checks": checks,
     }

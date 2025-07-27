@@ -59,7 +59,7 @@ async def list_catalogs(
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
-    total = await session.scalar(count_query)
+    total = await session.scalar(count_query) or 0
 
     # Paginate
     query = query.offset((page - 1) * size).limit(size)
@@ -269,7 +269,7 @@ async def list_catalog_media(
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
-    total = await session.scalar(count_query)
+    total = await session.scalar(count_query) or 0
 
     # Paginate
     query = (

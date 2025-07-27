@@ -14,8 +14,7 @@ from aio_pika import connect_robust
 from neo4j import AsyncGraphDatabase
 
 if TYPE_CHECKING:
-    from aio_pika import RobustConnection
-    from aio_pika.abc import AbstractIncomingMessage
+    from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
     from neo4j import AsyncDriver
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ class Populator:
 
     def __init__(self) -> None:
         """Initialize the populator."""
-        self.amqp_connection: RobustConnection | None = None
+        self.amqp_connection: AbstractRobustConnection | None = None
         self.neo4j_driver: AsyncDriver | None = None
         self._running = True
 

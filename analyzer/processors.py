@@ -40,6 +40,7 @@ class AudioProcessor:
             model_manager: Model manager instance
         """
         self.model_manager = model_manager
+        self.pipeline: RealAudioPipeline | AudioPipeline
         if USE_REAL_ML:
             self.pipeline = RealAudioPipeline()
         else:
@@ -118,6 +119,7 @@ class VideoProcessor:
             model_manager: Model manager instance
         """
         self.model_manager = model_manager
+        self.pipeline: RealVideoPipeline | VideoPipeline
         if USE_REAL_ML:
             self.pipeline = RealVideoPipeline()
         else:

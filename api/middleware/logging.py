@@ -3,7 +3,7 @@
 import logging
 import time
 import uuid
-from collections.abc import Callable
+from typing import Callable, Awaitable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 class LoggingMiddleware(BaseHTTPMiddleware):
     """Middleware for request/response logging."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process request and log details."""
         # Generate request ID
         request_id = str(uuid.uuid4())

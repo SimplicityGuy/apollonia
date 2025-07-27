@@ -95,7 +95,7 @@ async def search_media(
 
     # Count total results
     count_query = select(func.count()).select_from(query.subquery())
-    total = await session.scalar(count_query)
+    total = await session.scalar(count_query) or 0
 
     # Apply sorting
     if search_request.sort_by == "name":

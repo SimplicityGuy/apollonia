@@ -82,7 +82,7 @@ jobs:
         if: always() && matrix.python-version == '3.12'
         with:
           files: pytest-results.xml
-          comment_mode: create new
+          comment_mode: failures
           check_name: Python Test Results
 
   # Frontend tests

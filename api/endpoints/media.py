@@ -116,7 +116,9 @@ async def upload_media_file(
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     """Upload a media file to catalog."""
-    logger.info("📤 Uploading file: %s to catalog: %s", file.filename, catalog_id)
+    logger.info(
+        "📤 Uploading file: %s to catalog: %s", file.filename or "unknown", catalog_id
+    )
 
     # Verify catalog access
     from shared.models import Catalog, MediaFile
@@ -138,13 +140,18 @@ async def upload_media_file(
     # Validate file
     settings = get_settings()
 
-    if file.size > settings.max_upload_size:
+    if file.size and file.size > settings.max_upload_size:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File too large. Maximum size: {settings.max_upload_size} bytes",
         )
 
     # Determine media type from extension
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File name is required",
+        )
     file_ext = Path(file.filename).suffix.lower()
 
     media_type_map = {
@@ -177,7 +184,7 @@ async def upload_media_file(
     upload_dir = Path(settings.upload_dir) / str(catalog_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    file_path = upload_dir / file.filename
+    file_path = upload_dir / file.filename  # file.filename is validated above
 
     try:
         content = await file.read()
@@ -194,13 +201,13 @@ async def upload_media_file(
     media_file = MediaFile(
         catalog_id=catalog_id,
         file_path=str(file_path),
-        file_name=file.filename,
-        file_size=file.size,
+        file_name=file.filename,  # validated above
+        file_size=file.size or 0,
         media_type=media_type,
         mime_type=file.content_type,
         metadata={
             "uploaded_by": current_user.username,
-            "original_filename": file.filename,
+            "original_filename": file.filename,  # validated above
         },
     )
 
@@ -208,7 +215,9 @@ async def upload_media_file(
     await session.commit()
     await session.refresh(media_file)
 
-    logger.info("✅ Uploaded media file: %s (ID: %s)", file.filename, media_file.id)
+    logger.info(
+        "✅ Uploaded media file: %s (ID: %s)", file.filename or "unknown", media_file.id
+    )
 
     # TODO: Trigger ML analysis via message queue
 

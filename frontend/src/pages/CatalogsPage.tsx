@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api'
-import { ViewGridIcon, ViewListIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { Squares2X2Icon, ListBulletIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { Dialog } from '@headlessui/react'
 import toast from 'react-hot-toast'
 import type { CatalogResponse } from '@/types/catalog'
@@ -47,7 +47,7 @@ export function CatalogsPage() {
                   : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200'
               }`}
             >
-              <ViewGridIcon className="h-5 w-5" />
+              <Squares2X2Icon className="h-5 w-5" />
             </button>
             <button
               type="button"
@@ -58,7 +58,7 @@ export function CatalogsPage() {
                   : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200'
               }`}
             >
-              <ViewListIcon className="h-5 w-5" />
+              <ListBulletIcon className="h-5 w-5" />
             </button>
           </div>
 
