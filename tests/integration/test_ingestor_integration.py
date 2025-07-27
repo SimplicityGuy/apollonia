@@ -96,30 +96,28 @@ class TestIngestorIntegration:
         """Test that ingestor publishes file events to AMQP."""
         channel, messages = amqp_consumer
 
-        # Patch DATA_DIRECTORY to use temp dir
-        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):  # noqa: SIM117
-            # Create ingestor
-            with Ingestor() as ingestor:
-                # Run ingestor in background
-                ingest_task = asyncio.create_task(ingestor.ingest())
+        # Patch DATA_DIRECTORY to use temp dir and create ingestor
+        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)), Ingestor() as ingestor:
+            # Run ingestor in background
+            ingest_task = asyncio.create_task(ingestor.ingest())
 
-                # Allow ingestor to start watching
-                await asyncio.sleep(0.5)
+            # Allow ingestor to start watching
+            await asyncio.sleep(0.5)
 
-                # Create a test file
-                test_file = temp_data_dir / "test.txt"
-                test_file.write_text("Hello, World!")
+            # Create a test file
+            test_file = temp_data_dir / "test.txt"
+            test_file.write_text("Hello, World!")
 
-                # Process some AMQP messages
-                connection_process_time = time.time() + 2  # 2 seconds timeout
-                while time.time() < connection_process_time:
-                    channel.connection.process_data_events(time_limit=0.1)
-                    if messages:
-                        break
+            # Process some AMQP messages
+            connection_process_time = time.time() + 2  # 2 seconds timeout
+            while time.time() < connection_process_time:
+                channel.connection.process_data_events(time_limit=0.1)
+                if messages:
+                    break
 
-                # Stop ingestor
-                ingestor.stop()
-                await ingest_task
+            # Stop ingestor
+            ingestor.stop()
+            await ingest_task
 
         # Verify message was published
         assert len(messages) > 0
@@ -137,32 +135,31 @@ class TestIngestorIntegration:
         """Test that ingestor handles multiple file events."""
         channel, messages = amqp_consumer
 
-        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):  # noqa: SIM117
-            with Ingestor() as ingestor:
-                # Run ingestor in background
-                ingest_task = asyncio.create_task(ingestor.ingest())
+        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)), Ingestor() as ingestor:
+            # Run ingestor in background
+            ingest_task = asyncio.create_task(ingestor.ingest())
 
-                # Allow ingestor to start watching
-                await asyncio.sleep(0.5)
+            # Allow ingestor to start watching
+            await asyncio.sleep(0.5)
 
-                # Create multiple test files
-                files = []
-                for i in range(3):
-                    test_file = temp_data_dir / f"test{i}.txt"
-                    test_file.write_text(f"Content {i}")
-                    files.append(test_file)
-                    await asyncio.sleep(0.1)  # Small delay between files
+            # Create multiple test files
+            files = []
+            for i in range(3):
+                test_file = temp_data_dir / f"test{i}.txt"
+                test_file.write_text(f"Content {i}")
+                files.append(test_file)
+                await asyncio.sleep(0.1)  # Small delay between files
 
-                # Process AMQP messages
-                connection_process_time = time.time() + 3
-                while time.time() < connection_process_time:
-                    channel.connection.process_data_events(time_limit=0.1)
-                    if len(messages) >= 3:
-                        break
+            # Process AMQP messages
+            connection_process_time = time.time() + 3
+            while time.time() < connection_process_time:
+                channel.connection.process_data_events(time_limit=0.1)
+                if len(messages) >= 3:
+                    break
 
-                # Stop ingestor
-                ingestor.stop()
-                await ingest_task
+            # Stop ingestor
+            ingestor.stop()
+            await ingest_task
 
         # Verify all files were processed
         assert len(messages) >= 3
@@ -292,28 +289,27 @@ class TestIngestorIntegration:
         existing_file = temp_data_dir / "existing.txt"
         existing_file.write_text("Already here")
 
-        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):  # noqa: SIM117
-            with Ingestor() as ingestor:
-                # Run ingestor in background
-                ingest_task = asyncio.create_task(ingestor.ingest())
+        with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)), Ingestor() as ingestor:
+            # Run ingestor in background
+            ingest_task = asyncio.create_task(ingestor.ingest())
 
-                # Allow ingestor to start
-                await asyncio.sleep(0.5)
+            # Allow ingestor to start
+            await asyncio.sleep(0.5)
 
-                # Create a new file to trigger processing
-                new_file = temp_data_dir / "new.txt"
-                new_file.write_text("New file")
+            # Create a new file to trigger processing
+            new_file = temp_data_dir / "new.txt"
+            new_file.write_text("New file")
 
-                # Process AMQP messages
-                connection_process_time = time.time() + 2
-                while time.time() < connection_process_time:
-                    channel.connection.process_data_events(time_limit=0.1)
-                    if messages:
-                        break
+            # Process AMQP messages
+            connection_process_time = time.time() + 2
+            while time.time() < connection_process_time:
+                channel.connection.process_data_events(time_limit=0.1)
+                if messages:
+                    break
 
-                # Stop ingestor
-                ingestor.stop()
-                await ingest_task
+            # Stop ingestor
+            ingestor.stop()
+            await ingest_task
 
         # Should only process the new file (existing files are not watched)
         assert len(messages) == 1

@@ -104,7 +104,7 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_file_ingestion_to_neo4j(self, services_available, temp_data_dir, clean_neo4j):
+    async def test_file_ingestion_to_neo4j(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
         """Test complete pipeline from file creation to Neo4j storage."""
         # Patch DATA_DIRECTORY for ingestor
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
@@ -168,7 +168,10 @@ class TestEndToEnd:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_neighbor_file_relationships(
-        self, services_available, temp_data_dir, clean_neo4j
+        self,
+        services_available,  # noqa: ARG002
+        temp_data_dir,
+        clean_neo4j,  # noqa: ARG002
     ):
         """Test that neighbor file relationships are correctly created."""
         # Create neighbor files
@@ -227,7 +230,7 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_file_update_handling(self, services_available, temp_data_dir, clean_neo4j):
+    async def test_file_update_handling(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
         """Test that file updates are correctly handled."""
         test_file = temp_data_dir / "update_test.txt"
         test_file.write_text("Initial content")
@@ -278,7 +281,7 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_concurrent_file_processing(self, services_available, temp_data_dir, clean_neo4j):
+    async def test_concurrent_file_processing(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
         """Test that multiple files can be processed concurrently."""
         num_files = 10
 
@@ -334,7 +337,7 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_service_resilience(self, services_available, temp_data_dir, clean_neo4j):
+    async def test_service_resilience(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
         """Test that services can recover from temporary failures."""
         test_file = temp_data_dir / "resilience_test.txt"
 
@@ -392,7 +395,7 @@ class TestEndToEnd:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_message_persistence(self, services_available):
+    async def test_message_persistence(self, services_available):  # noqa: ARG002
         """Test that messages are persisted in RabbitMQ."""
         # This test verifies RabbitMQ configuration
         connection = BlockingConnection(URLParameters(INGESTOR_AMQP))
@@ -441,7 +444,7 @@ class TestEndToEnd:
     @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_large_file_handling(self, services_available, temp_data_dir, clean_neo4j):
+    async def test_large_file_handling(self, services_available, temp_data_dir, clean_neo4j):  # noqa: ARG002
         """Test handling of large files."""
         # Create a 10MB file
         large_file = temp_data_dir / "large_file.bin"
