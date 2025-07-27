@@ -1,15 +1,16 @@
-"""Tests for the Prospector class."""
-
-from __future__ import annotations
+"""Unit tests for the Prospector class."""
 
 import hashlib
+import os
 import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import xxhash
+from freezegun import freeze_time
 
 # Skip on macOS as the ingestor module uses asyncinotify which is Linux-only
 pytestmark = pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
@@ -18,189 +19,297 @@ if sys.platform != "darwin":
     from ingestor.prospector import Prospector
 
 
-@pytest.mark.asyncio
-async def test_prospector_basic() -> None:
-    """Test basic prospector functionality."""
-    # Create a temporary file
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tf:
-        test_content = "test content"
-        tf.write(test_content)
-        temp_path = Path(tf.name)
+class TestProspector:
+    """Test cases for the Prospector class."""
 
-    try:
-        prospector = Prospector(temp_path)
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory for testing."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    @pytest.fixture
+    def test_file(self, temp_dir):
+        """Create a test file."""
+        file_path = temp_dir / "test_file.txt"
+        file_path.write_text("Hello, World!")
+        return file_path
+
+    @pytest.fixture
+    def test_file_with_neighbors(self, temp_dir):
+        """Create a test file with neighbor files."""
+        # Main file
+        main_file = temp_dir / "video.mp4"
+        main_file.write_text("video content")
+
+        # Neighbor files
+        (temp_dir / "video.srt").write_text("subtitles")
+        (temp_dir / "video.nfo").write_text("info")
+        (temp_dir / "tracklist.txt").write_text("tracks")
+        (temp_dir / "readme.txt").write_text("readme")
+        (temp_dir / "vid001.jpg").write_text("thumbnail")  # Starts with same 3 chars
+
+        # Non-neighbor files
+        (temp_dir / "other.txt").write_text("other")
+        (temp_dir / "ab.txt").write_text("too short stem match")
+
+        return main_file
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_prospector_initialization_with_string(self):
+        """Test Prospector can be initialized with string path."""
+        prospector = Prospector("/test/path/file.txt")
+        assert isinstance(prospector.path, Path)
+        assert str(prospector.path) == "/test/path/file.txt"
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_prospector_initialization_with_path(self):
+        """Test Prospector can be initialized with Path object."""
+        path = Path("/test/path/file.txt")
+        prospector = Prospector(path)
+        assert prospector.path is path
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_prospect_successful(self, test_file):
+        """Test successful file prospecting."""
+        prospector = Prospector(test_file)
         result = await prospector.prospect()
 
-        # Check required fields
-        assert "file_path" in result
-        assert "sha256_hash" in result
-        assert "xxh128_hash" in result
-        assert "neighbors" in result
-        assert "timestamp" in result
-        assert "size" in result
-        assert "event_type" in result
+        # Check basic fields
+        assert result["file_path"] == str(test_file.absolute())
+        assert result["event_type"] == "IN_CREATE"
+        assert result["timestamp"] == "2024-01-01T12:00:00+00:00"
 
-        # Verify hashes are correct
-        expected_sha256 = hashlib.sha256(test_content.encode()).hexdigest()
-        expected_xxh128 = xxhash.xxh128(test_content.encode()).hexdigest()
+        # Check file stats
+        assert result["size"] == 13  # "Hello, World!" is 13 bytes
+        assert "modified_time" in result
+        assert "accessed_time" in result
+        assert "changed_time" in result
+
+        # Check hashes
+        assert len(result["sha256_hash"]) == 64  # SHA256 is 64 hex chars
+        assert len(result["xxh128_hash"]) == 32  # xxh128 is 32 hex chars
+
+        # Verify correct hash values
+        expected_sha256 = hashlib.sha256(b"Hello, World!").hexdigest()
+        expected_xxh128 = xxhash.xxh128(b"Hello, World!").hexdigest()
         assert result["sha256_hash"] == expected_sha256
         assert result["xxh128_hash"] == expected_xxh128
 
-        # Verify other fields
-        assert Path(result["file_path"]).is_absolute()
-        assert result["size"] == len(test_content)
-        assert result["event_type"] == "IN_CREATE"
+        # Check neighbors
         assert isinstance(result["neighbors"], list)
 
-        # Verify timestamp format
-        timestamp = datetime.fromisoformat(result["timestamp"])
-        assert timestamp.tzinfo is not None
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    async def test_prospect_missing_file(self, temp_dir):
+        """Test prospecting a non-existent file."""
+        missing_file = temp_dir / "missing.txt"
+        prospector = Prospector(missing_file)
 
-    finally:
-        # Cleanup
-        temp_path.unlink()
-
-
-@pytest.mark.asyncio
-async def test_prospector_with_string_path() -> None:
-    """Test prospector with string path instead of Path object."""
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as tf:
-        tf.write("string path test")
-        temp_path = tf.name
-
-    try:
-        prospector = Prospector(temp_path)  # String path
         result = await prospector.prospect()
 
-        assert "file_path" in result
-        assert Path(result["file_path"]).is_absolute()
+        # Should still return basic data
+        assert result["file_path"] == str(missing_file.absolute())
+        assert result["event_type"] == "IN_CREATE"
+        assert "timestamp" in result
 
-    finally:
-        Path(temp_path).unlink()
+        # No stats data
+        assert "size" not in result
+        assert "modified_time" not in result
 
+        # Empty hashes
+        assert result["sha256_hash"] == ""
+        assert result["xxh128_hash"] == ""
 
-@pytest.mark.asyncio
-async def test_prospector_large_file() -> None:
-    """Test prospector with a larger file to verify chunked hashing."""
-    with tempfile.NamedTemporaryFile(mode="wb", delete=False) as tf:
-        # Write 1MB of data
-        data = b"x" * (1024 * 1024)
-        tf.write(data)
-        temp_path = Path(tf.name)
+        # Empty neighbors
+        assert result["neighbors"] == []
 
-    try:
-        prospector = Prospector(temp_path)
-        result = await prospector.prospect()
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    async def test_prospect_permission_error(self, temp_dir):
+        """Test prospecting handles permission errors gracefully."""
+        test_file = temp_dir / "restricted.txt"
+        test_file.write_text("content")
 
-        # Verify hashes
-        expected_sha256 = hashlib.sha256(data).hexdigest()
-        expected_xxh128 = xxhash.xxh128(data).hexdigest()
-        assert result["sha256_hash"] == expected_sha256
-        assert result["xxh128_hash"] == expected_xxh128
-        assert result["size"] == 1024 * 1024
-
-    finally:
-        temp_path.unlink()
-
-
-@pytest.mark.asyncio
-async def test_prospector_neighbors() -> None:
-    """Test neighbor file discovery."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir_path = Path(tmpdir)
-
-        # Create main file and neighbors
-        main_file = tmpdir_path / "test.mp3"
-        main_file.write_text("main content")
-
-        # Create neighbor files
-        (tmpdir_path / "test.txt").write_text("text file")
-        (tmpdir_path / "test.log").write_text("log file")
-        (tmpdir_path / "tracklist.txt").write_text("tracklist")
-        (tmpdir_path / "readme.txt").write_text("readme")
-        (tmpdir_path / "unrelated.doc").write_text("unrelated")
-
-        prospector = Prospector(main_file)
-        result = await prospector.prospect()
-
-        neighbors = result["neighbors"]
-        neighbor_names = [Path(n).name for n in neighbors]
-
-        # Check expected neighbors are found
-        assert "test.txt" in neighbor_names
-        assert "test.log" in neighbor_names
-        assert "tracklist.txt" in neighbor_names
-        assert "readme.txt" in neighbor_names
-
-        # Verify unrelated file is not included
-        assert "unrelated.doc" not in neighbor_names
-
-        # Verify main file is not in its own neighbors
-        assert "test.mp3" not in neighbor_names
-
-        # Verify max 10 neighbors limit
-        assert len(neighbors) <= 10
-
-
-@pytest.mark.asyncio
-async def test_prospector_missing_file() -> None:
-    """Test prospector with a non-existent file."""
-    prospector = Prospector("/non/existent/file.txt")
-    result = await prospector.prospect()
-
-    # Should still return basic structure
-    assert "file_path" in result
-    assert "sha256_hash" in result
-    assert "xxh128_hash" in result
-
-    # Hashes should be empty for missing file
-    assert result["sha256_hash"] == ""
-    assert result["xxh128_hash"] == ""
-
-    # Should not have size or timestamps
-    assert "size" not in result
-
-
-@pytest.mark.asyncio
-async def test_prospector_file_permissions() -> None:
-    """Test prospector with a file that has read issues."""
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as tf:
-        tf.write("permission test")
-        temp_path = Path(tf.name)
-
-    try:
-        # Make file unreadable (Unix-like systems)
-        import os
-
-        if hasattr(os, "chmod"):
-            temp_path.chmod(0o000)
-
-            prospector = Prospector(temp_path)
+        with patch.object(Path, "stat", side_effect=OSError("Permission denied")):
+            prospector = Prospector(test_file)
             result = await prospector.prospect()
 
-            # Should handle gracefully
-            assert result["sha256_hash"] == ""
-            assert result["xxh128_hash"] == ""
+            # Should still return basic data
+            assert result["file_path"] == str(test_file.absolute())
+            assert "timestamp" in result
 
-            # Restore permissions for cleanup
-            temp_path.chmod(0o644)
+            # No stats data
+            assert "size" not in result
 
-    finally:
-        temp_path.unlink()
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_compute_hashes_successful(self, test_file):
+        """Test hash computation for a regular file."""
+        prospector = Prospector(test_file)
+        hashes = prospector._compute_hashes()
 
+        # SHA256 of "Hello, World!"
+        expected_sha256 = hashlib.sha256(b"Hello, World!").hexdigest()
+        expected_xxh128 = xxhash.xxh128(b"Hello, World!").hexdigest()
+        assert hashes["sha256"] == expected_sha256
+        assert hashes["xxh128"] == expected_xxh128
 
-@pytest.mark.asyncio
-async def test_prospector_symlink() -> None:
-    """Test prospector with symbolic links."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir_path = Path(tmpdir)
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_compute_hashes_large_file(self, temp_dir):
+        """Test hash computation handles large files with chunking."""
+        # Create a file larger than chunk size (64KB)
+        large_file = temp_dir / "large.bin"
+        large_data = b"x" * (100 * 1024)  # 100KB
+        large_file.write_bytes(large_data)
 
+        prospector = Prospector(large_file)
+        hashes = prospector._compute_hashes()
+
+        # Verify hashes
+        expected_sha256 = hashlib.sha256(large_data).hexdigest()
+        expected_xxh128 = xxhash.xxh128(large_data).hexdigest()
+        assert hashes["sha256"] == expected_sha256
+        assert hashes["xxh128"] == expected_xxh128
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_compute_hashes_read_error(self, temp_dir):
+        """Test hash computation handles read errors."""
+        test_file = temp_dir / "error.txt"
+        test_file.write_text("content")
+
+        with patch.object(Path, "open", side_effect=OSError("Read error")):
+            prospector = Prospector(test_file)
+            hashes = prospector._compute_hashes()
+
+            assert hashes["sha256"] == ""
+            assert hashes["xxh128"] == ""
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_find_neighbors_with_matches(self, test_file_with_neighbors):
+        """Test finding neighbor files."""
+        prospector = Prospector(test_file_with_neighbors)
+        neighbors = prospector._find_neighbors()
+
+        # Should find the related files
+        neighbor_names = [Path(n).name for n in neighbors]
+        assert "video.srt" in neighbor_names
+        assert "video.nfo" in neighbor_names
+        assert "tracklist.txt" in neighbor_names
+        assert "readme.txt" in neighbor_names
+        assert "vid001.jpg" in neighbor_names
+
+        # Should not find unrelated files
+        assert "other.txt" not in neighbor_names
+        assert "ab.txt" not in neighbor_names  # Too short stem
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_find_neighbors_no_parent(self):
+        """Test finding neighbors when parent directory doesn't exist."""
+        prospector = Prospector("/non/existent/path/file.txt")
+        neighbors = prospector._find_neighbors()
+
+        assert neighbors == []
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_find_neighbors_limit(self, temp_dir):
+        """Test neighbor limit of 10 files."""
+        # Create main file
+        main_file = temp_dir / "main.txt"
+        main_file.write_text("main")
+
+        # Create 15 neighbor files
+        for i in range(15):
+            (temp_dir / f"main_{i}.txt").write_text(f"neighbor {i}")
+
+        prospector = Prospector(main_file)
+        neighbors = prospector._find_neighbors()
+
+        # Should only return 10 neighbors
+        assert len(neighbors) == 10
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_find_neighbors_directory_error(self, temp_dir):
+        """Test finding neighbors handles directory errors."""
+        test_file = temp_dir / "test.txt"
+        test_file.write_text("content")
+
+        with patch.object(Path, "iterdir", side_effect=OSError("Directory error")):
+            prospector = Prospector(test_file)
+            neighbors = prospector._find_neighbors()
+
+            assert neighbors == []
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_find_neighbors_case_insensitive_special_names(self, temp_dir):
+        """Test finding neighbors matches special names case-insensitively."""
+        # Create main file
+        main_file = temp_dir / "video.mp4"
+        main_file.write_text("video")
+
+        # Create special named files with different cases
+        (temp_dir / "TRACKLIST.txt").write_text("tracks")
+        (temp_dir / "Tracks.txt").write_text("tracks")
+        (temp_dir / "INFO.nfo").write_text("info")
+        (temp_dir / "ReadMe.md").write_text("readme")
+
+        prospector = Prospector(main_file)
+        neighbors = prospector._find_neighbors()
+
+        neighbor_names = [Path(n).name for n in neighbors]
+        assert "TRACKLIST.txt" in neighbor_names
+        assert "Tracks.txt" in neighbor_names
+        assert "INFO.nfo" in neighbor_names
+        assert "ReadMe.md" in neighbor_names
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    def test_find_neighbors_excludes_directories(self, temp_dir):
+        """Test that directories are excluded from neighbors."""
+        # Create main file
+        main_file = temp_dir / "video.mp4"
+        main_file.write_text("video")
+
+        # Create a directory with matching name
+        (temp_dir / "video_dir").mkdir()
+
+        # Create a matching file
+        (temp_dir / "video.srt").write_text("subtitles")
+
+        prospector = Prospector(main_file)
+        neighbors = prospector._find_neighbors()
+
+        neighbor_names = [Path(n).name for n in neighbors]
+        assert "video.srt" in neighbor_names
+        assert "video_dir" not in neighbor_names
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    async def test_prospect_with_string_path(self):
+        """Test prospector with string path instead of Path object."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as tf:
+            tf.write("string path test")
+            temp_path = tf.name
+
+        try:
+            prospector = Prospector(temp_path)  # String path
+            result = await prospector.prospect()
+
+            assert "file_path" in result
+            assert Path(result["file_path"]).is_absolute()
+        finally:
+            Path(temp_path).unlink()
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    async def test_prospect_symlink(self, temp_dir):
+        """Test prospector with symbolic links."""
         # Create real file
-        real_file = tmpdir_path / "real.txt"
+        real_file = temp_dir / "real.txt"
         real_file.write_text("real content")
 
         # Create symlink
-        symlink = tmpdir_path / "link.txt"
+        symlink = temp_dir / "link.txt"
         symlink.symlink_to(real_file)
 
         prospector = Prospector(symlink)
@@ -210,3 +319,49 @@ async def test_prospector_symlink() -> None:
         assert "file_path" in result
         assert result["size"] == len("real content")
         assert result["sha256_hash"] != ""
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    async def test_prospect_file_permissions_unix(self, test_file):
+        """Test prospector with a file that has read permission issues on Unix."""
+        if not hasattr(os, "chmod"):
+            pytest.skip("chmod not available on this platform")
+
+        # Remove read permissions
+        test_file.chmod(0o000)
+
+        try:
+            prospector = Prospector(test_file)
+            result = await prospector.prospect()
+
+            # Should handle gracefully - stats might work but read won't
+            assert result["sha256_hash"] == ""
+            assert result["xxh128_hash"] == ""
+        finally:
+            # Restore permissions for cleanup
+            test_file.chmod(0o644)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Module not imported on macOS")
+    async def test_prospect_integration(self, test_file_with_neighbors):
+        """Test complete prospect workflow with neighbors."""
+        prospector = Prospector(test_file_with_neighbors)
+        result = await prospector.prospect()
+
+        # Check all fields are present
+        assert "file_path" in result
+        assert "event_type" in result
+        assert "timestamp" in result
+        assert "size" in result
+        assert "sha256_hash" in result
+        assert "xxh128_hash" in result
+        assert "neighbors" in result
+
+        # Check neighbors were found
+        assert len(result["neighbors"]) > 0
+        neighbor_names = [Path(n).name for n in result["neighbors"]]
+        assert "video.srt" in neighbor_names
+
+        # Verify timestamp format is ISO with timezone
+        timestamp = datetime.fromisoformat(result["timestamp"])
+        assert timestamp.tzinfo is not None
