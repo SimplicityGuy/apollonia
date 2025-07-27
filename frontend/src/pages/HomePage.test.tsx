@@ -18,8 +18,10 @@ const mockMediaFiles: MediaFilesResponse = {
     {
       id: '1',
       filename: 'video.mp4',
+      file_path: '/uploads/video.mp4',
       media_type: 'video/mp4',
       file_size: 1048576,
+      status: 'completed',
       processing_status: 'completed',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
@@ -27,8 +29,10 @@ const mockMediaFiles: MediaFilesResponse = {
     {
       id: '2',
       filename: 'image.jpg',
+      file_path: '/uploads/image.jpg',
       media_type: 'image/jpeg',
       file_size: 524288,
+      status: 'processing',
       processing_status: 'processing',
       created_at: '2024-01-02T00:00:00Z',
       updated_at: '2024-01-02T00:00:00Z',
@@ -36,8 +40,10 @@ const mockMediaFiles: MediaFilesResponse = {
     {
       id: '3',
       filename: 'document.pdf',
+      file_path: '/uploads/document.pdf',
       media_type: 'application/pdf',
       file_size: 2097152,
+      status: 'pending',
       processing_status: 'pending',
       created_at: '2024-01-03T00:00:00Z',
       updated_at: '2024-01-03T00:00:00Z',
@@ -45,7 +51,7 @@ const mockMediaFiles: MediaFilesResponse = {
   ],
   total: 3,
   page: 1,
-  page_size: 10,
+  size: 10,
 }
 
 const createTestQueryClient = () =>

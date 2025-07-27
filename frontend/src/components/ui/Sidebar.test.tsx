@@ -108,8 +108,8 @@ describe('Sidebar', () => {
   })
 
   it('closes mobile sidebar when close button is clicked', async () => {
-    const _user = userEvent.setup()
-    const { container: _container } = renderWithRouter(<Sidebar />)
+    userEvent.setup()
+    renderWithRouter(<Sidebar />)
 
     // The close button exists and is functional
     const closeButton = screen.getByRole('button', { name: /close sidebar/i })

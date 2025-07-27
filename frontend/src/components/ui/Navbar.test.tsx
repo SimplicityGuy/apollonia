@@ -217,7 +217,7 @@ describe('Navbar', () => {
     expect(icons.length).toBeGreaterThan(0)
 
     // Check for sr-only labels
-    const srOnlyElements = screen.getAllByText((content, element) => {
+    const srOnlyElements = screen.getAllByText((_, element) => {
       return element?.classList.contains('sr-only') || false
     })
     expect(srOnlyElements.length).toBeGreaterThan(0)
