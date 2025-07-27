@@ -223,7 +223,6 @@ data/
 
 # uv
 .uv/
-uv.lock
 
 # Ruff
 .ruff_cache/
