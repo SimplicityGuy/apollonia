@@ -46,22 +46,16 @@ jobs:
       - name: 🐍 Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
+      - name: Install just
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+        with:
+          just-version: '1.38.0'  # Pin to specific version for reliability
+
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras
 
       - name: 🧪 Run unit tests with coverage
-        run: |
-          uv run pytest -v \
-            --cov=ingestor \
-            --cov=populator \
-            --cov=analyzer \
-            --cov=api \
-            --cov=shared \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            --cov-report=html \
-            --junit-xml=pytest-results.xml \
-            tests/unit tests/ingestor tests/populator tests/analyzer
+        run: just test-coverage
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -107,16 +101,21 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install just
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+        with:
+          just-version: '1.38.0'  # Pin to specific version for reliability
+
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: 📦 Install dependencies
-        run: npm install
+        run: cd frontend && npm install
 
       - name: 🧪 Run tests with coverage
-        run: npm run test:coverage
+        run: just test-frontend
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -205,6 +204,11 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install just
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+        with:
+          just-version: '1.38.0'  # Pin to specific version for reliability
+
       - name: 🐍 Set up Python 3.12
         run: uv python install 3.12
 
@@ -215,14 +219,7 @@ jobs:
         env:
           POSTGRES_URL: postgresql://test:test@localhost:5432/apollonia_test
           REDIS_URL: redis://localhost:6379/0
-        run: |
-          uv run pytest -v \
-            --cov=ingestor \
-            --cov=populator \
-            --cov=analyzer \
-            --cov-report=xml \
-            --junit-xml=integration-results.xml \
-            tests/integration
+        run: just test-integration
 
       - name: 📤 Upload integration test results
         uses: actions/upload-artifact@v4
@@ -250,6 +247,11 @@ jobs:
       - name: 📦 Install uv
         uses: astral-sh/setup-uv@v2
 
+      - name: Install just
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+        with:
+          just-version: '1.38.0'  # Pin to specific version for reliability
+
       - name: 🐍 Set up Python 3.12
         run: uv python install 3.12
 
@@ -264,19 +266,8 @@ jobs:
       - name: 📦 Install frontend dependencies
         run: cd frontend && npm install
 
-      - name: 🐳 Start services with Docker Compose
-        run: |
-          echo "🚀 Starting services..."
-          docker-compose up -d
-          echo "⏳ Waiting for services to be ready..."
-          sleep 30
-          docker-compose ps
-
       - name: 🌐 Run E2E tests
-        run: |
-          uv run pytest -v \
-            --junit-xml=e2e-results.xml \
-            tests/e2e
+        run: just test-e2e
 
       - name: 📋 Show service logs on failure
         if: failure()
