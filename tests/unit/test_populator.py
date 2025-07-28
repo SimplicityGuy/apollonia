@@ -370,12 +370,12 @@ class TestPopulator:
     @pytest.mark.asyncio
     async def test_async_main_signal_handling(self) -> None:
         """Test async_main sets up signal handlers correctly."""
+        from populator.populator import async_main
+
         with (
             patch("populator.populator.signal.signal") as mock_signal,
             patch("populator.populator.Populator") as mock_populator_class,
         ):
-            from populator.populator import async_main
-
             # Set up mock
             mock_populator = AsyncMock()
             mock_populator_class.return_value.__aenter__.return_value = mock_populator
@@ -394,9 +394,9 @@ class TestPopulator:
     @pytest.mark.asyncio
     async def test_async_main_keyboard_interrupt(self) -> None:
         """Test async_main handles KeyboardInterrupt gracefully."""
-        with patch("populator.populator.Populator") as mock_populator_class:
-            from populator.populator import async_main
+        from populator.populator import async_main
 
+        with patch("populator.populator.Populator") as mock_populator_class:
             # Make consume raise KeyboardInterrupt
             mock_populator = AsyncMock()
             mock_populator.consume.side_effect = KeyboardInterrupt()
@@ -409,12 +409,12 @@ class TestPopulator:
     @pytest.mark.asyncio
     async def test_async_main_fatal_error(self) -> None:
         """Test async_main handles fatal errors."""
+        from populator.populator import async_main
+
         with (
             patch("populator.populator.Populator") as mock_populator_class,
             patch("populator.populator.sys.exit") as mock_exit,
         ):
-            from populator.populator import async_main
-
             # Make consume raise exception
             mock_populator = AsyncMock()
             mock_populator.consume.side_effect = Exception("Fatal error")

@@ -38,14 +38,23 @@ class TestIngestor:
         return channel
 
     @pytest.fixture
-    def mock_inotify(self) -> Generator[tuple[Mock, AsyncMock], None, None]:
+    def mock_inotify(self) -> Generator[tuple[Mock, Mock], None, None]:
         """Create a mock Inotify instance."""
-        with patch("asyncinotify.Inotify") as mock:
-            inotify_instance = AsyncMock()
-            # add_watch is not async, so use regular Mock
-            inotify_instance.add_watch = Mock()
-            mock.return_value.__aenter__.return_value = inotify_instance
-            yield mock, inotify_instance
+        with patch("asyncinotify.Inotify") as mock_class:
+            # Create the inotify instance with proper methods
+            inotify_instance = Mock()
+            # add_watch is a synchronous method
+            inotify_instance.add_watch = Mock(return_value=None)
+            # Make it an async iterable
+            inotify_instance.__aiter__ = Mock(return_value=inotify_instance)
+            inotify_instance.__anext__ = AsyncMock()
+
+            # Create the context manager
+            mock_class.return_value = Mock()
+            mock_class.return_value.__aenter__ = AsyncMock(return_value=inotify_instance)
+            mock_class.return_value.__aexit__ = AsyncMock(return_value=None)
+
+            yield mock_class, inotify_instance
 
     @pytest.fixture
     def mock_prospector(self) -> Generator[tuple[Mock, Mock], None, None]:
@@ -157,7 +166,7 @@ class TestIngestor:
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     async def test_ingest_creates_directory(
         self,
-        mock_inotify: tuple[Mock, AsyncMock],
+        mock_inotify: tuple[Mock, Mock],
         mock_prospector: tuple[Mock, Mock],  # noqa: ARG002
     ) -> None:
         """Test ingest creates data directory if it doesn't exist."""
@@ -178,8 +187,6 @@ class TestIngestor:
                 yield  # Make it a generator
 
             inotify_instance.__aiter__.return_value = empty_generator()
-            # Ensure add_watch is a regular mock, not async
-            inotify_instance.add_watch = Mock()
 
             ingestor = Ingestor()
             ingestor._running = False  # Stop immediately
@@ -193,7 +200,7 @@ class TestIngestor:
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     async def test_ingest_processes_events(
         self,
-        mock_inotify: tuple[Mock, AsyncMock],
+        mock_inotify: tuple[Mock, Mock],
         mock_prospector: tuple[Mock, Mock],
         mock_amqp_channel: Mock,
     ) -> None:
@@ -282,7 +289,7 @@ class TestIngestor:
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     async def test_ingest_handles_processing_errors(
         self,
-        mock_inotify: tuple[Mock, AsyncMock],
+        mock_inotify: tuple[Mock, Mock],
         mock_prospector: tuple[Mock, Mock],
         mock_amqp_channel: Mock,
     ) -> None:
