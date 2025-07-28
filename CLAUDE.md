@@ -202,6 +202,34 @@ The ingestor publishes messages with this structure:
 - **CI/CD**: GitHub Actions with Python testing, security scanning, and x86_64 builds
 - **Testing**: Comprehensive test suite with unit, integration, and E2E tests
 
+## CI/CD Pipeline
+
+### GitHub Actions Workflows
+
+The project uses optimized GitHub Actions workflows with performance enhancements:
+
+- **Reusable Actions**: `.github/actions/setup-python-env` and `setup-frontend-env`
+- **Smart Testing**: Change detection skips unnecessary tests
+- **Parallel Execution**: Tests run concurrently by type
+- **Comprehensive Caching**: Dependencies, Docker layers, and test results
+- **Timeouts**: All jobs have appropriate timeouts to prevent hanging
+
+### Workflow Commands
+
+```bash
+# Run workflows manually
+gh workflow run test.yml                              # Force test run
+gh workflow run docker.yml -f push_images=true        # Build and push images
+gh workflow run dependencies.yml -f update_type=minor # Update dependencies
+
+# View workflow status
+gh run list --workflow=test.yml
+gh run view <run-id> --log
+
+# Download artifacts
+gh run download <run-id> -n pytest-results-unit-py3.12
+```
+
 ## Development Workflow
 
 1. **Local Development**:

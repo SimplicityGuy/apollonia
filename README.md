@@ -5,8 +5,7 @@
 [![CI/CD Pipeline](https://github.com/SimplicityGuy/apollonia/actions/workflows/build.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/build.yml)
 [![Quality Checks](https://github.com/SimplicityGuy/apollonia/actions/workflows/quality.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/quality.yml)
 [![Tests](https://github.com/SimplicityGuy/apollonia/actions/workflows/test.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/test.yml)
-[![Docker Build & Deploy](https://github.com/SimplicityGuy/apollonia/actions/workflows/docker.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/docker.yml)
-[![Deploy](https://github.com/SimplicityGuy/apollonia/actions/workflows/deploy.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/deploy.yml)
+[![Docker Build](https://github.com/SimplicityGuy/apollonia/actions/workflows/docker.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/docker.yml)
 [![Dependencies](https://github.com/SimplicityGuy/apollonia/actions/workflows/dependencies.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/dependencies.yml)
 
 ## 📦 Project Info
@@ -293,6 +292,7 @@ uv run task check
 - **CI/CD**
 
   - [GitHub Workflows](docs/development/github-workflows.md) - CI/CD pipeline documentation
+  - [Composite Actions](docs/development/composite-actions.md) - Reusable workflow components
   - [Emoji Logging Convention](docs/development/logging-convention.md) - Standardized logging with
     emojis
   - [Justfile Commands](docs/development/justfile-guide.md) - Development task runner reference
