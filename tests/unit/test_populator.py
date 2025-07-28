@@ -4,7 +4,7 @@ import asyncio
 import logging
 import signal
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import orjson
 import pytest
@@ -23,10 +23,10 @@ class TestPopulator:
         exchange = AsyncMock()
         queue = AsyncMock()
 
-        # Set up the mock chain
-        connection.channel.return_value = channel
-        channel.declare_exchange.return_value = exchange
-        channel.declare_queue.return_value = queue
+        # Set up the mock chain - channel() is async
+        connection.channel = AsyncMock(return_value=channel)
+        channel.declare_exchange = AsyncMock(return_value=exchange)
+        channel.declare_queue = AsyncMock(return_value=queue)
         queue.bind = AsyncMock()
 
         return connection, channel, exchange, queue
@@ -110,19 +110,12 @@ class TestPopulator:
 
             mock_connect.side_effect = async_connect
             mock_graph_db.driver.return_value = neo4j_driver
-            # Create a proper async context manager for neo4j session
-            session_context = AsyncMock()
 
-            # Make __aenter__ return a coroutine that returns neo4j_session
-            async def aenter_coro(*args: Any, **kwargs: Any) -> Any:  # noqa: ARG001
-                return neo4j_session
-
-            async def aexit_coro(*args: Any, **kwargs: Any) -> Any:  # noqa: ARG001
-                return None
-
-            session_context.__aenter__ = aenter_coro
-            session_context.__aexit__ = aexit_coro
-            neo4j_driver.session.return_value = session_context
+            # Mock session as an async context manager
+            session_mock = AsyncMock()
+            session_mock.__aenter__ = AsyncMock(return_value=neo4j_session)
+            session_mock.__aexit__ = AsyncMock(return_value=None)
+            neo4j_driver.session = Mock(return_value=session_mock)
             neo4j_session.run = AsyncMock(return_value=neo4j_result)
 
             # Create populator
@@ -274,28 +267,38 @@ class TestPopulator:
 
         connection, channel, exchange, queue = mock_amqp_connection
 
+        # Create populator first
+        populator = Populator()
+        populator.amqp_connection = connection
+
         # Set up mock messages
         mock_msg1 = AsyncMock()
         mock_msg2 = AsyncMock()
         messages = [mock_msg1, mock_msg2]
 
         # Create async iterator for queue
-        async def message_iterator() -> Any:
-            for msg in messages:
-                if not populator._running:
-                    return
-                yield msg
+        class MessageIterator:
+            def __init__(self) -> None:
+                self.index = 0
+
+            def __aiter__(self) -> Any:
+                return self
+
+            async def __anext__(self) -> Any:
+                if self.index >= len(messages) or not populator._running:
+                    raise StopAsyncIteration
+                msg = messages[self.index]
+                self.index += 1
+                return msg
 
         # Create a proper async context manager for queue.iterator()
-        iterator_context = AsyncMock()
-        iterator_context.__aenter__.return_value = AsyncMock()
-        iterator_context.__aenter__.return_value.__aiter__ = message_iterator
-        iterator_context.__aexit__.return_value = None
-        queue.iterator.return_value = iterator_context
+        iterator_mock = MessageIterator()
 
-        # Create populator
-        populator = Populator()
-        populator.amqp_connection = connection
+        # Create iterator context manager
+        iterator_ctx = AsyncMock()
+        iterator_ctx.__aenter__ = AsyncMock(return_value=iterator_mock)
+        iterator_ctx.__aexit__ = AsyncMock(return_value=None)
+        queue.iterator = Mock(return_value=iterator_ctx)
         # Create a proper async mock for process_message
         mock_process = AsyncMock()
         # Use setattr to avoid mypy method assignment error
@@ -312,7 +315,7 @@ class TestPopulator:
         from contextlib import suppress
 
         with suppress(asyncio.TimeoutError):
-            await asyncio.wait_for(populator.consume(), timeout=1.0)
+            await asyncio.wait_for(populator.consume(), timeout=2.0)
         await task
 
         # Verify setup
