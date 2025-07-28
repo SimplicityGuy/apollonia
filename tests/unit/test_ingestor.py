@@ -171,6 +171,8 @@ class TestIngestor:
                 yield  # Make it a generator
 
             inotify_instance.__aiter__.return_value = empty_generator()
+            # Ensure add_watch is a regular mock, not async
+            inotify_instance.add_watch = Mock()
 
             ingestor = Ingestor()
             ingestor._running = False  # Stop immediately
@@ -189,8 +191,16 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest processes file events and publishes to AMQP."""
-        with patch("asyncinotify.Mask"):
+        with (
+            patch("asyncinotify.Mask"),
+            patch("ingestor.ingestor.Path") as mock_path_class,
+        ):
             from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY, Ingestor
+
+            # Mock Path operations
+            mock_path = Mock()
+            mock_path_class.return_value = mock_path
+            mock_path.mkdir = Mock()
 
             # Set up mocks
             _, inotify_instance = mock_inotify
@@ -263,8 +273,16 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest handles errors during event processing gracefully."""
-        with patch("asyncinotify.Mask"):
+        with (
+            patch("asyncinotify.Mask"),
+            patch("ingestor.ingestor.Path") as mock_path_class,
+        ):
             from ingestor.ingestor import Ingestor
+
+            # Mock Path operations
+            mock_path = Mock()
+            mock_path_class.return_value = mock_path
+            mock_path.mkdir = Mock()
 
             # Set up mocks
             _, inotify_instance = mock_inotify
@@ -392,6 +410,12 @@ class TestIngestor:
 
     def test_main_successful_run(self) -> None:
         """Test main runs successfully with proper configuration."""
+
+        # Create a function that consumes the coroutine
+        def consume_coro(coro: Any) -> None:
+            # Close the coroutine to prevent warning
+            coro.close()
+
         # Mock asyncinotify before importing ingestor on macOS
         if sys.platform == "darwin":
             with (
@@ -399,7 +423,7 @@ class TestIngestor:
                 patch("ingestor.ingestor.setup_logging"),
                 patch("ingestor.ingestor.print_banner"),
                 patch("ingestor.ingestor.AMQP_CONNECTION", "amqp://test:test@localhost:5672/"),
-                patch("ingestor.ingestor.asyncio.run") as mock_run,
+                patch("ingestor.ingestor.asyncio.run", side_effect=consume_coro) as mock_run,
             ):
                 from ingestor.ingestor import main
 
@@ -410,7 +434,7 @@ class TestIngestor:
                 patch("ingestor.ingestor.setup_logging"),
                 patch("ingestor.ingestor.print_banner"),
                 patch("ingestor.ingestor.AMQP_CONNECTION", "amqp://test:test@localhost:5672/"),
-                patch("ingestor.ingestor.asyncio.run") as mock_run,
+                patch("ingestor.ingestor.asyncio.run", side_effect=consume_coro) as mock_run,
             ):
                 from ingestor.ingestor import main
 

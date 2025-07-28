@@ -451,12 +451,18 @@ class TestPopulator:
 
     def test_main_default_neo4j_password_warning(self, caplog: Any) -> None:
         """Test main warns about default Neo4j password."""
+
+        # Create a function that consumes the coroutine
+        def consume_coro(coro: Any) -> None:
+            # Close the coroutine to prevent warning
+            coro.close()
+
         with (
             patch("populator.populator.setup_logging"),
             patch("populator.populator.print_banner"),
             patch("populator.populator.AMQP_CONNECTION", "amqp://test:test@localhost:5672/"),
             patch("populator.populator.NEO4J_PASSWORD", "password"),
-            patch("populator.populator.asyncio.run") as mock_run,
+            patch("populator.populator.asyncio.run", side_effect=consume_coro) as mock_run,
         ):
             from populator.populator import main
 
@@ -469,12 +475,18 @@ class TestPopulator:
 
     def test_main_successful_run(self) -> None:
         """Test main runs successfully with proper configuration."""
+
+        # Create a function that consumes the coroutine
+        def consume_coro(coro: Any) -> None:
+            # Close the coroutine to prevent warning
+            coro.close()
+
         with (
             patch("populator.populator.setup_logging"),
             patch("populator.populator.print_banner"),
             patch("populator.populator.AMQP_CONNECTION", "amqp://test:test@localhost:5672/"),
             patch("populator.populator.NEO4J_PASSWORD", "secure_password"),
-            patch("populator.populator.asyncio.run") as mock_run,
+            patch("populator.populator.asyncio.run", side_effect=consume_coro) as mock_run,
         ):
             from populator.populator import main
 
