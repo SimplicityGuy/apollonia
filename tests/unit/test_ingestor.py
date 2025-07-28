@@ -195,9 +195,13 @@ class TestIngestor:
         with (
             patch("asyncinotify.Mask"),
             patch("ingestor.ingestor.Path") as mock_path_class,
-            patch("ingestor.ingestor.Prospector", mock_prospector[0]),
+            patch("ingestor.ingestor.Prospector") as mock_prospector_class,
         ):
             from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY, Ingestor
+
+            # Set up the Prospector mock
+            prospector_instance = mock_prospector[1]
+            mock_prospector_class.return_value = prospector_instance
 
             # Mock Path operations
             mock_path = Mock()
@@ -206,7 +210,6 @@ class TestIngestor:
 
             # Set up mocks
             _, inotify_instance = mock_inotify
-            prospector_class, prospector_instance = mock_prospector
 
             # Create mock events
             mock_event1 = Mock()
@@ -247,9 +250,9 @@ class TestIngestor:
             await task
 
             # Verify prospector was called for each event
-            assert prospector_class.call_count == 2
-            prospector_class.assert_any_call("/test/file1.txt")
-            prospector_class.assert_any_call("/test/file2.txt")
+            assert mock_prospector_class.call_count == 2
+            mock_prospector_class.assert_any_call("/test/file1.txt")
+            mock_prospector_class.assert_any_call("/test/file2.txt")
 
             # Verify AMQP publishes
             assert mock_amqp_channel.basic_publish.call_count == 2
@@ -277,9 +280,13 @@ class TestIngestor:
         with (
             patch("asyncinotify.Mask"),
             patch("ingestor.ingestor.Path") as mock_path_class,
-            patch("ingestor.ingestor.Prospector", mock_prospector[0]),
+            patch("ingestor.ingestor.Prospector") as mock_prospector_class,
         ):
             from ingestor.ingestor import Ingestor
+
+            # Set up the Prospector mock
+            prospector_instance = mock_prospector[1]
+            mock_prospector_class.return_value = prospector_instance
 
             # Mock Path operations
             mock_path = Mock()
@@ -288,7 +295,6 @@ class TestIngestor:
 
             # Set up mocks
             _, inotify_instance = mock_inotify
-            prospector_class, prospector_instance = mock_prospector
 
             # Make prospector raise an exception
             prospector_instance.prospect.side_effect = Exception("Processing error")
@@ -312,7 +318,7 @@ class TestIngestor:
             await ingestor.ingest()
 
             # Verify prospector was called
-            prospector_class.assert_called_once_with("/test/error.txt")
+            mock_prospector_class.assert_called_once_with("/test/error.txt")
 
             # Verify no AMQP publish due to error
             mock_amqp_channel.basic_publish.assert_not_called()
