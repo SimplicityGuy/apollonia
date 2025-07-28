@@ -58,9 +58,8 @@ class TestIngestor:
             mock.return_value = prospector_instance
             yield mock, prospector_instance
 
-    @pytest.mark.asyncio
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
-    async def test_ingestor_initialization(self) -> None:
+    def test_ingestor_initialization(self) -> None:
         """Test that Ingestor can be initialized."""
         # Mock all the dependencies before importing
         with (
@@ -74,7 +73,7 @@ class TestIngestor:
             assert ingestor.amqp_connection is None
             assert ingestor.amqp_channel is None
             assert ingestor._running is True
-            assert ingestor.amqp_properties.delivery_mode == DeliveryMode.Persistent
+            assert ingestor.amqp_properties.delivery_mode == DeliveryMode.Persistent.value
             assert ingestor.amqp_properties.content_encoding == "application/json"
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
@@ -190,7 +189,7 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest processes file events and publishes to AMQP."""
-        with patch("ingestor.ingestor.asyncinotify.Mask"):
+        with patch("asyncinotify.Mask"):
             from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY, Ingestor
 
             # Set up mocks
@@ -264,7 +263,7 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest handles errors during event processing gracefully."""
-        with patch("ingestor.ingestor.asyncinotify.Mask"):
+        with patch("asyncinotify.Mask"):
             from ingestor.ingestor import Ingestor
 
             # Set up mocks
