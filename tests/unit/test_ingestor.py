@@ -45,9 +45,7 @@ class TestIngestor:
             inotify_instance = Mock()
             # add_watch is a synchronous method
             inotify_instance.add_watch = Mock(return_value=None)
-            # Make it an async iterable
-            inotify_instance.__aiter__ = Mock(return_value=inotify_instance)
-            inotify_instance.__anext__ = AsyncMock()
+            # Don't set __aiter__ here - let the tests set it
 
             # Create the context manager
             mock_class.return_value = Mock()
@@ -205,20 +203,15 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest processes file events and publishes to AMQP."""
-        # Import the module first
-        from ingestor import ingestor
-        from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY
-
         # Set up the Prospector mock
         prospector_class, prospector_instance = mock_prospector
 
         with (
             patch("asyncinotify.Mask"),
             patch("ingestor.ingestor.Path") as mock_path_class,
-            patch.object(ingestor, "Prospector", prospector_class),
+            patch("ingestor.ingestor.Prospector", prospector_class),
         ):
-            # Get the Ingestor class after patching
-            Ingestor = ingestor.Ingestor
+            from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY, Ingestor
 
             # Mock Path operations
             mock_path = Mock()
@@ -294,19 +287,15 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest handles errors during event processing gracefully."""
-        # Import the module first
-        from ingestor import ingestor
-
         # Set up the Prospector mock
         prospector_class, prospector_instance = mock_prospector
 
         with (
             patch("asyncinotify.Mask"),
             patch("ingestor.ingestor.Path") as mock_path_class,
-            patch.object(ingestor, "Prospector", prospector_class),
+            patch("ingestor.ingestor.Prospector", prospector_class),
         ):
-            # Get the Ingestor class after patching
-            Ingestor = ingestor.Ingestor
+            from ingestor.ingestor import Ingestor
 
             # Mock Path operations
             mock_path = Mock()
