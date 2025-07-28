@@ -232,3 +232,6 @@ data/
 
 # Docker volumes
 *.vol/
+
+# Security reports
+bandit-report.json

@@ -245,7 +245,7 @@ def main() -> None:
         logger.error("❌ AMQP_CONNECTION_STRING environment variable not set")
         sys.exit(1)
 
-    if not NEO4J_PASSWORD or NEO4J_PASSWORD == "password":  # noqa: S105
+    if not NEO4J_PASSWORD or NEO4J_PASSWORD == "password":  # noqa: S105 # nosec B105
         logger.warning("⚠️ Using default Neo4j password - please change in production")
 
     asyncio.run(async_main())

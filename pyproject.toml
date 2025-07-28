@@ -68,6 +68,8 @@ dev = [
     "taskipy>=1.12.0",
     "pre-commit>=3.7.0",
     "types-pyyaml>=6.0.0",
+    "pip-audit>=2.7.0",
+    "bandit[toml]>=1.7.0",
 ]
 
 # Testing dependencies (for CI)
@@ -248,6 +250,10 @@ exclude_lines = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "build", "dist"]
+skips = ["B101"]  # B101: assert_used (needed for tests)
 
 [dependency-groups]
 dev = [
