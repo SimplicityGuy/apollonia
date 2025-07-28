@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import orjson
 import pytest
@@ -372,7 +372,11 @@ class TestPopulatorIntegration:
             amqp_connect_attempts += 1
             if amqp_connect_attempts == 1:
                 raise AMQPConnectionError("Connection failed")
-            return AsyncMock()
+            # Create a proper mock for AMQP connection
+            mock_conn = AsyncMock()
+            mock_channel = AsyncMock()
+            mock_conn.channel.return_value = mock_channel
+            return mock_conn
 
         def mock_neo4j_driver(*args: Any, **kwargs: Any) -> AsyncMock:  # noqa: ARG001
             nonlocal neo4j_connect_attempts
@@ -382,20 +386,32 @@ class TestPopulatorIntegration:
 
             driver = AsyncMock()
             session = AsyncMock()
-            driver.session.return_value.__aenter__.return_value = session
-            driver.session.return_value.__aexit__.return_value = None
+            # Create a proper async context manager for session
+            session_context = AsyncMock()
+            session_context.__aenter__ = AsyncMock(return_value=session)
+            session_context.__aexit__ = AsyncMock(return_value=None)
+            driver.session = Mock(return_value=session_context)
+            session.run = AsyncMock()  # Mock the run method for connection verification
             return driver
 
         with (
             patch("populator.populator.connect_robust", side_effect=mock_amqp_connect),
             patch("populator.populator.AsyncGraphDatabase.driver", side_effect=mock_neo4j_driver),
         ):
-            # First attempt should fail
+            # First attempt should fail with AMQP error
             with pytest.raises(AMQPConnectionError):
                 async with Populator() as populator:
                     pass
 
-            # Second attempt should succeed
+            # Reset Neo4j attempts since it wasn't reached in first attempt
+            neo4j_connect_attempts = 0
+
+            # Second attempt - AMQP succeeds but Neo4j fails
+            with pytest.raises(ServiceUnavailable):
+                async with Populator() as populator:
+                    pass
+
+            # Third attempt should succeed (both services connect)
             async with Populator() as populator:
                 assert populator.amqp_connection is not None
                 assert populator.neo4j_driver is not None
