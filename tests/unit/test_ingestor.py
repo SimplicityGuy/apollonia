@@ -237,7 +237,7 @@ class TestIngestor:
             async def event_generator() -> AsyncGenerator[Mock, None]:
                 nonlocal event_index
                 for event in events:
-                    if event_index >= len(events) or not ingestor._running:
+                    if event_index >= len(events) or not ingestor_instance._running:
                         return
                     yield event
                     event_index += 1
@@ -245,18 +245,18 @@ class TestIngestor:
             inotify_instance.__aiter__.return_value = event_generator()
 
             # Create ingestor
-            ingestor = Ingestor()
-            ingestor.amqp_channel = mock_amqp_channel
+            ingestor_instance = Ingestor()
+            ingestor_instance.amqp_channel = mock_amqp_channel
 
             # Run ingest in a task and stop after processing events
             async def run_and_stop() -> None:
                 await asyncio.sleep(0.1)  # Let it process events
-                ingestor.stop()
+                ingestor_instance.stop()
 
             import asyncio
 
             task = asyncio.create_task(run_and_stop())
-            await ingestor.ingest()
+            await ingestor_instance.ingest()
             await task
 
             # Verify prospector was called for each event
@@ -317,18 +317,18 @@ class TestIngestor:
             mock_event.path = "/test/error.txt"
             mock_event.mask = "IN_CREATE"
 
+            # Create ingestor
+            ingestor_instance = Ingestor()
+            ingestor_instance.amqp_channel = mock_amqp_channel
+
             async def event_generator() -> AsyncGenerator[Mock, None]:
                 yield mock_event
-                ingestor.stop()
+                ingestor_instance.stop()
 
             inotify_instance.__aiter__.return_value = event_generator()
 
-            # Create ingestor
-            ingestor = Ingestor()
-            ingestor.amqp_channel = mock_amqp_channel
-
             # Run ingest - should not raise exception
-            await ingestor.ingest()
+            await ingestor_instance.ingest()
 
             # Verify prospector was called
             prospector_class.assert_called_once_with("/test/error.txt")
