@@ -166,6 +166,7 @@ jobs:
         uses: ./.github/actions/setup-frontend-env
         with:
           node-version: '22'
+          install-just: 'true'
 
       - name: 🏗️ Build frontend
         timeout-minutes: 10

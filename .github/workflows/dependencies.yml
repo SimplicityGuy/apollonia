@@ -119,6 +119,7 @@ jobs:
         with:
           node-version: '22'
           install-dependencies: false
+          install-just: true
 
       - name: 🔄 Update dependencies
         run: |
@@ -225,6 +226,7 @@ jobs:
         with:
           node-version: '22'
           install-dependencies: false
+          install-just: true
 
       - name: 🔄 Apply all updates
         run: |
