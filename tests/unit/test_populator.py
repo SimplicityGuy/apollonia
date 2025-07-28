@@ -430,24 +430,22 @@ class TestPopulator:
     @pytest.mark.timeout(2)  # 2 second timeout
     def test_main_missing_amqp_connection(self) -> None:
         """Test main exits when AMQP connection string is missing."""
-        # Need to patch before import to ensure the module-level variables are set correctly
-        import sys as sys_module
-
-        # Remove the module if it's already imported
-        if "populator.populator" in sys_module.modules:
-            del sys_module.modules["populator.populator"]
-
         with (
-            patch.dict("os.environ", {"AMQP_CONNECTION_STRING": ""}),
-            patch("sys.exit") as mock_exit,
+            patch("populator.populator.AMQP_CONNECTION", ""),
+            patch("populator.populator.setup_logging"),
+            patch("populator.populator.print_banner"),
+            patch("asyncio.run") as mock_async_run,  # Prevent asyncio.run from executing
         ):
-            # Now import with the patched environment
-            from populator import populator
+            from populator.populator import main
 
-            # Call main
-            populator.main()
+            # Call main and expect SystemExit
+            with pytest.raises(SystemExit) as exc_info:
+                main()
 
-            mock_exit.assert_called_once_with(1)
+            # Verify exit code
+            assert exc_info.value.code == 1
+            # Ensure asyncio.run was not called since we should exit early
+            mock_async_run.assert_not_called()
 
     def test_main_default_neo4j_password_warning(self, caplog: Any) -> None:
         """Test main warns about default Neo4j password."""
