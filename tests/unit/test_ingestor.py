@@ -77,6 +77,7 @@ class TestIngestor:
             assert ingestor.amqp_properties.delivery_mode == DeliveryMode.Persistent
             assert ingestor.amqp_properties.content_encoding == "application/json"
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     def test_ingestor_context_manager_enter(
         self, mock_amqp_connection: Mock, mock_amqp_channel: Mock
     ) -> None:
@@ -110,6 +111,7 @@ class TestIngestor:
             assert ingestor.amqp_connection is mock_amqp_connection
             assert ingestor.amqp_channel is mock_amqp_channel
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     def test_ingestor_context_manager_exit(self, mock_amqp_connection: Mock) -> None:
         """Test __exit__ closes AMQP connection properly."""
         with (
@@ -131,6 +133,7 @@ class TestIngestor:
             ingestor.__exit__(None, None, None)
             mock_amqp_connection.close.assert_not_called()
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     def test_stop(self) -> None:
         """Test stop method sets _running to False."""
         with (
@@ -293,6 +296,7 @@ class TestIngestor:
             # Verify no AMQP publish due to error
             mock_amqp_channel.basic_publish.assert_not_called()
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     def test_setup_logging(self) -> None:
         """Test logging setup."""
         with patch("ingestor.ingestor.logging.basicConfig") as mock_config:
@@ -306,6 +310,7 @@ class TestIngestor:
             assert "%(asctime)s" in args.kwargs["format"]
             assert len(args.kwargs["handlers"]) == 1
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     def test_print_banner(self, capsys: Any) -> None:
         """Test banner printing."""
         from ingestor.ingestor import print_banner
@@ -317,6 +322,7 @@ class TestIngestor:
         assert "ingestor" in captured.out.lower()
 
     @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     async def test_async_main_signal_handling(self) -> None:
         """Test async_main sets up signal handlers correctly."""
         with (
@@ -343,6 +349,7 @@ class TestIngestor:
             assert signal.SIGINT in signals_registered
             assert signal.SIGTERM in signals_registered
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     def test_main_missing_amqp_connection(self) -> None:
         """Test main exits when AMQP connection string is missing."""
         with (
@@ -357,6 +364,7 @@ class TestIngestor:
 
             mock_exit.assert_called_once_with(1)
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     def test_main_successful_run(self) -> None:
         """Test main runs successfully with proper configuration."""
         with (
