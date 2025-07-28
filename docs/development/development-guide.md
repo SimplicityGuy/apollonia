@@ -4,10 +4,12 @@ This guide covers the development setup and workflow for the Apollonia project.
 
 ## Prerequisites
 
-- Python 3.12
-- Docker and Docker Compose
-- uv package manager
-- Git
+- **Python 3.12** (required for TensorFlow and Essentia compatibility)
+- **Node.js 22+** (for frontend development)
+- **Docker and Docker Compose** (v2.0+)
+- **uv package manager** (modern Python package management)
+- **Just** (optional but recommended for task running)
+- **Git** (version control)
 
 ## Initial Setup
 
@@ -71,14 +73,24 @@ uv run pytest tests/test_ingestor.py -v
 ### Running Services Locally
 
 ```bash
-# Start dependencies (RabbitMQ and Neo4j)
-docker-compose up -d rabbitmq neo4j
+# Using Just (recommended)
+just up-infra      # Start infrastructure services
+just ingestor      # Run the ingestor service
+just analyzer      # Run the analyzer service
+just populator     # Run the populator service
+just api           # Run the API service
+just frontend      # Run the frontend development server
 
-# Run the ingestor service
+# Or manually with Docker Compose
+docker-compose up -d postgres rabbitmq redis neo4j
+
+# Run services individually with uv
 uv run task ingestor
-
-# Run the populator service (in another terminal)
 uv run task populator
+uv run task api
+
+# Frontend development
+cd frontend && npm run dev
 ```
 
 ### Building and Docker
@@ -105,24 +117,54 @@ docker-compose down
 ```
 apollonia/
 ├── ingestor/              # File monitoring service
-│   ├── __init__.py
 │   ├── ingestor.py       # Main service entry point
+│   ├── media_ingestor.py # Enhanced media-specific ingestion
 │   ├── prospector.py     # File metadata extraction
+│   ├── media_prospector.py # Media-specific metadata
+│   ├── media_utils.py    # Media processing utilities
 │   ├── pyproject.toml    # Package configuration
 │   └── Dockerfile
-├── populator/            # Neo4j import service
-│   ├── __init__.py
+├── analyzer/             # ML analysis service
+│   ├── analyzer.py       # Main service entry point
+│   ├── ml/               # Machine learning models
+│   │   ├── extractors.py # Feature extraction
+│   │   ├── pipelines.py  # Processing pipelines
+│   │   └── real_models.py # TensorFlow/Essentia models
+│   ├── processors.py     # Media processors
+│   ├── cache.py          # Result caching
+│   └── Dockerfile
+├── populator/            # Database import service
 │   ├── populator.py      # Main service entry point
 │   ├── pyproject.toml    # Package configuration
 │   └── Dockerfile
+├── api/                  # REST/GraphQL API service
+│   ├── main.py           # FastAPI application
+│   ├── endpoints/        # REST endpoints
+│   ├── graphql/          # GraphQL schema
+│   ├── database.py       # Database connections
+│   └── Dockerfile
+├── frontend/             # React web application
+│   ├── src/              # Source code
+│   ├── package.json      # Node dependencies
+│   ├── vite.config.ts    # Build configuration
+│   └── Dockerfile
+├── database/             # Database migrations
+│   ├── models.py         # SQLAlchemy models
+│   ├── alembic/          # Migration scripts
+│   └── pyproject.toml
+├── shared/               # Shared utilities
+│   └── logging_utils.py  # Logging configuration
 ├── tests/                # Test suite
-│   ├── ingestor/
-│   └── populator/
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
+│   ├── e2e/              # End-to-end tests
+│   └── fixtures/         # Test fixtures
 ├── docs/                 # Documentation
+├── scripts/              # Utility scripts
+├── justfile              # Task runner commands
 ├── pyproject.toml        # Root project configuration
 ├── docker-compose.yml    # Local development environment
 └── .pre-commit-config.yaml
-
 ```
 
 ## Code Style and Standards
@@ -151,16 +193,35 @@ documentation.
 For local development, you can create a `.env` file:
 
 ```bash
+# Database Configuration
+DATABASE_URL=postgresql://apollonia:apollonia@localhost:5432/apollonia
+POSTGRES_USER=apollonia
+POSTGRES_PASSWORD=apollonia
+POSTGRES_DB=apollonia
+
 # AMQP Configuration
 AMQP_CONNECTION_STRING=amqp://apollonia:apollonia@localhost:5672/
+RABBITMQ_DEFAULT_USER=apollonia
+RABBITMQ_DEFAULT_PASS=apollonia
 
-# Neo4j Configuration
+# Neo4j Configuration (optional)
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=apollonia
+NEO4J_AUTH=neo4j/apollonia
+
+# Redis Configuration
+REDIS_URL=redis://localhost:6379/0
+
+# API Configuration
+JWT_SECRET_KEY=your-secret-key-here
+API_BASE_URL=http://localhost:8000
 
 # Ingestor Configuration
 DATA_DIRECTORY=./data
+
+# Frontend Configuration
+VITE_API_URL=http://localhost:8000
 ```
 
 ## Debugging
@@ -259,5 +320,12 @@ docker-compose ps | grep healthy
 
 - Review the [Architecture Overview](../architecture/overview.md)
 - Check service-specific documentation:
-  - [Ingestor Service](../services/ingestor.md)
-  - [Populator Service](../services/populator.md)
+  - [Ingestor Service](../services/ingestor.md) - File monitoring and detection
+  - [Analyzer Service](../services/analyzer.md) - ML-powered media analysis
+  - [Populator Service](../services/populator.md) - Database persistence
+  - [API Service](../services/api.md) - REST and GraphQL endpoints
+- Review additional guides:
+  - [Testing Guide](testing.md) - Unit, integration, and E2E testing
+  - [Justfile Guide](justfile-guide.md) - Task runner commands
+  - [Logging Convention](logging-convention.md) - Emoji-based logging
+  - [GitHub Workflows](github-workflows.md) - CI/CD pipelines

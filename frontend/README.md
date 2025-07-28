@@ -27,7 +27,7 @@ Modern React-based web interface for the Apollonia media catalog system.
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - npm or yarn
 
 ### Installation

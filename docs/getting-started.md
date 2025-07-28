@@ -15,7 +15,7 @@ Before you begin, ensure you have the following installed:
 
 - **Docker & Docker Compose** (recommended for quick start)
 - **Python 3.12+** (for local development)
-- **Node.js 18+** (for frontend development)
+- **Node.js 22+** (for frontend development)
 - **Git** (for version control)
 
 ### System Requirements

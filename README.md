@@ -13,7 +13,7 @@
 
 ![License: MIT](https://img.shields.io/github/license/SimplicityGuy/apollonia)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
-[![Node.js 18+](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org/)
+[![Node.js 22+](https://img.shields.io/badge/node.js-22+-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-enabled-blue.svg?logo=docker)](https://www.docker.com/)
 
 ## 🛠️ Code Quality
@@ -38,7 +38,7 @@
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/SimplicityGuy/apollonia)](https://github.com/SimplicityGuy/apollonia/pulls)
 [![GitHub last commit](https://img.shields.io/github/last-commit/SimplicityGuy/apollonia)](https://github.com/SimplicityGuy/apollonia/commits/main)
 [![GitHub repo size](https://img.shields.io/github/repo-size/SimplicityGuy/apollonia)](https://github.com/SimplicityGuy/apollonia)
-[![Lines of code](https://img.shields.io/tokei/lines/github/SimplicityGuy/apollonia)](https://github.com/SimplicityGuy/apollonia)
+[![codecov](https://codecov.io/gh/SimplicityGuy/apollonia/branch/main/graph/badge.svg)](https://codecov.io/gh/SimplicityGuy/apollonia)
 
 Pronunciation: _a·pol·lon·ia_
 
@@ -129,7 +129,7 @@ The system consists of several specialized services:
 - RabbitMQ for message queuing
 - Redis for caching
 - Neo4j for graph relationships (optional)
-- Node.js 18+ for frontend development
+- Node.js 22+ for frontend development
 
 ## Quick Start
 
