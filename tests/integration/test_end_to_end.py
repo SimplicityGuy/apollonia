@@ -108,7 +108,10 @@ class TestEndToEnd:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_file_ingestion_to_neo4j(
-        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+        self,
+        services_available: bool,  # noqa: ARG002
+        temp_data_dir: Path,
+        clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test complete pipeline from file creation to Neo4j storage."""
         # Patch DATA_DIRECTORY for ingestor
@@ -238,7 +241,10 @@ class TestEndToEnd:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_file_update_handling(
-        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+        self,
+        services_available: bool,  # noqa: ARG002
+        temp_data_dir: Path,
+        clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test that file updates are correctly handled."""
         test_file = temp_data_dir / "update_test.txt"
@@ -292,7 +298,10 @@ class TestEndToEnd:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_concurrent_file_processing(
-        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+        self,
+        services_available: bool,  # noqa: ARG002
+        temp_data_dir: Path,
+        clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test that multiple files can be processed concurrently."""
         num_files = 10
@@ -351,7 +360,10 @@ class TestEndToEnd:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_service_resilience(
-        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+        self,
+        services_available: bool,  # noqa: ARG002
+        temp_data_dir: Path,
+        clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test that services can recover from temporary failures."""
         test_file = temp_data_dir / "resilience_test.txt"
@@ -460,7 +472,10 @@ class TestEndToEnd:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_large_file_handling(
-        self, _services_available: bool, temp_data_dir: Path, _clean_neo4j: None
+        self,
+        services_available: bool,  # noqa: ARG002
+        temp_data_dir: Path,
+        clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test handling of large files."""
         # Create a 10MB file

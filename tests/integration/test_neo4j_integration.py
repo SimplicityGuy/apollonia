@@ -40,7 +40,7 @@ def skip_if_no_neo4j(neo4j_config: dict[str, str]) -> None:
 
 
 @pytest.fixture
-async def neo4j_driver(neo4j_config: dict[str, str], _skip_if_no_neo4j: None) -> AsyncIterator[Any]:
+async def neo4j_driver(neo4j_config: dict[str, str], skip_if_no_neo4j: None) -> AsyncIterator[Any]:  # noqa: ARG001
     """Create async Neo4j driver."""
     driver = AsyncGraphDatabase.driver(
         neo4j_config["uri"], auth=(neo4j_config["user"], neo4j_config["password"])

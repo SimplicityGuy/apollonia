@@ -36,7 +36,7 @@ def skip_if_no_amqp(amqp_url: str) -> None:
 class TestAMQPIntegration:
     """Test AMQP integration between services."""
 
-    def test_blocking_connection(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
+    def test_blocking_connection(self, amqp_url: str, skip_if_no_amqp: None) -> None:  # noqa: ARG002
         """Test basic blocking connection (used by ingestor)."""
         connection = BlockingConnection(URLParameters(amqp_url))
         channel = connection.channel()
@@ -80,7 +80,7 @@ class TestAMQPIntegration:
         connection.close()
 
     @pytest.mark.asyncio
-    async def test_async_connection(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
+    async def test_async_connection(self, amqp_url: str, skip_if_no_amqp: None) -> None:  # noqa: ARG002
         """Test async connection (used by populator)."""
         connection = await connect_robust(amqp_url)
 
@@ -124,7 +124,7 @@ class TestAMQPIntegration:
             await exchange.delete()
 
     @pytest.mark.asyncio
-    async def test_message_flow(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
+    async def test_message_flow(self, amqp_url: str, skip_if_no_amqp: None) -> None:  # noqa: ARG002
         """Test complete message flow from publisher to consumer."""
         # Setup connection
         connection = await connect_robust(amqp_url)
@@ -184,7 +184,7 @@ class TestAMQPIntegration:
             # Cleanup
             await queue.delete()
 
-    def test_error_handling(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
+    def test_error_handling(self, amqp_url: str, skip_if_no_amqp: None) -> None:  # noqa: ARG002
         """Test error handling and recovery."""
         connection = BlockingConnection(URLParameters(amqp_url))
         channel = connection.channel()
@@ -199,7 +199,7 @@ class TestAMQPIntegration:
         connection.close()
 
     @pytest.mark.asyncio
-    async def test_concurrent_consumers(self, amqp_url: str, _skip_if_no_amqp: None) -> None:
+    async def test_concurrent_consumers(self, amqp_url: str, skip_if_no_amqp: None) -> None:  # noqa: ARG002
         """Test multiple consumers on same queue."""
         connection = await connect_robust(amqp_url)
 
