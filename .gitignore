@@ -235,3 +235,5 @@ data/
 
 # Security reports
 bandit-report.json
+
+backups/
