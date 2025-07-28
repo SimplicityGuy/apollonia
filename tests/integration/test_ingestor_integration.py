@@ -266,7 +266,7 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
-    async def test_ingestor_handles_amqp_disconnection(self, temp_data_dir: Path) -> None:
+    def test_ingestor_handles_amqp_disconnection(self, temp_data_dir: Path) -> None:
         """Test that ingestor handles AMQP disconnection gracefully."""
         # Mock connection that fails after first channel creation
         mock_connection = Mock(spec=BlockingConnection)

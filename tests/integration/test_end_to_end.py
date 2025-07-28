@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 import orjson
 import pytest
+import pytest_asyncio
 from neo4j import AsyncGraphDatabase
 from neo4j.exceptions import ServiceUnavailable
 from pika import BlockingConnection, URLParameters
@@ -84,7 +85,7 @@ class TestEndToEnd:
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def clean_neo4j(self, services_available: bool) -> AsyncGenerator[None, None]:  # noqa: ARG002
         """Clean up Neo4j before and after tests."""
         driver = AsyncGraphDatabase.driver(

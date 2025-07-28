@@ -22,7 +22,7 @@ from tests.fixtures import *  # noqa: F403, E402
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop]:
+def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     """Create an instance of the default event loop for the test session."""
     loop = asyncio.new_event_loop()
     yield loop

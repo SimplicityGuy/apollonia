@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
 import pytest
+import pytest_asyncio
 from neo4j import AsyncGraphDatabase, GraphDatabase
 
 pytestmark = pytest.mark.integration
@@ -39,7 +40,7 @@ def skip_if_no_neo4j(neo4j_config: dict[str, str]) -> None:
         pytest.skip("Neo4j server not available")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def neo4j_driver(neo4j_config: dict[str, str], skip_if_no_neo4j: None) -> AsyncIterator[Any]:  # noqa: ARG001
     """Create async Neo4j driver."""
     driver = AsyncGraphDatabase.driver(
@@ -49,7 +50,7 @@ async def neo4j_driver(neo4j_config: dict[str, str], skip_if_no_neo4j: None) -> 
     await driver.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def clean_database(neo4j_driver: Any) -> AsyncIterator[None]:
     """Clean test data from database."""
     async with neo4j_driver.session() as session:
@@ -73,7 +74,7 @@ class TestNeo4jIntegration:
             assert record["value"] == 1
 
     @pytest.mark.asyncio
-    async def test_create_file_node(self, neo4j_driver: Any, _clean_database: None) -> None:
+    async def test_create_file_node(self, neo4j_driver: Any, clean_database: None) -> None:  # noqa: ARG002
         """Test creating a file node."""
         file_data = {
             "file_path": "/test/example.txt",
@@ -112,7 +113,7 @@ class TestNeo4jIntegration:
             assert node["size"] == file_data["size"]
 
     @pytest.mark.asyncio
-    async def test_update_existing_node(self, neo4j_driver: Any, _clean_database: None) -> None:
+    async def test_update_existing_node(self, neo4j_driver: Any, clean_database: None) -> None:  # noqa: ARG002
         """Test updating an existing file node."""
         file_path = "/test/update.txt"
 
@@ -150,7 +151,7 @@ class TestNeo4jIntegration:
             assert node["size"] == 1000
 
     @pytest.mark.asyncio
-    async def test_neighbor_relationships(self, neo4j_driver: Any, _clean_database: None) -> None:
+    async def test_neighbor_relationships(self, neo4j_driver: Any, clean_database: None) -> None:  # noqa: ARG002
         """Test creating neighbor relationships between files."""
         async with neo4j_driver.session() as session:
             # Create main file
@@ -185,7 +186,7 @@ class TestNeo4jIntegration:
             assert neighbor_paths == sorted(neighbors)
 
     @pytest.mark.asyncio
-    async def test_find_duplicates_by_hash(self, neo4j_driver: Any, _clean_database: None) -> None:
+    async def test_find_duplicates_by_hash(self, neo4j_driver: Any, clean_database: None) -> None:  # noqa: ARG002
         """Test finding duplicate files by hash."""
         test_hash = "duplicate_hash_123"
 
@@ -219,7 +220,7 @@ class TestNeo4jIntegration:
             assert duplicate_paths == sorted(files)
 
     @pytest.mark.asyncio
-    async def test_transaction_rollback(self, neo4j_driver: Any, _clean_database: None) -> None:
+    async def test_transaction_rollback(self, neo4j_driver: Any, clean_database: None) -> None:  # noqa: ARG002
         """Test transaction rollback on error."""
         async with neo4j_driver.session() as session:
             try:
@@ -241,7 +242,7 @@ class TestNeo4jIntegration:
             assert record is None
 
     @pytest.mark.asyncio
-    async def test_performance_with_indexes(self, neo4j_driver: Any, _clean_database: None) -> None:
+    async def test_performance_with_indexes(self, neo4j_driver: Any, clean_database: None) -> None:  # noqa: ARG002
         """Test performance improvement with indexes."""
         async with neo4j_driver.session() as session:
             # Create index if not exists
@@ -272,7 +273,7 @@ class TestNeo4jIntegration:
             assert record["count"] == 10  # Should find 10 files with hash_5
 
     @pytest.mark.asyncio
-    async def test_datetime_handling(self, neo4j_driver: Any, _clean_database: None) -> None:
+    async def test_datetime_handling(self, neo4j_driver: Any, clean_database: None) -> None:  # noqa: ARG002
         """Test proper datetime handling."""
         now = datetime.now(UTC)
 

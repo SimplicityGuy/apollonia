@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, Mock
 
 import orjson
 import pytest
+import pytest_asyncio
 from aio_pika import Message
 from neo4j import AsyncDriver
 
@@ -197,14 +198,6 @@ def sample_file_dataset():
 # --- Async Utilities ---
 
 
-@pytest.fixture
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
 async def wait_for_condition(condition_func, timeout=5, interval=0.1):  # noqa: ASYNC109
     """Wait for a condition to become true."""
     start_time = asyncio.get_event_loop().time()
@@ -306,7 +299,7 @@ class PerformanceTimer:
 # --- Cleanup Utilities ---
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def cleanup_neo4j(mock_neo4j_driver):
     """Fixture to clean up Neo4j test data."""
     driver, session = mock_neo4j_driver

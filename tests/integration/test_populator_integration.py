@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import orjson
 import pytest
+import pytest_asyncio
 from aio_pika import Message, connect_robust
 from aio_pika.abc import AbstractIncomingMessage
 from aio_pika.exceptions import AMQPConnectionError
@@ -27,7 +28,7 @@ from populator.populator import (
 class TestPopulatorIntegration:
     """Integration tests for populator service."""
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def rabbitmq_available(self) -> bool:
         """Check if RabbitMQ is available."""
         try:
@@ -37,7 +38,7 @@ class TestPopulatorIntegration:
         except (AMQPConnectionError, ConnectionError, OSError):
             return False
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def neo4j_available(self) -> bool:
         """Check if Neo4j is available."""
         try:
@@ -52,7 +53,7 @@ class TestPopulatorIntegration:
         except (ServiceUnavailable, OSError):
             return False
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def amqp_publisher(
         self, rabbitmq_available: bool
     ) -> AsyncGenerator[tuple[Any, Any], None]:
@@ -75,7 +76,7 @@ class TestPopulatorIntegration:
 
         await connection.close()
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def neo4j_driver(self, neo4j_available: bool) -> AsyncGenerator[Any, None]:
         """Create a Neo4j driver for testing."""
         if not neo4j_available:
