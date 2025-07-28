@@ -22,6 +22,7 @@ jobs:
   discover-services:
     name: Discover Services
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     outputs:
       services: ${{ steps.set-matrix.outputs.services }}
@@ -58,6 +59,7 @@ jobs:
   build-services:
     name: Build Service (${{ matrix.service }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: discover-services
     if: fromJson(needs.discover-services.outputs.services)[0] != null
 
@@ -118,6 +120,7 @@ jobs:
 
       - name: 🔨 Build and push Docker image
         uses: docker/build-push-action@v6
+        timeout-minutes: 25
         with:
           context: .
           file: ${{ matrix.service }}/Dockerfile
@@ -143,6 +146,7 @@ jobs:
   build-frontend:
     name: Build Frontend
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: discover-services
     if: needs.discover-services.outputs.frontend == 'true'
 
@@ -165,6 +169,7 @@ jobs:
 
       - name: 🏗️ Build frontend
         working-directory: frontend
+        timeout-minutes: 10
         run: npm run build
 
       - name: 📤 Upload build artifacts
@@ -202,6 +207,7 @@ jobs:
 
       - name: 🔨 Build and push frontend image
         uses: docker/build-push-action@v6
+        timeout-minutes: 15
         with:
           context: frontend
           platforms: linux/amd64
@@ -215,6 +221,7 @@ jobs:
   integration-test:
     name: Integration Test (Docker)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [build-services, build-frontend]
     if: always() && (needs.build-services.result == 'success' || needs.build-frontend.result == 'success')
 
@@ -239,6 +246,7 @@ jobs:
           docker-compose: latest
 
       - name: 🐳 Test multi-service deployment
+        timeout-minutes: 10
         run: |
           echo "🚀 Starting integrated services test..."
 
@@ -291,6 +299,7 @@ jobs:
   deployment-summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [build-services, build-frontend, integration-test]
     if: always()
 
@@ -316,6 +325,7 @@ jobs:
   notify:
     name: Notify
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [build-services, build-frontend, integration-test]
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main')
 

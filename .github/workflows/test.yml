@@ -23,6 +23,7 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -60,6 +61,7 @@ jobs:
   python-tests:
     name: Python Tests (${{ matrix.test-group }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true'
 
@@ -105,6 +107,7 @@ jobs:
             test-results-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.test-group }}-
 
       - name: 🧪 Run ${{ matrix.test-group }} tests with coverage
+        timeout-minutes: 10
         run: |
           uv run pytest ${{ matrix.test-path }} \
             -m "${{ matrix.marks }}" \
@@ -148,6 +151,7 @@ jobs:
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true'
 
@@ -177,6 +181,7 @@ jobs:
 
       - name: 🧪 Run tests with coverage
         working-directory: frontend
+        timeout-minutes: 8
         run: |
           npm run lint
           npm run type-check
@@ -202,6 +207,7 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [changes, python-tests]
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true'
 
@@ -324,6 +330,7 @@ jobs:
           echo "✅ All services are ready"
 
       - name: 🔗 Run integration tests
+        timeout-minutes: 15
         env:
           POSTGRES_URL: postgresql://test:test@localhost:5432/apollonia_test
           REDIS_URL: redis://localhost:6379/0
@@ -350,6 +357,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [changes, integration-tests, frontend-tests]
     if: |
       (needs.changes.outputs.backend == 'true' ||
@@ -392,6 +400,7 @@ jobs:
             buildx-${{ runner.os }}-
 
       - name: 🐋 Build services with cache
+        timeout-minutes: 20
         run: |
           docker buildx bake \
             --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
@@ -399,6 +408,7 @@ jobs:
             --load
 
       - name: 🌐 Run E2E tests
+        timeout-minutes: 15
         run: |
           # Start services
           docker-compose up -d
@@ -439,6 +449,7 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [python-tests, frontend-tests, integration-tests, e2e-tests]
     if: always()
 
@@ -467,6 +478,7 @@ jobs:
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [python-tests, frontend-tests, integration-tests]
     if: always() && github.event_name == 'pull_request'
 

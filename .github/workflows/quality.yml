@@ -17,6 +17,7 @@ jobs:
   backend-quality:
     name: Backend Quality Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     permissions:
       contents: read
@@ -60,6 +61,7 @@ jobs:
   frontend-quality:
     name: Frontend Quality Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     permissions:
       contents: read
@@ -95,6 +97,7 @@ jobs:
   pre-commit:
     name: Pre-commit Hooks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: 📥 Checkout repository
