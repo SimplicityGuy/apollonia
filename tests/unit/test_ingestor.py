@@ -45,7 +45,8 @@ class TestIngestor:
             inotify_instance = Mock()
             # add_watch is a synchronous method
             inotify_instance.add_watch = Mock(return_value=None)
-            # Don't set __aiter__ here - let the tests set it
+            # Create __aiter__ as a mock so tests can set its return_value
+            inotify_instance.__aiter__ = Mock()
 
             # Create the context manager
             mock_class.return_value = Mock()
