@@ -114,7 +114,7 @@ jobs:
           mv pytest-results.xml pytest-results-${{ matrix.test-group }}.xml
 
       - name: 📤 Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.12'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -178,7 +178,7 @@ jobs:
         run: just test-frontend-ci
 
       - name: 📤 Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./frontend/coverage/lcov.info
