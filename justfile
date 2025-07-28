@@ -74,6 +74,12 @@ build-frontend:
   echo "🎨 Building frontend..."
   cd frontend && npm ci && npm run build
 
+# Build frontend in CI (without ci install)
+[group('build')]
+build-frontend-ci:
+  echo "🎨 Building frontend for CI..."
+  cd frontend && npm run build
+
 # Build all Docker images
 [group('build')]
 build-docker:
@@ -98,6 +104,39 @@ test: test-python test-frontend
 test-python:
   echo "🧪 Running Python tests..."
   uv run pytest -v
+
+# Run Python unit tests for CI (with markers and coverage)
+[group('test')]
+test-python-unit-ci path marks:
+  echo "🧪 Running Python unit tests for CI..."
+  uv run pytest {{path}} \
+    -m "{{marks}}" \
+    --cov \
+    --cov-report=xml \
+    --cov-report=html \
+    --junit-xml=pytest-results.xml \
+    --maxfail=5 \
+    --tb=short \
+    -n auto
+
+# Run Python integration tests for CI
+[group('test')]
+test-python-integration-ci:
+  echo "🔗 Running Python integration tests for CI..."
+  uv run pytest tests/integration \
+    -m "integration and not e2e" \
+    --cov \
+    --cov-report=xml \
+    --junit-xml=integration-results.xml \
+    --maxfail=5 \
+    --tb=short \
+    -n auto
+
+# Run Python unit tests only (quick check)
+[group('test')]
+test-python-unit:
+  echo "🧪 Running Python unit tests..."
+  uv run pytest tests/unit -x --tb=short
 
 # Run Python tests in watch mode
 [group('test')]
@@ -147,17 +186,40 @@ test-e2e:
     tests/e2e
   docker-compose down -v
 
+# Run performance benchmarks
+[group('test')]
+test-benchmarks:
+  #!/usr/bin/env bash
+  echo "⚡ Running performance benchmarks..."
+  if [ -d "benchmarks" ]; then
+    uv run pytest benchmarks/ --benchmark-json=benchmark-results.json
+  else
+    echo "ℹ️ No benchmark directory found, skipping performance tests"
+  fi
+
 # Run frontend tests
 [group('test')]
 test-frontend:
   echo "🎨 Running frontend tests..."
   cd frontend && npm run test:coverage
 
+# Run frontend tests in CI mode
+[group('test')]
+test-frontend-ci:
+  echo "🎨 Running frontend tests in CI mode..."
+  cd frontend && npm run lint && npm run type-check && npm run test:ci -- --coverage --maxWorkers=50%
+
+# Run frontend quality checks and build for dependencies workflow
+[group('test')]
+test-frontend-deps:
+  echo "🎨 Running frontend quality checks for dependencies..."
+  cd frontend && npm run lint && npm run type-check && npm run test && npm run build
+
 # Run frontend tests in watch mode
 [group('test')]
 test-frontend-watch:
   echo "👁️ Running frontend tests in watch mode..."
-  cd frontend && npm run test:watch
+  cd frontend && npm run test
 
 # Code quality checks, linting, and formatting
 

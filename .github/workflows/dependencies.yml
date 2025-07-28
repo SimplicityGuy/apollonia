@@ -62,9 +62,9 @@ jobs:
         run: |
           echo "🧪 Testing updated dependencies..."
           uv sync --frozen --all-extras
-          uv run pytest tests/unit -x --tb=short
-          uv run ruff check .
-          uv run mypy .
+          just test-python-unit
+          just lint-backend
+          just typecheck-backend
 
       - name: 📦 Generate dependency report
         if: env.HAS_PYTHON_UPDATES == 'true'
@@ -158,10 +158,7 @@ jobs:
         timeout-minutes: 10
         run: |
           echo "🧪 Testing updated dependencies..."
-          npm run lint
-          npm run type-check
-          npm run test
-          npm run build
+          just test-frontend-deps
 
       - name: 🔒 Security audit
         if: env.HAS_NODE_UPDATES == 'true'
@@ -267,17 +264,12 @@ jobs:
 
           # Python tests
           uv sync --frozen --all-extras
-          uv run pytest tests/unit -x
-          uv run ruff check .
-          uv run mypy .
+          just test-python-unit
+          just lint-backend
+          just typecheck-backend
 
           # Node.js tests
-          cd frontend
-          npm run lint
-          npm run type-check
-          npm run test
-          npm run build
-          cd ..
+          just test-frontend-deps
 
       - name: 📋 Check for changes
         id: changes

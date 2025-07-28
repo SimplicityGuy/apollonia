@@ -168,9 +168,8 @@ jobs:
           node-version: '22'
 
       - name: 🏗️ Build frontend
-        working-directory: frontend
         timeout-minutes: 10
-        run: npm run build
+        run: just build-frontend-ci
 
       - name: 📤 Upload build artifacts
         uses: actions/upload-artifact@v4

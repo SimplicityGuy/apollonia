@@ -116,16 +116,11 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           python-version: '3.12'
-          install-just: false
+          install-just: true
 
       - name: ⚡ Run performance benchmarks
         timeout-minutes: 15
-        run: |
-          if [ -d "benchmarks" ]; then
-            uv run pytest benchmarks/ --benchmark-json=benchmark-results.json
-          else
-            echo "ℹ️ No benchmark directory found, skipping performance tests"
-          fi
+        run: just test-benchmarks
 
       - name: 📊 Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1

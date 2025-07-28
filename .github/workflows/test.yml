@@ -109,15 +109,9 @@ jobs:
       - name: 🧪 Run ${{ matrix.test-group }} tests with coverage
         timeout-minutes: 10
         run: |
-          uv run pytest ${{ matrix.test-path }} \
-            -m "${{ matrix.marks }}" \
-            --cov \
-            --cov-report=xml \
-            --cov-report=html \
-            --junit-xml=pytest-results-${{ matrix.test-group }}.xml \
-            --maxfail=5 \
-            --tb=short \
-            -n auto
+          just test-python-unit-ci "${{ matrix.test-path }}" "${{ matrix.marks }}"
+          # Rename the output file to match the matrix test group
+          mv pytest-results.xml pytest-results-${{ matrix.test-group }}.xml
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -180,12 +174,8 @@ jobs:
             frontend-test-results-${{ runner.os }}-
 
       - name: 🧪 Run tests with coverage
-        working-directory: frontend
         timeout-minutes: 8
-        run: |
-          npm run lint
-          npm run type-check
-          npm run test:ci -- --coverage --maxWorkers=50%
+        run: just test-frontend-ci
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -334,15 +324,7 @@ jobs:
         env:
           POSTGRES_URL: postgresql://test:test@localhost:5432/apollonia_test
           REDIS_URL: redis://localhost:6379/0
-        run: |
-          uv run pytest tests/integration \
-            -m "integration and not e2e" \
-            --cov \
-            --cov-report=xml \
-            --junit-xml=integration-results.xml \
-            --maxfail=5 \
-            --tb=short \
-            -n auto
+        run: just test-python-integration-ci
 
       - name: 📤 Upload integration test results
         uses: actions/upload-artifact@v4
