@@ -31,22 +31,11 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "**/pyproject.toml"
-
-      - name: 🐍 Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
-        with:
-          just-version: '1.38.0'  # Pin to specific version for reliability
-
-      - name: 📦 Install dependencies
-        run: uv sync --frozen --all-extras
+          python-version: ${{ matrix.python-version }}
+          install-just: true
 
       - name: 🔍 Run backend linting checks
         run: just lint-backend
@@ -84,18 +73,11 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
-        with:
-          just-version: '1.38.0'  # Pin to specific version for reliability
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
         with:
           node-version: '22'
-
-      - name: 📦 Install frontend dependencies
-        run: just install-frontend
+          install-just: true
 
       - name: 🔍 Run frontend linting checks
         run: just lint-frontend
@@ -118,19 +100,11 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
-
-      - name: Install just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
         with:
-          just-version: '1.38.0'  # Pin to specific version for reliability
-
-      - name: 🐍 Set up Python
-        run: uv python install 3.12
-
-      - name: 📦 Install dependencies
-        run: uv sync --frozen --all-extras
+          python-version: '3.12'
+          install-just: true
 
       - name: 🪝 Run pre-commit hooks
         run: just pre-commit

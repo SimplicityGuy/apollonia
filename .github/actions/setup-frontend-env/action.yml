@@ -1,0 +1,65 @@
+name: 'Setup Frontend Environment'
+description: 'Setup Node.js with caching and dependency installation'
+author: 'Apollonia Project'
+
+inputs:
+  node-version:
+    description: 'Node.js version to install'
+    required: false
+    default: '22'
+  working-directory:
+    description: 'Working directory for frontend'
+    required: false
+    default: 'frontend'
+  install-dependencies:
+    description: 'Whether to install dependencies'
+    required: false
+    default: 'true'
+  install-just:
+    description: 'Whether to install just command runner'
+    required: false
+    default: 'false'
+  cache-key-prefix:
+    description: 'Cache key prefix for dependency caching'
+    required: false
+    default: 'frontend'
+
+outputs:
+  cache-hit:
+    description: 'Whether the cache was hit'
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+    - name: 💾 Cache node_modules
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ inputs.working-directory }}/node_modules
+          ~/.npm
+        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-node${{ inputs.node-version }}-${{ hashFiles(format('{0}/package-lock.json', inputs.working-directory)) }}
+        restore-keys: |
+          ${{ inputs.cache-key-prefix }}-${{ runner.os }}-node${{ inputs.node-version }}-
+
+    - name: 🔧 Install just
+      if: inputs.install-just == 'true'
+      uses: extractions/setup-just@v2
+      with:
+        just-version: '1.38.0'
+
+    - name: 📦 Install dependencies
+      if: inputs.install-dependencies == 'true' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "📦 Installing frontend dependencies..."
+        npm ci --prefer-offline --no-audit

@@ -19,10 +19,49 @@ env:
   NEO4J_PASSWORD: testpassword
 
 jobs:
-  # Python unit tests
-  python-tests:
-    name: Python Tests
+  # Determine what changed to optimize test runs
+  changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      docker: ${{ steps.filter.outputs.docker }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Detect changed files
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apollonia/**'
+              - 'ingestor/**'
+              - 'populator/**'
+              - 'analyzer/**'
+              - 'api/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '*.py'
+            frontend:
+              - 'frontend/**'
+            docker:
+              - '**/Dockerfile'
+              - 'docker-compose*.yml'
+            workflows:
+              - '.github/workflows/**'
+              - '.github/actions/**'
+
+  # Python unit tests - parallelized by test type
+  python-tests:
+    name: Python Tests (${{ matrix.test-group }})
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true'
 
     permissions:
       contents: read
@@ -30,32 +69,52 @@ jobs:
       pull-requests: write
 
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.12']
+        test-group: ['unit', 'integration-unit']
+        include:
+          - test-group: 'unit'
+            test-path: 'tests/unit'
+            marks: 'not integration and not e2e'
+          - test-group: 'integration-unit'
+            test-path: 'tests/integration'
+            marks: 'not e2e and not docker'
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "**/pyproject.toml"
+          python-version: ${{ matrix.python-version }}
+          install-just: true
+          cache-key-prefix: python-test-${{ matrix.test-group }}
 
-      - name: 🐍 Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+      - name: 💾 Cache test results
+        uses: actions/cache@v4
         with:
-          just-version: '1.38.0'  # Pin to specific version for reliability
+          path: |
+            .pytest_cache
+            .coverage
+            coverage.xml
+            htmlcov
+          key: test-results-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.test-group }}-${{ github.sha }}
+          restore-keys: |
+            test-results-${{ runner.os }}-py${{ matrix.python-version }}-${{ matrix.test-group }}-
 
-      - name: 📦 Install dependencies
-        run: uv sync --frozen --all-extras
-
-      - name: 🧪 Run unit tests with coverage
-        run: just test-coverage
+      - name: 🧪 Run ${{ matrix.test-group }} tests with coverage
+        run: |
+          uv run pytest ${{ matrix.test-path }} \
+            -m "${{ matrix.marks }}" \
+            --cov \
+            --cov-report=xml \
+            --cov-report=html \
+            --junit-xml=pytest-results-${{ matrix.test-group }}.xml \
+            --maxfail=5 \
+            --tb=short \
+            -n auto
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -63,59 +122,65 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
-          flags: unittests
-          name: apollonia-coverage
+          flags: ${{ matrix.test-group }}
+          name: apollonia-${{ matrix.test-group }}-coverage
           fail_ci_if_error: false
 
       - name: 📤 Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pytest-results-py${{ matrix.python-version }}
+          name: pytest-results-${{ matrix.test-group }}-py${{ matrix.python-version }}
           path: |
-            pytest-results.xml
+            pytest-results-${{ matrix.test-group }}.xml
             htmlcov/
+            .coverage
 
       - name: 📊 Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always() && matrix.python-version == '3.12'
         with:
-          files: pytest-results.xml
+          files: pytest-results-${{ matrix.test-group }}.xml
           comment_mode: failures
-          check_name: Python Test Results
+          check_name: Python ${{ matrix.test-group }} Test Results
 
-  # Frontend tests
+  # Frontend tests - with better caching
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true'
 
     permissions:
       contents: read
       checks: write
 
-    defaults:
-      run:
-        working-directory: frontend
-
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
-        with:
-          just-version: '1.38.0'  # Pin to specific version for reliability
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
         with:
           node-version: '22'
+          install-just: true
 
-      - name: 📦 Install frontend dependencies
-        run: just install-frontend
+      - name: 💾 Cache test results
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/coverage
+            frontend/.next/cache
+          key: frontend-test-results-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            frontend-test-results-${{ runner.os }}-
 
       - name: 🧪 Run tests with coverage
-        run: just test-frontend
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm run type-check
+          npm run test:ci -- --coverage --maxWorkers=50%
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -133,11 +198,12 @@ jobs:
           name: frontend-test-results
           path: frontend/coverage/
 
-  # Integration tests with services
+  # Integration tests with services - improved startup time
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [python-tests]
+    needs: [changes, python-tests]
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true'
 
     permissions:
       contents: read
@@ -154,9 +220,10 @@ jobs:
           RABBITMQ_DEFAULT_PASS: test
         options: >-
           --health-cmd "rabbitmq-diagnostics ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+          --health-start-period 10s
 
       postgres:
         image: postgres:15-alpine
@@ -166,11 +233,13 @@ jobs:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
           POSTGRES_DB: apollonia_test
+          POSTGRES_HOST_AUTH_METHOD: trust
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "pg_isready -U test"
+          --health-interval 3s
+          --health-timeout 2s
+          --health-retries 10
+          --health-start-period 5s
 
       neo4j:
         image: neo4j:5-community
@@ -179,11 +248,15 @@ jobs:
           - 7687:7687
         env:
           NEO4J_AUTH: neo4j/testpassword
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
+          NEO4J_dbms_memory_heap_max__size: '512M'
+          NEO4J_dbms_memory_heap_initial__size: '512M'
         options: >-
-          --health-cmd "neo4j status"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "neo4j status || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+          --health-start-period 30s
 
       redis:
         image: redis:7-alpine
@@ -191,35 +264,78 @@ jobs:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 3s
+          --health-timeout 2s
+          --health-retries 10
+          --health-start-period 5s
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
+          python-version: '3.12'
+          install-just: true
+          cache-key-prefix: python-integration
 
-      - name: Install just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+      - name: 💾 Cache integration test data
+        uses: actions/cache@v4
         with:
-          just-version: '1.38.0'  # Pin to specific version for reliability
+          path: |
+            tests/fixtures/data
+            .pytest_cache
+          key: integration-test-data-${{ runner.os }}-${{ hashFiles('tests/fixtures/**') }}
 
-      - name: 🐍 Set up Python 3.12
-        run: uv python install 3.12
+      - name: ⏳ Wait for services (optimized)
+        run: |
+          echo "⏳ Waiting for services to be ready..."
 
-      - name: 📦 Install dependencies
-        run: uv sync --frozen --all-extras
+          # Parallel health checks
+          check_service() {
+            local service=$1
+            local check_cmd=$2
+            local max_attempts=30
+            local attempt=0
+
+            while [ $attempt -lt $max_attempts ]; do
+              if eval "$check_cmd" > /dev/null 2>&1; then
+                echo "✅ $service is ready"
+                return 0
+              fi
+              attempt=$((attempt + 1))
+              sleep 1
+            done
+
+            echo "❌ $service failed to start"
+            return 1
+          }
+
+          # Run health checks in parallel
+          check_service "RabbitMQ" "curl -f http://localhost:15672" &
+          check_service "PostgreSQL" "pg_isready -h localhost -p 5432 -U test" &
+          check_service "Neo4j" "curl -f http://localhost:7474" &
+          check_service "Redis" "redis-cli -h localhost ping" &
+
+          # Wait for all checks to complete
+          wait
+
+          echo "✅ All services are ready"
 
       - name: 🔗 Run integration tests
         env:
           POSTGRES_URL: postgresql://test:test@localhost:5432/apollonia_test
           REDIS_URL: redis://localhost:6379/0
-        run: just test-integration
+        run: |
+          uv run pytest tests/integration \
+            -m "integration and not e2e" \
+            --cov \
+            --cov-report=xml \
+            --junit-xml=integration-results.xml \
+            --maxfail=5 \
+            --tb=short \
+            -n auto
 
       - name: 📤 Upload integration test results
         uses: actions/upload-artifact@v4
@@ -230,50 +346,74 @@ jobs:
             integration-results.xml
             coverage.xml
 
-  # End-to-end tests
+  # E2E tests - with Docker layer caching
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: [integration-tests, frontend-tests]
+    needs: [changes, integration-tests, frontend-tests]
+    if: |
+      (needs.changes.outputs.backend == 'true' ||
+       needs.changes.outputs.frontend == 'true' ||
+       needs.changes.outputs.docker == 'true' ||
+       needs.changes.outputs.workflows == 'true') &&
+      needs.integration-tests.result == 'success' &&
+      needs.frontend-tests.result == 'success'
 
     permissions:
       contents: read
       checks: write
+      packages: read
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Install just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3.0.0
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
         with:
-          just-version: '1.38.0'  # Pin to specific version for reliability
+          python-version: '3.12'
+          install-just: true
+          cache-key-prefix: python-e2e
 
-      - name: 🐍 Set up Python 3.12
-        run: uv python install 3.12
-
-      - name: 📦 Install dependencies
-        run: uv sync --frozen --all-extras
-
-      - name: 📦 Setup Node.js for frontend
-        uses: actions/setup-node@v4
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
         with:
           node-version: '22'
 
-      - name: 📦 Install frontend dependencies
-        run: cd frontend && npm install
+      - name: 💾 Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: buildx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            buildx-${{ runner.os }}-
+
+      - name: 🐋 Build services with cache
+        run: |
+          docker buildx bake \
+            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
+            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
+            --load
 
       - name: 🌐 Run E2E tests
-        run: just test-e2e
+        run: |
+          # Start services
+          docker-compose up -d
+
+          # Wait for services to be healthy
+          timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
+
+          # Run E2E tests
+          just test-e2e
 
       - name: 📋 Show service logs on failure
         if: failure()
         run: |
           echo "🔍 Service logs:"
-          docker-compose logs
+          docker-compose logs --tail=100
 
       - name: 🛑 Stop services
         if: always()
@@ -284,9 +424,18 @@ jobs:
         if: always()
         with:
           name: e2e-test-results
-          path: e2e-results.xml
+          path: |
+            e2e-results.xml
+            cypress/screenshots/
+            cypress/videos/
 
-  # Test summary
+      - name: 🗑️ Move cache
+        if: always()
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  # Test summary - runs in parallel with other final jobs
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
@@ -298,9 +447,43 @@ jobs:
         run: |
           echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Python Tests | ${{ needs.python-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend Tests | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Unit Tests | ${{ needs.python-tests.result == 'success' && '✅ Passed' || needs.python-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Tests | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || needs.frontend-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || needs.integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Performance tips based on results
+          if [[ "${{ needs.python-tests.result }}" == "skipped" ]]; then
+            echo "💡 **Performance Tip**: Python tests were skipped because no backend changes were detected." >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "${{ needs.frontend-tests.result }}" == "skipped" ]]; then
+            echo "💡 **Performance Tip**: Frontend tests were skipped because no frontend changes were detected." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Coverage report aggregation - parallel with summary
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [python-tests, frontend-tests, integration-tests]
+    if: always() && github.event_name == 'pull_request'
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: 📥 Download all coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-results*'
+          merge-multiple: true
+
+      - name: 📊 Generate coverage summary
+        run: |
+          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports have been uploaded to Codecov for detailed analysis." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed coverage: [Codecov Dashboard](https://codecov.io/gh/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY

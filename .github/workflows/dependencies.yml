@@ -33,11 +33,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
-
-      - name: 🐍 Set up Python
-        run: uv python install 3.12
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-dependencies: false
 
       - name: 🔄 Update dependencies
         run: |
@@ -111,10 +111,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
         with:
           node-version: '22'
+          install-dependencies: false
 
       - name: 🔄 Update dependencies
         run: |
@@ -211,16 +212,17 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-dependencies: false
 
-      - name: 🐍 Set up Python
-        run: uv python install 3.12
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
         with:
           node-version: '22'
+          install-dependencies: false
 
       - name: 🔄 Apply all updates
         run: |
@@ -351,11 +353,11 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Install uv
-        uses: astral-sh/setup-uv@v2
-
-      - name: 🐍 Set up Python
-        run: uv python install 3.12
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-dependencies: false
 
       - name: 📦 Install dependencies
         run: uv sync --frozen --all-extras
@@ -365,10 +367,11 @@ jobs:
           echo "🔒 Running Python security scan..."
           uv run pip-audit --format=json --output=python-security.json || true
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
         with:
           node-version: '22'
+          install-dependencies: false
 
       - name: 🔒 Node.js security scan
         run: |
