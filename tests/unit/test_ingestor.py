@@ -4,6 +4,7 @@ import logging
 import signal
 import sys
 from collections.abc import AsyncGenerator, Generator
+from contextlib import suppress
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -11,6 +12,11 @@ import orjson
 import pytest
 from pika import BlockingConnection
 from pika.spec import DeliveryMode
+
+# Only import asyncinotify on Linux
+if sys.platform != "darwin":
+    with suppress(ImportError):
+        import asyncinotify  # noqa: F401
 
 
 class TestIngestor:
@@ -192,16 +198,20 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest processes file events and publishes to AMQP."""
+        # Import the module first
+        from ingestor import ingestor
+        from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY
+
+        # Set up the Prospector mock
+        prospector_class, prospector_instance = mock_prospector
+
         with (
             patch("asyncinotify.Mask"),
             patch("ingestor.ingestor.Path") as mock_path_class,
-            patch("ingestor.ingestor.Prospector") as mock_prospector_class,
+            patch.object(ingestor, "Prospector", prospector_class),
         ):
-            from ingestor.ingestor import AMQP_EXCHANGE, ROUTING_KEY, Ingestor
-
-            # Set up the Prospector mock
-            prospector_instance = mock_prospector[1]
-            mock_prospector_class.return_value = prospector_instance
+            # Get the Ingestor class after patching
+            Ingestor = ingestor.Ingestor
 
             # Mock Path operations
             mock_path = Mock()
@@ -250,9 +260,9 @@ class TestIngestor:
             await task
 
             # Verify prospector was called for each event
-            assert mock_prospector_class.call_count == 2
-            mock_prospector_class.assert_any_call("/test/file1.txt")
-            mock_prospector_class.assert_any_call("/test/file2.txt")
+            assert prospector_class.call_count == 2
+            prospector_class.assert_any_call("/test/file1.txt")
+            prospector_class.assert_any_call("/test/file2.txt")
 
             # Verify AMQP publishes
             assert mock_amqp_channel.basic_publish.call_count == 2
@@ -277,16 +287,19 @@ class TestIngestor:
         mock_amqp_channel: Mock,
     ) -> None:
         """Test ingest handles errors during event processing gracefully."""
+        # Import the module first
+        from ingestor import ingestor
+
+        # Set up the Prospector mock
+        prospector_class, prospector_instance = mock_prospector
+
         with (
             patch("asyncinotify.Mask"),
             patch("ingestor.ingestor.Path") as mock_path_class,
-            patch("ingestor.ingestor.Prospector") as mock_prospector_class,
+            patch.object(ingestor, "Prospector", prospector_class),
         ):
-            from ingestor.ingestor import Ingestor
-
-            # Set up the Prospector mock
-            prospector_instance = mock_prospector[1]
-            mock_prospector_class.return_value = prospector_instance
+            # Get the Ingestor class after patching
+            Ingestor = ingestor.Ingestor
 
             # Mock Path operations
             mock_path = Mock()
@@ -318,7 +331,7 @@ class TestIngestor:
             await ingestor.ingest()
 
             # Verify prospector was called
-            mock_prospector_class.assert_called_once_with("/test/error.txt")
+            prospector_class.assert_called_once_with("/test/error.txt")
 
             # Verify no AMQP publish due to error
             mock_amqp_channel.basic_publish.assert_not_called()
