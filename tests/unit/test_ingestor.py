@@ -231,34 +231,23 @@ class TestIngestor:
             mock_event2.path = "/test/file2.txt"
             mock_event2.mask = "IN_MOVED_TO"
 
-            # Make inotify return events
-            events = [mock_event1, mock_event2]
-            event_index = 0
-
-            async def event_generator() -> AsyncGenerator[Mock, None]:
-                nonlocal event_index
-                for event in events:
-                    if event_index >= len(events) or not ingestor_instance._running:
-                        return
-                    yield event
-                    event_index += 1
-
-            inotify_instance.__aiter__.return_value = event_generator()
-
             # Create ingestor
             ingestor_instance = Ingestor()
             ingestor_instance.amqp_channel = mock_amqp_channel
 
-            # Run ingest in a task and stop after processing events
-            async def run_and_stop() -> None:
-                await asyncio.sleep(0.1)  # Let it process events
+            # Make inotify return events
+            events = [mock_event1, mock_event2]
+
+            async def event_generator() -> AsyncGenerator[Mock, None]:
+                for event in events:
+                    yield event
+                # After yielding all events, stop the ingestor
                 ingestor_instance.stop()
 
-            import asyncio
+            inotify_instance.__aiter__.return_value = event_generator()
 
-            task = asyncio.create_task(run_and_stop())
+            # Run ingest - it will process events and then stop
             await ingestor_instance.ingest()
-            await task
 
             # Verify prospector was called for each event
             assert prospector_class.call_count == 2
