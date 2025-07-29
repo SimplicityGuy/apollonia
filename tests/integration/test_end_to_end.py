@@ -143,18 +143,28 @@ class TestEndToEnd:
         )
 
         async with driver.session() as session:
-            # Count created nodes
+            # Count created nodes - be specific to avoid nodes from other tests
+            import os
+
+            temp_dir_path = os.path.realpath(str(temp_data_dir))
             result = await session.run(
-                "MATCH (f:File) WHERE f.path CONTAINS 'test_file_' RETURN count(f) as count"
+                """
+                MATCH (f:File) WHERE f.path STARTS WITH $dir
+                AND f.path CONTAINS 'test_file_'
+                RETURN count(f) as count
+                """,
+                dir=temp_dir_path,
             )
             record = await result.single()
             assert record is not None and record["count"] == 3
 
             # Verify file properties
             for i, test_file in enumerate(test_files):
-                result = await session.run(
-                    "MATCH (f:File {path: $path}) RETURN f", path=str(test_file.absolute())
-                )
+                # Handle macOS /private/var symlink issue
+                import os
+
+                file_path = os.path.realpath(str(test_file.absolute()))
+                result = await session.run("MATCH (f:File {path: $path}) RETURN f", path=file_path)
                 record = await result.single()
                 assert record is not None
 
@@ -289,8 +299,12 @@ class TestEndToEnd:
         )
 
         async with driver.session() as session:
+            # Handle macOS /private/var symlink issue
+            import os
+
             result = await session.run(
-                "MATCH (f:File {path: $path}) RETURN f", path=str(test_file.absolute())
+                "MATCH (f:File {path: $path}) RETURN f",
+                path=os.path.realpath(str(test_file.absolute())),
             )
             record = await result.single()
             assert record is not None
@@ -326,6 +340,8 @@ class TestEndToEnd:
                         await asyncio.sleep(2)
 
                         # Create multiple files rapidly
+                        import os
+
                         test_files = []
                         for i in range(num_files):
                             file_path = temp_data_dir / f"concurrent_{i}.dat"
@@ -353,17 +369,29 @@ class TestEndToEnd:
         )
 
         async with driver.session() as session:
+            # Be specific about the path to avoid counting files from other tests
+            import os
+
+            temp_dir_path = os.path.realpath(str(temp_data_dir))
             result = await session.run(
-                "MATCH (f:File) WHERE f.path CONTAINS 'concurrent_' RETURN count(f) as count"
+                """
+                MATCH (f:File) WHERE f.path STARTS WITH $dir
+                AND f.path CONTAINS 'concurrent_'
+                RETURN count(f) as count
+                """,
+                dir=temp_dir_path,
             )
             record = await result.single()
             assert record is not None and record["count"] == num_files
 
             # Verify each file has correct size
             for test_file in test_files:
+                # Handle macOS /private/var symlink issue
+                import os
+
                 result = await session.run(
                     "MATCH (f:File {path: $path}) RETURN f.size as size",
-                    path=str(test_file.absolute()),
+                    path=os.path.realpath(str(test_file.absolute())),
                 )
                 record = await result.single()
                 assert record is not None and record["size"] == 1024
@@ -431,9 +459,17 @@ class TestEndToEnd:
         )
 
         async with driver.session() as session:
+            # Be specific about the path to avoid finding files from other tests
+            import os
+
+            temp_dir_path = os.path.realpath(str(temp_data_dir))
             result = await session.run(
-                "MATCH (f:File) WHERE f.path CONTAINS 'resilience_test' "
-                "RETURN f.path as path ORDER BY path"
+                """
+                MATCH (f:File) WHERE f.path STARTS WITH $dir
+                AND f.path CONTAINS 'resilience_test'
+                RETURN f.path as path ORDER BY path
+                """,
+                dir=temp_dir_path,
             )
             paths = [record["path"] async for record in result]
 
@@ -513,6 +549,8 @@ class TestEndToEnd:
                         await asyncio.sleep(2)
 
                         # Create large file AFTER watchdog is running
+                        import os
+
                         large_file = temp_data_dir / "large_file.bin"
                         large_content = os.urandom(10 * 1024 * 1024)  # 10MB
                         large_file.write_bytes(large_content)
@@ -538,8 +576,12 @@ class TestEndToEnd:
         )
 
         async with driver.session() as session:
+            # Handle macOS /private/var symlink issue
+            import os
+
             result = await session.run(
-                "MATCH (f:File {path: $path}) RETURN f", path=str(large_file.absolute())
+                "MATCH (f:File {path: $path}) RETURN f",
+                path=os.path.realpath(str(large_file.absolute())),
             )
             record = await result.single()
             assert record is not None

@@ -78,18 +78,14 @@ class TestPopulatorIntegration:
             auto_delete=False,
         )
 
-        # Create and bind test-specific queue
-        queue = await channel.declare_queue(
-            test_queue_name,
-            durable=True,
-            auto_delete=True,  # Auto-delete when connection closes
-        )
-        await queue.bind(exchange, routing_key=AMQP_ROUTING_KEY)
+        # Don't pre-declare the queue - let the populator declare it with its own parameters
+        # This avoids queue declaration conflicts
 
         yield channel, exchange, test_queue_name
 
-        # Cleanup: delete the test queue
+        # Cleanup: delete the test queue if it exists
         with contextlib.suppress(Exception):
+            queue = await channel.get_queue(test_queue_name)
             await queue.delete()
 
         await connection.close()

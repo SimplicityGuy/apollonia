@@ -20,7 +20,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def amqp_url() -> str:
     """Get AMQP connection URL from environment or use default."""
-    return os.getenv("AMQP_CONNECTION_STRING", "amqp://guest:guest@localhost:5672/")
+    return os.getenv("AMQP_CONNECTION_STRING", "amqp://apollonia:apollonia@localhost:5672/")
 
 
 @pytest.fixture

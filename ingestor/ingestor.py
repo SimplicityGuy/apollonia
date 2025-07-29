@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-AMQP_CONNECTION = os.getenv("AMQP_CONNECTION_STRING", "amqp://guest:guest@localhost:5672/")
+AMQP_CONNECTION = os.getenv("AMQP_CONNECTION_STRING", "amqp://apollonia:apollonia@localhost:5672/")
 AMQP_EXCHANGE = "apollonia"
 DATA_DIRECTORY = os.getenv("DATA_DIRECTORY", "/data")
 ROUTING_KEY = "file.created"
