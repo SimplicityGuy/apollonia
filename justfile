@@ -111,9 +111,14 @@ test-python-unit-ci path marks:
   echo "🧪 Running Python unit tests for CI..."
   uv run pytest {{path}} \
     -m "{{marks}}" \
-    --cov \
+    --cov=apollonia \
+    --cov=ingestor \
+    --cov=populator \
+    --cov=analyzer \
+    --cov=api \
     --cov-report=xml \
     --cov-report=html \
+    --cov-report=term \
     --junitxml=junit.xml \
     -o junit_family=legacy \
     --maxfail=5 \
@@ -128,8 +133,15 @@ test-python-integration-ci:
   export NEO4J_PASSWORD="apollonia"
   uv run pytest tests/integration \
     -m "integration and not e2e" \
-    --cov \
+    --cov=apollonia \
+    --cov=ingestor \
+    --cov=populator \
+    --cov=analyzer \
+    --cov=api \
     --cov-report=xml \
+    --cov-report=html \
+    --cov-report=term \
+    --cov-append \
     --junitxml=junit.xml \
     -o junit_family=legacy \
     --maxfail=5 \

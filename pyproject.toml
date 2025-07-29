@@ -239,8 +239,8 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["ingestor", "populator"]
-omit = ["*/tests/*", "*/test_*.py"]
+source = ["apollonia", "ingestor", "populator", "analyzer", "api"]
+omit = ["*/tests/*", "*/test_*.py", "*/__pycache__/*", "*/migrations/*"]
 
 [tool.coverage.report]
 exclude_lines = [

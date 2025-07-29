@@ -7,6 +7,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -63,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true'
+    if: always() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch')
 
     permissions:
       contents: read
@@ -74,7 +78,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.12']
-        test-group: ['unit', 'integration-unit']
+        test-group: ['unit', 'integration-unit', 'analyzer', 'api', 'e2e-unit']
         include:
           - test-group: 'unit'
             test-path: 'tests/unit'
@@ -82,6 +86,15 @@ jobs:
           - test-group: 'integration-unit'
             test-path: 'tests/integration'
             marks: 'not e2e and not docker'
+          - test-group: 'analyzer'
+            test-path: 'tests/analyzer'
+            marks: 'not integration and not e2e'
+          - test-group: 'api'
+            test-path: 'tests/api'
+            marks: 'not integration and not e2e'
+          - test-group: 'e2e-unit'
+            test-path: 'tests/e2e'
+            marks: 'not docker'
 
     steps:
       - name: 📥 Checkout repository
@@ -110,6 +123,8 @@ jobs:
         timeout-minutes: 10
         run: |
           just test-python-unit-ci "${{ matrix.test-path }}" "${{ matrix.marks }}"
+          # Rename coverage file to avoid conflicts
+          mv .coverage .coverage.${{ matrix.test-group }}
           # Rename the output file to match the matrix test group
           mv junit.xml pytest-results-${{ matrix.test-group }}.xml
 
@@ -147,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: changes
-    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true'
+    if: always() && (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch')
 
     permissions:
       contents: read
@@ -200,8 +215,8 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [changes, python-tests]
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true'
+    needs: [changes]
+    if: always() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch')
 
     permissions:
       contents: read
@@ -321,12 +336,24 @@ jobs:
 
           echo "✅ All services are ready"
 
-      - name: 🔗 Run integration tests
+      - name: 🔗 Run integration tests with coverage
         timeout-minutes: 15
         env:
           POSTGRES_URL: postgresql://test:test@localhost:5432/apollonia_test
           REDIS_URL: redis://localhost:6379/0
-        run: just test-python-integration-ci
+        run: |
+          just test-python-integration-ci
+          # Rename coverage file to avoid conflicts
+          mv .coverage .coverage.integration
+
+      - name: 📤 Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: integration
+          name: apollonia-integration-coverage
+          fail_ci_if_error: false
 
       - name: 📤 Upload integration test results
         uses: actions/upload-artifact@v4
@@ -336,20 +363,21 @@ jobs:
           path: |
             junit.xml
             coverage.xml
+            .coverage.integration
 
   # E2E tests - with Docker layer caching
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [changes, integration-tests, frontend-tests]
+    needs: [changes]
     if: |
+      always() &&
       (needs.changes.outputs.backend == 'true' ||
        needs.changes.outputs.frontend == 'true' ||
        needs.changes.outputs.docker == 'true' ||
-       needs.changes.outputs.workflows == 'true') &&
-      needs.integration-tests.result == 'success' &&
-      needs.frontend-tests.result == 'success'
+       needs.changes.outputs.workflows == 'true' ||
+       github.event_name == 'workflow_dispatch')
 
     permissions:
       contents: read
@@ -436,12 +464,60 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
+  # Combined coverage upload
+  upload-coverage:
+    name: Upload Combined Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [python-tests, integration-tests]
+    if: always()
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+
+      - name: 📥 Download all coverage files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-test-results*'
+          merge-multiple: true
+
+      - name: 🔀 Combine coverage files
+        run: |
+          # Find all coverage files
+          echo "Found coverage files:"
+          ls -la .coverage* || echo "No coverage files found"
+
+          # Combine coverage files if they exist
+          if ls .coverage* 1> /dev/null 2>&1; then
+            uv run coverage combine .coverage*
+            uv run coverage xml
+            uv run coverage report
+          else
+            echo "No coverage files to combine"
+          fi
+
+      - name: 📤 Upload combined coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: hashFiles('coverage.xml') != ''
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: backend
+          name: apollonia-combined-coverage
+          fail_ci_if_error: false
+
   # Test summary - runs in parallel with other final jobs
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [python-tests, frontend-tests, integration-tests, e2e-tests]
+    needs: [python-tests, frontend-tests, integration-tests, e2e-tests, upload-coverage]
     if: always()
 
     steps:

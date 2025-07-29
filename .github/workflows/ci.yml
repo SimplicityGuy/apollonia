@@ -1,0 +1,71 @@
+---
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Call all workflows in parallel
+  quality:
+    name: Quality Checks
+    uses: ./.github/workflows/quality.yml
+    permissions:
+      contents: read
+      security-events: write
+      checks: write
+
+  tests:
+    name: Tests
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      packages: read
+    secrets: inherit
+
+  docker:
+    name: Docker Build
+    uses: ./.github/workflows/docker.yml
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+
+  # Final status check
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [quality, tests, docker]
+    if: always()
+
+    steps:
+      - name: 📊 CI Summary
+        run: |
+          echo "## 🚀 CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality Checks | ${{ needs.quality.result == 'success' && '✅ Passed' || needs.quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.tests.result == 'success' && '✅ Passed' || needs.tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker.result == 'success' && '✅ Passed' || needs.docker.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [[ "${{ needs.quality.result }}" == "success" && "${{ needs.tests.result }}" == "success" && "${{ needs.docker.result }}" == "success" ]]; then
+            echo "### ✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "### ❌ Some checks failed or were skipped" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

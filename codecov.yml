@@ -1,0 +1,101 @@
+# Codecov configuration for Apollonia
+# https://docs.codecov.io/docs/codecov-yaml
+
+coverage:
+  # Coverage precision (decimal places)
+  precision: 2
+  round: down
+
+  # Coverage status checks
+  status:
+    project:
+      default:
+        # Overall project coverage
+        target: 80%
+        threshold: 2%
+        paths:
+          - "apollonia/"
+          - "ingestor/"
+          - "populator/"
+          - "analyzer/"
+          - "api/"
+
+      frontend:
+        target: 70%
+        threshold: 2%
+        paths:
+          - "frontend/"
+        flags:
+          - frontend
+
+      backend:
+        target: 80%
+        threshold: 2%
+        paths:
+          - "apollonia/"
+          - "ingestor/"
+          - "populator/"
+          - "analyzer/"
+          - "api/"
+        flags:
+          - unit
+          - integration-unit
+          - integration
+
+    patch:
+      default:
+        # Coverage for new code in PR
+        target: 85%
+        threshold: 5%
+
+# Define coverage flags for different test types
+flags:
+  unit:
+    paths:
+      - "apollonia/"
+      - "ingestor/"
+      - "populator/"
+      - "analyzer/"
+      - "api/"
+    carryforward: true
+
+  integration-unit:
+    paths:
+      - "apollonia/"
+      - "ingestor/"
+      - "populator/"
+      - "analyzer/"
+      - "api/"
+    carryforward: true
+
+  integration:
+    paths:
+      - "apollonia/"
+      - "ingestor/"
+      - "populator/"
+      - "analyzer/"
+      - "api/"
+    carryforward: true
+
+  frontend:
+    paths:
+      - "frontend/"
+    carryforward: true
+
+# Comment configuration
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# Ignore certain paths from coverage
+ignore:
+  - "**/tests/**"
+  - "**/test_*.py"
+  - "**/__pycache__/**"
+  - "**/migrations/**"
+  - "**/*.md"
+  - "**/docs/**"
+  - "**/benchmarks/**"
