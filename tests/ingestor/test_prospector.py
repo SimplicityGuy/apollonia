@@ -7,6 +7,7 @@ import tempfile
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -128,7 +129,7 @@ class TestProspector:
         # Mock stat to raise error only for the test file
         original_stat = Path.stat
 
-        def mock_stat(self, *args, **kwargs):
+        def mock_stat(self: Path, *args: Any, **kwargs: Any) -> Any:
             # If this is our test file, raise permission error
             if self == test_file:
                 raise OSError("Permission denied")
