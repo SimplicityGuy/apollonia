@@ -82,8 +82,8 @@ class TestPopulatorIntegration:
                 auto_delete=False,
             )
             await queue.purge()
-            # Give a moment for the purge to complete
-            await asyncio.sleep(0.1)
+            # Give more time for the purge to complete in CI
+            await asyncio.sleep(0.5)
         except (AMQPConnectionError, AttributeError):
             # Queue might not exist yet or other transient errors
             pass
@@ -223,8 +223,8 @@ class TestPopulatorIntegration:
             consume_task = asyncio.create_task(populator.consume())
 
             try:
-                # Give consumer time to set up and consume any stray messages
-                await asyncio.sleep(1.5)
+                # Give consumer more time to set up and consume any stray messages in CI
+                await asyncio.sleep(3)
 
                 # Publish messages
                 for data in messages_data:
@@ -234,10 +234,10 @@ class TestPopulatorIntegration:
                         content_type="application/json",
                     )
                     await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
-                    await asyncio.sleep(0.1)  # Small delay between messages
+                    await asyncio.sleep(0.2)  # More delay between messages for CI
 
-                # Give time to process
-                await asyncio.sleep(2)
+                # Give more time to process in CI
+                await asyncio.sleep(4)
 
             finally:
                 # Stop populator

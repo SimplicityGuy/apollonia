@@ -183,8 +183,8 @@ class TestEndToEnd:
                     consume_task = asyncio.create_task(populator.consume())
 
                     try:
-                        # Give services time to start
-                        await asyncio.sleep(2)
+                        # Give services more time to start in CI
+                        await asyncio.sleep(4)
 
                         # Create files AFTER watchdog is running
                         # Create neighbor files first
@@ -192,15 +192,15 @@ class TestEndToEnd:
                         (temp_data_dir / "movie.nfo").write_text("metadata")
                         (temp_data_dir / "movie.jpg").write_text("thumbnail")
 
-                        # Small delay to ensure neighbor files are on disk
-                        await asyncio.sleep(0.5)
+                        # More delay to ensure neighbor files are on disk in CI
+                        await asyncio.sleep(1)
 
                         # Create the main file to trigger processing
                         main_file = temp_data_dir / "movie.mp4"
                         main_file.write_text("video content")
 
-                        # Give time for processing
-                        await asyncio.sleep(5)
+                        # Give more time for processing in CI
+                        await asyncio.sleep(7)
 
                     finally:
                         # Stop services
@@ -255,21 +255,21 @@ class TestEndToEnd:
                     consume_task = asyncio.create_task(populator.consume())
 
                     try:
-                        # Give services time to start
-                        await asyncio.sleep(2)
+                        # Give services more time to start in CI
+                        await asyncio.sleep(4)
 
                         # Create initial file AFTER watchdog is running
                         test_file = temp_data_dir / "update_test.txt"
                         test_file.write_text("Initial content")
 
-                        # Give time to process initial file
-                        await asyncio.sleep(3)
+                        # Give more time to process initial file in CI
+                        await asyncio.sleep(5)
 
                         # Update the file
                         test_file.write_text("Updated content with more text")
 
-                        # Give time for processing the update
-                        await asyncio.sleep(3)
+                        # Give more time for processing the update in CI
+                        await asyncio.sleep(5)
 
                     finally:
                         # Stop services

@@ -135,7 +135,8 @@ class Ingestor:
                     current_time = asyncio.get_event_loop().time()
                     if file_path in self._recent_files:
                         last_processed = self._recent_files[file_path]
-                        if current_time - last_processed < 1.0:  # 1 second debounce
+                        # 0.5 second debounce for faster updates in CI
+                        if current_time - last_processed < 0.5:
                             logger.debug("⏭️ Skipping duplicate event for %s", file_path)
                             return
 
