@@ -61,7 +61,7 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
-*.junit.xml
+*junit.xml
 pytest-results.xml
 .hypothesis/
 .pytest_cache/
