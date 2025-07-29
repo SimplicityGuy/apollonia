@@ -28,7 +28,7 @@ def docker_client() -> docker.DockerClient:
 
 
 @pytest.fixture(scope="session")
-def docker_compose_project(_docker_client: docker.DockerClient) -> Iterator[str]:
+def docker_compose_project(docker_client: docker.DockerClient) -> Iterator[str]:  # noqa: ARG001
     """Start docker-compose services for testing."""
     import subprocess
 
@@ -123,7 +123,7 @@ class TestEndToEnd:
             assert "Processing file" in populator_logs or test_filename in populator_logs
 
     @pytest.mark.asyncio
-    async def test_neo4j_data_verification(self, _docker_compose_project: str) -> None:
+    async def test_neo4j_data_verification(self, docker_compose_project: str) -> None:  # noqa: ARG002
         """Verify data was stored in Neo4j."""
         from neo4j import AsyncGraphDatabase
 

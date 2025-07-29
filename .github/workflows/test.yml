@@ -78,7 +78,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.12']
-        test-group: ['unit', 'integration-unit', 'analyzer', 'api', 'e2e-unit']
+        test-group: ['unit', 'integration-unit', 'analyzer', 'ingestor', 'populator']
         include:
           - test-group: 'unit'
             test-path: 'tests/unit'
@@ -89,12 +89,12 @@ jobs:
           - test-group: 'analyzer'
             test-path: 'tests/analyzer'
             marks: 'not integration and not e2e'
-          - test-group: 'api'
-            test-path: 'tests/api'
+          - test-group: 'ingestor'
+            test-path: 'tests/ingestor'
             marks: 'not integration and not e2e'
-          - test-group: 'e2e-unit'
-            test-path: 'tests/e2e'
-            marks: 'not docker'
+          - test-group: 'populator'
+            test-path: 'tests/populator'
+            marks: 'not integration and not e2e'
 
     steps:
       - name: 📥 Checkout repository
@@ -435,8 +435,19 @@ jobs:
           # Wait for services to be healthy
           timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
 
-          # Run E2E tests with coverage
-          just test-e2e-ci
+          # Run E2E tests with coverage (excluding playwright tests)
+          uv run pytest -v \
+            tests/e2e \
+            -m "not docker and not playwright" \
+            --cov=apollonia \
+            --cov=ingestor \
+            --cov=populator \
+            --cov=analyzer \
+            --cov=api \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=e2e-results.xml
 
           # Rename coverage file to avoid conflicts
           mv .coverage .coverage.e2e
