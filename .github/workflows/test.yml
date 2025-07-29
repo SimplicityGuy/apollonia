@@ -333,6 +333,129 @@ jobs:
             coverage.xml
             .coverage.integration
 
+  # Docker integration tests - comprehensive Docker-based testing
+  docker-integration-tests:
+    name: Docker Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [changes]
+    if: |
+      inputs.skip_changes_detection ||
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.docker == 'true' ||
+      needs.changes.outputs.workflows == 'true' ||
+      github.event_name == 'workflow_dispatch'
+
+    permissions:
+      contents: read
+      checks: write
+      packages: read
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+          cache-key-prefix: python-docker-integration
+
+      - name: 🐋 Install docker-compose
+        uses: alexellis/arkade-get@1eef818e467c387d3f50cfe0d2c565d1cbe82b03 # master
+        with:
+          docker-compose: latest
+
+      - name: 💾 Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: buildx-docker-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            buildx-docker-${{ runner.os }}-
+
+      - name: 🐋 Build services with cache
+        timeout-minutes: 20
+        run: |
+          # Use docker-compose build instead of buildx bake to avoid privilege issues
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          docker-compose build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --parallel
+
+      - name: 🌐 Run Docker integration tests with coverage
+        timeout-minutes: 15
+        run: |
+          # Start services
+          docker-compose up -d
+
+          # Wait for services to be healthy
+          timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
+
+          # Run Docker integration tests with coverage
+          uv run pytest -v \
+            tests/e2e/test_docker_e2e.py \
+            -m "docker" \
+            --cov=apollonia \
+            --cov=ingestor \
+            --cov=populator \
+            --cov=analyzer \
+            --cov=api \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=docker-integration-results.xml
+
+          # Rename coverage file to avoid conflicts
+          mv .coverage .coverage.docker-integration
+
+      - name: 📋 Show service logs on failure
+        if: failure()
+        run: |
+          echo "🔍 Service logs:"
+          docker-compose logs --tail=100
+
+      - name: 🛑 Stop services
+        if: always()
+        run: docker-compose down -v
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: docker-integration
+          name-suffix: docker-integration
+
+      - name: 📤 Upload Docker integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-integration-test-results
+          path: |
+            docker-integration-results.xml
+            coverage.xml
+            .coverage.docker-integration
+            htmlcov/
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: docker-integration-results.xml
+          check-name: Docker Integration Test Results
+
+      - name: 🗑️ Move cache
+        if: always()
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
+
   # E2E tests - with Docker layer caching
   e2e-tests:
     name: E2E Tests
@@ -462,7 +585,7 @@ jobs:
     name: Upload Combined Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [python-tests, frontend-tests, integration-tests, e2e-tests]
+    needs: [python-tests, frontend-tests, integration-tests, docker-integration-tests, e2e-tests]
     if: always()
 
     steps:
@@ -492,6 +615,13 @@ jobs:
         with:
           name: e2e-test-results
           path: e2e-coverage
+        continue-on-error: true
+
+      - name: 📥 Download Docker integration coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-integration-test-results
+          path: docker-integration-coverage
         continue-on-error: true
 
       - name: 🔀 Combine coverage files
@@ -543,7 +673,7 @@ jobs:
     name: Test Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [python-tests, frontend-tests, integration-tests, e2e-tests, upload-coverage]
+    needs: [python-tests, frontend-tests, integration-tests, docker-integration-tests, e2e-tests, upload-coverage]
     if: always()
 
     steps:
@@ -556,6 +686,7 @@ jobs:
           echo "| Python Unit Tests | ${{ needs.python-tests.result == 'success' && '✅ Passed' || needs.python-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Tests | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || needs.frontend-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || needs.integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Integration Tests | ${{ needs.docker-integration-tests.result == 'success' && '✅ Passed' || needs.docker-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -572,7 +703,7 @@ jobs:
     name: Coverage Report
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [python-tests, frontend-tests, integration-tests, e2e-tests]
+    needs: [python-tests, frontend-tests, integration-tests, docker-integration-tests, e2e-tests]
     if: always() && github.event_name == 'pull_request'
 
     permissions:

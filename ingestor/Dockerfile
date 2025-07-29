@@ -36,7 +36,7 @@ WORKDIR /app
 COPY --from=builder --chown=apollonia:apollonia /app/.venv /app/.venv
 
 # Copy application code
-COPY --chown=apollonia:apollonia ingestor/ ./ingestor/
+COPY --from=builder --chown=apollonia:apollonia /app ./
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"

@@ -167,7 +167,6 @@ jobs:
 
       - name: 🏗️ Build frontend
         timeout-minutes: 10
-        working-directory: frontend
         run: just build-frontend-ci
 
       - name: 📤 Upload build artifacts
