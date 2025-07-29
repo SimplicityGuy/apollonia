@@ -245,7 +245,7 @@ test-frontend:
 [group('test')]
 test-frontend-ci:
   echo "🎨 Running frontend tests in CI mode..."
-  cd frontend && npm run lint && npm run type-check && npm run test:ci -- --coverage --reporter=junit --outputFile=test-report.junit.xml --maxWorkers=50%
+  cd frontend && npm run lint && npm run type-check && npm run test:coverage -- --reporter=junit --reporter=json --outputFile=test-report.junit.xml
 
 # Run frontend quality checks and build for dependencies workflow
 [group('test')]

@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: changes
-    if: always() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch')
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: changes
-    if: always() && (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch')
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
@@ -216,7 +216,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [changes]
-    if: always() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch')
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
@@ -372,12 +372,11 @@ jobs:
     timeout-minutes: 30
     needs: [changes]
     if: |
-      always() &&
-      (needs.changes.outputs.backend == 'true' ||
-       needs.changes.outputs.frontend == 'true' ||
-       needs.changes.outputs.docker == 'true' ||
-       needs.changes.outputs.workflows == 'true' ||
-       github.event_name == 'workflow_dispatch')
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.docker == 'true' ||
+      needs.changes.outputs.workflows == 'true' ||
+      github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
