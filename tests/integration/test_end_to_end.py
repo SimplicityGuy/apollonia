@@ -16,7 +16,7 @@ import pytest
 import pytest_asyncio
 from neo4j import AsyncGraphDatabase
 from neo4j.exceptions import ServiceUnavailable
-from pika import BlockingConnection, URLParameters
+from pika import BasicProperties, BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 
 # Import services conditionally for macOS
@@ -483,7 +483,7 @@ class TestEndToEnd:
             exchange=AMQP_EXCHANGE,
             routing_key="",
             body=orjson.dumps(test_data),
-            properties=channel._create_properties(delivery_mode=2),
+            properties=BasicProperties(delivery_mode=2),
         )
 
         # Close connection

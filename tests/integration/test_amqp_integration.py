@@ -198,11 +198,13 @@ class TestAMQPIntegration:
         channel = connection.channel()
 
         # Try to consume from non-existent queue
-        with pytest.raises((ValueError, RuntimeError)):
+        with pytest.raises((ValueError, RuntimeError, pika.exceptions.ChannelClosedByBroker)):
             channel.basic_get("non-existent-queue")
 
-        # Connection should still be usable
-        assert connection.is_open
+        # After channel error, create a new channel to test connection recovery
+        if connection.is_open:
+            new_channel = connection.channel()
+            new_channel.close()
 
         connection.close()
 

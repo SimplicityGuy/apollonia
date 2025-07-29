@@ -106,6 +106,7 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
+    @pytest.mark.asyncio
     async def test_ingestor_publishes_file_events(
         self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
     ) -> None:
@@ -154,6 +155,7 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
+    @pytest.mark.asyncio
     async def test_ingestor_handles_multiple_files(
         self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
     ) -> None:
@@ -203,6 +205,7 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
+    @pytest.mark.asyncio
     async def test_ingestor_finds_neighbors(
         self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
     ) -> None:
@@ -318,6 +321,7 @@ class TestIngestorIntegration:
 
     @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
+    @pytest.mark.asyncio
     async def test_ingestor_processes_existing_files_on_startup(
         self, temp_data_dir: Path, amqp_consumer: tuple[Channel, list[Any]]
     ) -> None:
