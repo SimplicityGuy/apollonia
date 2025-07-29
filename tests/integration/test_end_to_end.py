@@ -163,8 +163,8 @@ class TestEndToEnd:
                 # Handle macOS /private/var symlink issue
                 import os
 
-                file_path = os.path.realpath(str(test_file.absolute()))
-                result = await session.run("MATCH (f:File {path: $path}) RETURN f", path=file_path)
+                real_path = os.path.realpath(str(test_file.absolute()))
+                result = await session.run("MATCH (f:File {path: $path}) RETURN f", path=real_path)
                 record = await result.single()
                 assert record is not None
 
