@@ -2,9 +2,9 @@
 name: Tests
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch:
 
@@ -118,7 +118,7 @@ jobs:
         if: matrix.python-version == '3.12'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
+          files: ./coverage.xml
           flags: ${{ matrix.test-group }}
           name: apollonia-${{ matrix.test-group }}-coverage
           fail_ci_if_error: false
@@ -181,7 +181,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./frontend/coverage/lcov.info
+          files: ./frontend/coverage/lcov.info
           flags: frontend
           name: apollonia-frontend-coverage
           fail_ci_if_error: false
