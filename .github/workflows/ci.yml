@@ -87,6 +87,8 @@ jobs:
       pull-requests: write
       packages: read
     secrets: inherit
+    with:
+      skip_changes_detection: true
 
   # Docker builds and deployment
   docker:

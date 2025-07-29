@@ -155,10 +155,6 @@ jobs:
       contents: read
       packages: write
 
-    defaults:
-      run:
-        working-directory: frontend
-
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -171,6 +167,7 @@ jobs:
 
       - name: 🏗️ Build frontend
         timeout-minutes: 10
+        working-directory: frontend
         run: just build-frontend-ci
 
       - name: 📤 Upload build artifacts

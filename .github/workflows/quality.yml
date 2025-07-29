@@ -64,10 +64,6 @@ jobs:
       contents: read
       checks: write
 
-    defaults:
-      run:
-        working-directory: frontend
-
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -79,15 +75,19 @@ jobs:
           install-just: true
 
       - name: 🔍 Run frontend linting checks
+        working-directory: frontend
         run: just lint-frontend
 
       - name: 💅 Check frontend code formatting
+        working-directory: frontend
         run: just format-check-frontend
 
       - name: 🔍 Run frontend type checking
+        working-directory: frontend
         run: just typecheck-frontend
 
       - name: 🔒 Audit frontend dependencies
+        working-directory: frontend
         run: just security-frontend
 
   # Pre-commit hooks validation

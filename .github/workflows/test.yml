@@ -4,6 +4,11 @@ name: Tests
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      skip_changes_detection:
+        description: 'Skip change detection and run all tests'
+        type: boolean
+        default: true
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -63,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
+    if: inputs.skip_changes_detection || needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
@@ -156,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: changes
-    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
+    if: inputs.skip_changes_detection || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
@@ -209,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [changes]
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
+    if: inputs.skip_changes_detection || needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
@@ -335,6 +340,7 @@ jobs:
     timeout-minutes: 30
     needs: [changes]
     if: |
+      inputs.skip_changes_detection ||
       needs.changes.outputs.backend == 'true' ||
       needs.changes.outputs.frontend == 'true' ||
       needs.changes.outputs.docker == 'true' ||
