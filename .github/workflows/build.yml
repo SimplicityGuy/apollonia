@@ -17,18 +17,33 @@ jobs:
   quality:
     name: Quality Checks
     uses: ./.github/workflows/quality.yml
+    permissions:
+      contents: read
+      security-events: write
+      checks: write
 
   # Comprehensive testing
   tests:
     name: Test Suite
     uses: ./.github/workflows/test.yml
     needs: quality
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      packages: read
+    secrets: inherit
 
   # Docker builds and deployment
   docker:
     name: Docker Build & Deploy
     uses: ./.github/workflows/docker.yml
     needs: tests
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
     secrets: inherit
     with:
       push_images: ${{ github.event_name != 'pull_request' }}

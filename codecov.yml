@@ -82,6 +82,15 @@ flags:
       - "frontend/"
     carryforward: true
 
+  e2e:
+    paths:
+      - "apollonia/"
+      - "ingestor/"
+      - "populator/"
+      - "analyzer/"
+      - "api/"
+    carryforward: true
+
 # Comment configuration
 comment:
   layout: "reach,diff,flags,tree"

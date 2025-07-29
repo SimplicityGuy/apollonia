@@ -426,7 +426,7 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --parallel
 
-      - name: 🌐 Run E2E tests
+      - name: 🌐 Run E2E tests with coverage
         timeout-minutes: 15
         run: |
           # Start services
@@ -435,8 +435,11 @@ jobs:
           # Wait for services to be healthy
           timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
 
-          # Run E2E tests
-          just test-e2e
+          # Run E2E tests with coverage
+          just test-e2e-ci
+
+          # Rename coverage file to avoid conflicts
+          mv .coverage .coverage.e2e
 
       - name: 📋 Show service logs on failure
         if: failure()
@@ -448,6 +451,15 @@ jobs:
         if: always()
         run: docker-compose down -v
 
+      - name: 📤 Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: e2e
+          name: apollonia-e2e-coverage
+          fail_ci_if_error: false
+
       - name: 📤 Upload E2E test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -455,6 +467,9 @@ jobs:
           name: e2e-test-results
           path: |
             e2e-results.xml
+            coverage.xml
+            .coverage.e2e
+            htmlcov/
             cypress/screenshots/
             cypress/videos/
 
@@ -469,7 +484,7 @@ jobs:
     name: Upload Combined Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [python-tests, integration-tests]
+    needs: [python-tests, frontend-tests, integration-tests, e2e-tests]
     if: always()
 
     steps:
@@ -487,29 +502,62 @@ jobs:
           pattern: '*-test-results*'
           merge-multiple: true
 
+      - name: 📥 Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-test-results
+          path: frontend-coverage
+        continue-on-error: true
+
+      - name: 📥 Download E2E coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-test-results
+          path: e2e-coverage
+        continue-on-error: true
+
       - name: 🔀 Combine coverage files
         run: |
-          # Find all coverage files
-          echo "Found coverage files:"
-          ls -la .coverage* || echo "No coverage files found"
+          # Find all Python coverage files
+          echo "Found Python coverage files:"
+          ls -la .coverage* || echo "No Python coverage files found"
 
-          # Combine coverage files if they exist
+          # Combine Python coverage files if they exist
           if ls .coverage* 1> /dev/null 2>&1; then
             uv run coverage combine .coverage*
-            uv run coverage xml
+            uv run coverage xml -o coverage-python.xml
             uv run coverage report
           else
-            echo "No coverage files to combine"
+            echo "No Python coverage files to combine"
           fi
 
-      - name: 📤 Upload combined coverage to Codecov
+          # Check for frontend coverage
+          if [ -f "frontend-coverage/coverage/lcov.info" ]; then
+            echo "Found frontend coverage file"
+            cp frontend-coverage/coverage/lcov.info coverage-frontend.lcov
+          fi
+
+          # Combine all coverage files for final upload
+          ls -la coverage*.{xml,lcov} 2>/dev/null || echo "No combined coverage files"
+
+      - name: 📤 Upload Python coverage to Codecov
         uses: codecov/codecov-action@v5
-        if: hashFiles('coverage.xml') != ''
+        if: hashFiles('coverage-python.xml') != ''
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
+          files: ./coverage-python.xml
           flags: backend
-          name: apollonia-combined-coverage
+          name: apollonia-backend-combined
+          fail_ci_if_error: false
+
+      - name: 📤 Upload Frontend coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: hashFiles('coverage-frontend.lcov') != ''
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage-frontend.lcov
+          flags: frontend
+          name: apollonia-frontend-combined
           fail_ci_if_error: false
 
   # Test summary - runs in parallel with other final jobs
@@ -546,7 +594,7 @@ jobs:
     name: Coverage Report
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [python-tests, frontend-tests, integration-tests]
+    needs: [python-tests, frontend-tests, integration-tests, e2e-tests]
     if: always() && github.event_name == 'pull_request'
 
     permissions:

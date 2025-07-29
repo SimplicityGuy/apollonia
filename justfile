@@ -208,6 +208,22 @@ test-e2e:
     tests/e2e
   docker-compose down -v
 
+# Run E2E tests for CI (with coverage)
+[group('test')]
+test-e2e-ci:
+  echo "🌐 Running E2E tests with coverage..."
+  uv run pytest -v \
+    --cov=apollonia \
+    --cov=ingestor \
+    --cov=populator \
+    --cov=analyzer \
+    --cov=api \
+    --cov-report=xml \
+    --cov-report=html \
+    --cov-report=term \
+    --junit-xml=e2e-results.xml \
+    tests/e2e
+
 # Run performance benchmarks
 [group('test')]
 test-benchmarks:
