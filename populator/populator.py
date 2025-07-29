@@ -100,7 +100,9 @@ class Populator:
                 # Validate required fields
                 file_path = data.get("file_path")
                 if not file_path:
-                    logger.warning("⚠️ Skipping message with missing file_path")
+                    logger.warning(
+                        "⚠️ Skipping message with missing file_path. Full message: %s", data
+                    )
                     return
 
                 logger.info("🔍 Processing file: %s", file_path)
@@ -121,71 +123,96 @@ class Populator:
         if not self.neo4j_driver:
             return
 
-        async with self.neo4j_driver.session() as session:
-            # Create or update File node
-            query = """
-            MERGE (f:File {path: $file_path})
-            SET f.sha256 = $sha256_hash,
-                f.xxh128 = $xxh128_hash,
-                f.size = $size,
-                f.modified = datetime($modified_time),
-                f.accessed = datetime($accessed_time),
-                f.changed = datetime($changed_time),
-                f.discovered = datetime($timestamp),
-                f.event_type = $event_type
-            RETURN f
+        # Add retry logic for deadlocks
+        max_retries = 3
+        retry_delay = 0.1
+
+        for attempt in range(max_retries):
+            try:
+                async with self.neo4j_driver.session() as session:
+                    await self._execute_neo4j_import(session, data)
+                    return  # Success
+            except Exception as e:
+                if "DeadlockDetected" in str(e) and attempt < max_retries - 1:
+                    logger.warning(
+                        "⚠️ Deadlock detected, retrying (attempt %d/%d): %s",
+                        attempt + 1,
+                        max_retries,
+                        str(e),
+                    )
+                    await asyncio.sleep(retry_delay * (attempt + 1))
+                else:
+                    raise
+
+    async def _execute_neo4j_import(self, session: Any, data: dict[str, Any]) -> None:
+        """Execute the actual Neo4j import within a session."""
+        # Validate required fields
+        if "file_path" not in data:
+            logger.error("Missing required field 'file_path' in message data: %s", data)
+            return
+        # Normalize the file path to ensure consistency
+        import os
+
+        normalized_path = os.path.realpath(data["file_path"])
+        logger.info("📥 Importing file to Neo4j: %s", normalized_path)
+
+        # Create or update File node
+        query = """
+        MERGE (f:File {path: $file_path})
+        SET f.sha256 = $sha256_hash,
+            f.xxh128 = $xxh128_hash,
+            f.size = $size,
+            f.modified = datetime($modified_time),
+            f.accessed = datetime($accessed_time),
+            f.changed = datetime($changed_time),
+            f.discovered = datetime($timestamp),
+            f.event_type = $event_type
+        RETURN f
+        """
+
+        params = {
+            "file_path": normalized_path,
+            "sha256_hash": data.get("sha256_hash", ""),
+            "xxh128_hash": data.get("xxh128_hash", ""),
+            "size": data.get("size", 0),
+            "modified_time": data.get("modified_time"),
+            "accessed_time": data.get("accessed_time"),
+            "changed_time": data.get("changed_time"),
+            "timestamp": data.get("timestamp"),
+            "event_type": data.get("event_type", "IN_CREATE"),
+        }
+
+        logger.debug("📊 File params: %s", params)
+        result = await session.run(query, params)
+        file_record = await result.single()
+
+        if file_record:
+            logger.info("✅ Created/updated file node: %s", normalized_path)
+        else:
+            logger.error("❌ Failed to create/update file node: %s", normalized_path)
+
+        # Create relationships to neighbor files
+        neighbors = data.get("neighbors", [])
+        logger.debug("🔗 Processing %d neighbors for %s", len(neighbors), normalized_path)
+
+        for neighbor_path in neighbors:
+            normalized_neighbor = os.path.realpath(neighbor_path)
+            logger.debug(
+                "🔗 Creating neighbor relationship: %s -> %s",
+                normalized_path,
+                normalized_neighbor,
+            )
+
+            neighbor_query = """
+            MERGE (f1:File {path: $file_path})
+            MERGE (f2:File {path: $neighbor_path})
+            MERGE (f1)-[:NEIGHBOR]->(f2)
             """
-
-            # Validate required fields
-            if "file_path" not in data:
-                logger.error("Missing required field 'file_path' in message data: %s", data)
-                return
-
-            # Normalize the file path to ensure consistency
-            import os
-
-            normalized_path = os.path.realpath(data["file_path"])
-
-            params = {
-                "file_path": normalized_path,
-                "sha256_hash": data.get("sha256_hash", ""),
-                "xxh128_hash": data.get("xxh128_hash", ""),
-                "size": data.get("size", 0),
-                "modified_time": data.get("modified_time"),
-                "accessed_time": data.get("accessed_time"),
-                "changed_time": data.get("changed_time"),
-                "timestamp": data.get("timestamp"),
-                "event_type": data.get("event_type", "IN_CREATE"),
-            }
-
-            result = await session.run(query, params)
-            file_record = await result.single()
-
-            if file_record:
-                logger.debug("✅ Created/updated file node: %s", data["file_path"])
-
-            # Create relationships to neighbor files
-            neighbors = data.get("neighbors", [])
-            logger.debug("🔗 Processing %d neighbors for %s", len(neighbors), normalized_path)
-
-            for neighbor_path in neighbors:
-                normalized_neighbor = os.path.realpath(neighbor_path)
-                logger.debug(
-                    "🔗 Creating neighbor relationship: %s -> %s",
-                    normalized_path,
-                    normalized_neighbor,
-                )
-
-                neighbor_query = """
-                MERGE (f1:File {path: $file_path})
-                MERGE (f2:File {path: $neighbor_path})
-                MERGE (f1)-[:NEIGHBOR]->(f2)
-                """
-                await session.run(
-                    neighbor_query,
-                    file_path=normalized_path,
-                    neighbor_path=normalized_neighbor,
-                )
+            await session.run(
+                neighbor_query,
+                file_path=normalized_path,
+                neighbor_path=normalized_neighbor,
+            )
 
     async def consume(self) -> None:
         """Start consuming messages from AMQP."""

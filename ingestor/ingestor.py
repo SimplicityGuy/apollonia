@@ -144,8 +144,8 @@ class Ingestor:
                     current_time = asyncio.get_event_loop().time()
                     if file_path in self._recent_files:
                         last_processed = self._recent_files[file_path]
-                        # 2 second debounce to prevent duplicates in CI
-                        if current_time - last_processed < 2.0:
+                        # 0.5 second debounce - enough to prevent duplicates but allow tests to run
+                        if current_time - last_processed < 0.5:
                             logger.debug("⏭️ Skipping duplicate event for %s", file_path)
                             return
 
@@ -161,7 +161,7 @@ class Ingestor:
                             if time > cutoff_time
                         }
 
-                    logger.debug("🔍 Processing event for %s", file_path)
+                    logger.info("🔍 Processing %s event for %s", event_type, file_path)
                     prospector = Prospector(Path(file_path))
                     data = await prospector.prospect()
                     # Override event type with the actual event
@@ -172,13 +172,16 @@ class Ingestor:
                             data,
                             option=orjson.OPT_SORT_KEYS | orjson.OPT_INDENT_2,
                         )
+                        logger.debug("📝 Message data: %s", data)
                         self.ingestor.amqp_channel.basic_publish(
                             exchange=AMQP_EXCHANGE,
                             routing_key=ROUTING_KEY,
                             body=message_body,
                             properties=self.ingestor.amqp_properties,
                         )
-                        logger.info("📤 Published event for file: %s", file_path)
+                        logger.info("📤 Published %s event for file: %s", event_type, file_path)
+                    else:
+                        logger.error("❌ No AMQP channel available to publish message")
                 except Exception:
                     logger.exception("💥 Error processing file event for %s", file_path)
 

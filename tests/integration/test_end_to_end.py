@@ -4,6 +4,7 @@
 
 import asyncio
 import contextlib
+import logging
 import os
 import tempfile
 import uuid
@@ -27,6 +28,8 @@ from populator.populator import (
     NEO4J_USER,
     Populator,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TestEndToEnd:
@@ -83,13 +86,25 @@ class TestEndToEnd:
 
         # Clean ALL File nodes before test to ensure test isolation
         async with driver.session() as session:
+            result = await session.run("MATCH (n:File) RETURN count(n) as count")
+            record = await result.single()
+            count = record["count"] if record else 0
+            logger.info("[CLEANUP] Before test: %d File nodes in Neo4j", count)
+
             await session.run("MATCH (n:File) DETACH DELETE n")
+            logger.info("[CLEANUP] Deleted all File nodes before test")
 
         yield
 
         # Clean ALL File nodes after test
         async with driver.session() as session:
+            result = await session.run("MATCH (n:File) RETURN count(n) as count")
+            record = await result.single()
+            count = record["count"] if record else 0
+            logger.info("[CLEANUP] After test: %d File nodes in Neo4j", count)
+
             await session.run("MATCH (n:File) DETACH DELETE n")
+            logger.info("[CLEANUP] Deleted all File nodes after test")
 
         await driver.close()
 
@@ -150,6 +165,12 @@ class TestEndToEnd:
             import os
 
             temp_dir_path = os.path.realpath(str(temp_data_dir))
+
+            # Debug: Check what files exist in Neo4j
+            debug_result = await session.run("MATCH (f:File) RETURN f.path as path ORDER BY path")
+            all_paths = [record["path"] async for record in debug_result]
+            logger.info("[DEBUG] All files in Neo4j: %s", all_paths)
+
             result = await session.run(
                 """
                 MATCH (f:File) WHERE f.path STARTS WITH $dir
@@ -159,6 +180,8 @@ class TestEndToEnd:
                 dir=temp_dir_path,
             )
             record = await result.single()
+            count = record["count"] if record else None
+            logger.info("[DEBUG] Count for dir %s: %s", temp_dir_path, count)
             assert record is not None and record["count"] == 3
 
             # Verify file properties
@@ -398,9 +421,23 @@ class TestEndToEnd:
                 # Handle macOS /private/var symlink issue
                 import os
 
+                test_path = os.path.realpath(str(test_file.absolute()))
+                logger.info("[DEBUG] Checking file: %s", test_path)
+
+                # First check if file exists and what properties it has
+                debug_result = await session.run(
+                    "MATCH (f:File {path: $path}) RETURN f",
+                    path=test_path,
+                )
+                debug_record = await debug_result.single()
+                if debug_record:
+                    logger.info("[DEBUG] File properties: %s", dict(debug_record["f"]))
+                else:
+                    logger.error("[DEBUG] File not found: %s", test_path)
+
                 result = await session.run(
                     "MATCH (f:File {path: $path}) RETURN f.size as size",
-                    path=os.path.realpath(str(test_file.absolute())),
+                    path=test_path,
                 )
                 record = await result.single()
                 assert record is not None and record["size"] == 1024
@@ -473,15 +510,28 @@ class TestEndToEnd:
             import os
 
             temp_dir_path = os.path.realpath(str(temp_data_dir))
+
+            # Debug: Check what's in Neo4j
+            debug_result = await session.run(
+                """
+                MATCH (f:File) WHERE f.path CONTAINS 'resilience_test'
+                RETURN f.path as path, f.event_type as event_type
+                ORDER BY path
+                """
+            )
+            debug_records = [(r["path"], r["event_type"]) async for r in debug_result]
+            logger.info("[DEBUG] Resilience test files in Neo4j: %s", debug_records)
+
             result = await session.run(
                 """
                 MATCH (f:File) WHERE f.path STARTS WITH $dir
                 AND f.path CONTAINS 'resilience_test'
-                RETURN f.path as path ORDER BY path
+                RETURN DISTINCT f.path as path ORDER BY path
                 """,
                 dir=temp_dir_path,
             )
             paths = [record["path"] async for record in result]
+            logger.info("[DEBUG] Distinct paths found: %s", paths)
 
             assert len(paths) == 2
             assert any("resilience_test.txt" in path for path in paths)
@@ -591,9 +641,19 @@ class TestEndToEnd:
             # Handle macOS /private/var symlink issue
             import os
 
+            large_file_path = os.path.realpath(str(large_file.absolute()))
+            logger.info("[DEBUG] Looking for large file at: %s", large_file_path)
+
+            # Debug: Check all files in Neo4j
+            debug_result = await session.run(
+                "MATCH (f:File) RETURN f.path as path, f.size as size ORDER BY path"
+            )
+            all_files = [(r["path"], r["size"]) async for r in debug_result]
+            logger.info("[DEBUG] All files in Neo4j: %s", all_files)
+
             result = await session.run(
                 "MATCH (f:File {path: $path}) RETURN f",
-                path=os.path.realpath(str(large_file.absolute())),
+                path=large_file_path,
             )
             record = await result.single()
             assert record is not None

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -54,8 +55,9 @@ class Prospector:
             logger.exception("💥 Failed to stat file: %s", self.path)
             stats = None
 
+        # Use os.path.realpath to ensure consistent paths across the system
         data: dict[str, Any] = {
-            "file_path": str(self.path.absolute()),
+            "file_path": os.path.realpath(str(self.path.absolute())),
             "event_type": "IN_CREATE",  # For compatibility
             "timestamp": datetime.now(UTC).isoformat(),
         }
@@ -129,7 +131,7 @@ class Prospector:
                         and file.stem.startswith(stem[:3])
                     )
                 ):
-                    neighbors.append(str(file.absolute()))
+                    neighbors.append(os.path.realpath(str(file.absolute())))
         except OSError:
             logger.exception("💥 Failed to search for neighbors of: %s", self.path)
 
