@@ -109,6 +109,9 @@ class Ingestor:
             def __init__(self, ingestor: Ingestor) -> None:
                 self.ingestor = ingestor
                 self.loop = asyncio.get_event_loop()
+                # Track recently processed files to avoid duplicates
+                self._recent_files: dict[str, float] = {}
+                self._cleanup_interval = 5.0  # seconds
 
             def on_created(self, event: Any) -> None:
                 """Handle file creation events."""
@@ -120,14 +123,29 @@ class Ingestor:
                 if not event.is_directory:
                     self.loop.create_task(self._process_file(str(event.dest_path)))
 
-            def on_modified(self, event: Any) -> None:
-                """Handle file modification events."""
-                if not event.is_directory:
-                    self.loop.create_task(self._process_file(str(event.src_path)))
-
             async def _process_file(self, file_path: str) -> None:
                 """Process a file event."""
                 try:
+                    # Check if we've recently processed this file
+                    current_time = asyncio.get_event_loop().time()
+                    if file_path in self._recent_files:
+                        last_processed = self._recent_files[file_path]
+                        if current_time - last_processed < 1.0:  # 1 second debounce
+                            logger.debug("⏭️ Skipping duplicate event for %s", file_path)
+                            return
+
+                    # Record this file as processed
+                    self._recent_files[file_path] = current_time
+
+                    # Clean up old entries
+                    if len(self._recent_files) > 100:
+                        cutoff_time = current_time - self._cleanup_interval
+                        self._recent_files = {
+                            path: time
+                            for path, time in self._recent_files.items()
+                            if time > cutoff_time
+                        }
+
                     logger.debug("🔍 Processing event for %s", file_path)
                     prospector = Prospector(Path(file_path))
                     data = await prospector.prospect()

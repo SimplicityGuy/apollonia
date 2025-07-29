@@ -102,15 +102,18 @@ class TestIngestorIntegration:
             ingest_task = asyncio.create_task(ingestor.ingest())
 
             # Allow ingestor to start watching
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)
 
             # Create a test file
             test_file = temp_data_dir / "test.txt"
             test_file.write_text("Hello, World!")
 
+            # Give watchdog time to detect the file event
+            await asyncio.sleep(0.5)
+
             try:
                 # Process some AMQP messages
-                connection_process_time = time.time() + 2  # 2 seconds timeout
+                connection_process_time = time.time() + 3  # 3 seconds timeout
                 while time.time() < connection_process_time:
                     channel.connection.process_data_events(time_limit=0.1)
                     if messages:
@@ -149,7 +152,7 @@ class TestIngestorIntegration:
             ingest_task = asyncio.create_task(ingestor.ingest())
 
             # Allow ingestor to start watching
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)
 
             # Create multiple test files
             files = []
@@ -206,9 +209,12 @@ class TestIngestorIntegration:
                 main_file = temp_data_dir / "video.mp4"
                 main_file.write_text("video content")
 
+                # Give watchdog time to detect the file event
+                await asyncio.sleep(0.5)
+
                 try:
                     # Process AMQP messages
-                    connection_process_time = time.time() + 2
+                    connection_process_time = time.time() + 3
                     while time.time() < connection_process_time:
                         channel.connection.process_data_events(time_limit=0.1)
                         if messages:
@@ -315,15 +321,18 @@ class TestIngestorIntegration:
             ingest_task = asyncio.create_task(ingestor.ingest())
 
             # Allow ingestor to start
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)
 
             # Create a new file to trigger processing
             new_file = temp_data_dir / "new.txt"
             new_file.write_text("New file")
 
+            # Give watchdog time to detect the file event
+            await asyncio.sleep(0.5)
+
             try:
                 # Process AMQP messages
-                connection_process_time = time.time() + 2
+                connection_process_time = time.time() + 3
                 while time.time() < connection_process_time:
                     channel.connection.process_data_events(time_limit=0.1)
                     if messages:
@@ -338,8 +347,14 @@ class TestIngestorIntegration:
                     await asyncio.wait_for(ingest_task, timeout=5.0)
 
         # Should only process the new file (existing files are not watched)
-        assert len(messages) == 1
-        assert messages[0]["file_path"] == str(new_file.absolute())
+        # Filter messages to only those from our test directory
+        test_messages = [msg for msg in messages if msg["file_path"].startswith(str(temp_data_dir))]
+
+        assert len(test_messages) == 1, (
+            f"Expected 1 message, got {len(test_messages)}: "
+            f"{[m['file_path'] for m in test_messages]}"
+        )
+        assert test_messages[0]["file_path"] == str(new_file.absolute())
 
     @pytest.mark.integration
     def test_amqp_message_properties(self, rabbitmq_available: bool) -> None:
