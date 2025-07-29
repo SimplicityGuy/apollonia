@@ -421,5 +421,5 @@ class TestIngestorIntegration:
 
         # Verify properties
         assert received_properties is not None
-        assert received_properties.delivery_mode == DeliveryMode.Persistent
+        assert received_properties.delivery_mode == DeliveryMode.Persistent.value
         assert received_properties.content_type == "application/json"

@@ -120,6 +120,11 @@ class Populator:
             RETURN f
             """
 
+            # Validate required fields
+            if "file_path" not in data:
+                logger.error("Missing required field 'file_path' in message data: %s", data)
+                return
+
             params = {
                 "file_path": data["file_path"],
                 "sha256_hash": data.get("sha256_hash", ""),
