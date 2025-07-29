@@ -18,6 +18,7 @@ from neo4j.exceptions import ServiceUnavailable
 from populator.populator import (
     AMQP_CONNECTION,
     AMQP_EXCHANGE,
+    AMQP_QUEUE,
     AMQP_ROUTING_KEY,
     NEO4J_PASSWORD,
     NEO4J_URI,
@@ -72,6 +73,18 @@ class TestPopulatorIntegration:
             durable=True,
             auto_delete=False,
         )
+
+        # Purge the populator queue to ensure clean state
+        try:
+            queue = await channel.declare_queue(
+                AMQP_QUEUE,
+                durable=True,
+                auto_delete=False,
+            )
+            await queue.purge()
+        except AMQPConnectionError:
+            # Queue might not exist yet, which is fine for tests
+            pass
 
         yield channel, exchange
 

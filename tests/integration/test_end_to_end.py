@@ -175,12 +175,6 @@ class TestEndToEnd:
         clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test that neighbor file relationships are correctly created."""
-        # Create neighbor files
-        (temp_data_dir / "movie.mp4").write_text("video content")
-        (temp_data_dir / "movie.srt").write_text("subtitles")
-        (temp_data_dir / "movie.nfo").write_text("metadata")
-        (temp_data_dir / "movie.jpg").write_text("thumbnail")
-
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             with Ingestor() as ingestor:
                 async with Populator() as populator:
@@ -192,9 +186,18 @@ class TestEndToEnd:
                         # Give services time to start
                         await asyncio.sleep(2)
 
-                        # Touch the main file to trigger processing
+                        # Create files AFTER watchdog is running
+                        # Create neighbor files first
+                        (temp_data_dir / "movie.srt").write_text("subtitles")
+                        (temp_data_dir / "movie.nfo").write_text("metadata")
+                        (temp_data_dir / "movie.jpg").write_text("thumbnail")
+
+                        # Small delay to ensure neighbor files are on disk
+                        await asyncio.sleep(0.5)
+
+                        # Create the main file to trigger processing
                         main_file = temp_data_dir / "movie.mp4"
-                        main_file.touch()
+                        main_file.write_text("video content")
 
                         # Give time for processing
                         await asyncio.sleep(5)
@@ -244,9 +247,6 @@ class TestEndToEnd:
         clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test that file updates are correctly handled."""
-        test_file = temp_data_dir / "update_test.txt"
-        test_file.write_text("Initial content")
-
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             with Ingestor() as ingestor:
                 async with Populator() as populator:
@@ -255,14 +255,20 @@ class TestEndToEnd:
                     consume_task = asyncio.create_task(populator.consume())
 
                     try:
-                        # Give services time to start and process initial file
+                        # Give services time to start
+                        await asyncio.sleep(2)
+
+                        # Create initial file AFTER watchdog is running
+                        test_file = temp_data_dir / "update_test.txt"
+                        test_file.write_text("Initial content")
+
+                        # Give time to process initial file
                         await asyncio.sleep(3)
 
                         # Update the file
                         test_file.write_text("Updated content with more text")
-                        test_file.touch()  # Update modification time
 
-                        # Give time for processing
+                        # Give time for processing the update
                         await asyncio.sleep(3)
 
                     finally:
@@ -453,8 +459,9 @@ class TestEndToEnd:
             auto_delete=False,
         )
 
-        # Create and bind a test queue
-        result = channel.queue_declare(queue="test_persistence", durable=True)
+        # Create and bind a test queue (use unique name to avoid conflicts)
+        test_queue = f"test_persistence_{os.getpid()}"
+        result = channel.queue_declare(queue=test_queue, durable=True)
         queue_name = result.method.queue
         channel.queue_bind(exchange=AMQP_EXCHANGE, queue=queue_name, routing_key="")
 
@@ -494,11 +501,6 @@ class TestEndToEnd:
         clean_neo4j: None,  # noqa: ARG002
     ) -> None:
         """Test handling of large files."""
-        # Create a 10MB file
-        large_file = temp_data_dir / "large_file.bin"
-        large_content = os.urandom(10 * 1024 * 1024)  # 10MB
-        large_file.write_bytes(large_content)
-
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             with Ingestor() as ingestor:
                 async with Populator() as populator:
@@ -510,8 +512,10 @@ class TestEndToEnd:
                         # Give services time to start
                         await asyncio.sleep(2)
 
-                        # Touch the file to trigger processing
-                        large_file.touch()
+                        # Create large file AFTER watchdog is running
+                        large_file = temp_data_dir / "large_file.bin"
+                        large_content = os.urandom(10 * 1024 * 1024)  # 10MB
+                        large_file.write_bytes(large_content)
 
                         # Give more time for processing large file
                         await asyncio.sleep(10)
