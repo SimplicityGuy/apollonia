@@ -24,8 +24,8 @@ beforeEach(() => {
   window.innerHeight = 768
 
   // Mock console methods to reduce noise in tests
-  global.console.warn = vi.fn()
-  global.console.error = vi.fn()
+  console.warn = vi.fn()
+  console.error = vi.fn()
 })
 
 afterEach(() => {

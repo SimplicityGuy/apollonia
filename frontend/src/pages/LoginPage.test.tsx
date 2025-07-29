@@ -66,7 +66,6 @@ describe('LoginPage', () => {
   })
 
   it('updates form fields when user types', async () => {
-    const user = setupUser()
     render(<LoginPage />)
 
     await fillForm({
@@ -171,7 +170,7 @@ describe('LoginPage', () => {
       expect(submitButton).not.toBeDisabledButton()
       expect(submitButton).toHaveTextContent('Sign in')
     })
-  }
+  })
 
   it('prevents form submission with empty fields', async () => {
     render(<LoginPage />)
@@ -185,7 +184,7 @@ describe('LoginPage', () => {
 
     // Login should not be called due to HTML5 validation
     expect(mockAuthStore.login).not.toHaveBeenCalled()
-  }
+  })
 
   it('applies correct styling for dark mode', () => {
     render(<LoginPage />)
@@ -237,7 +236,7 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(mockAuthStore.login).toHaveBeenCalledWith('testuser', 'testpass123')
     })
-  }
+  })
 
   it('clears password field on failed login', async () => {
     mockAuthStore.login.mockRejectedValue(new Error('Invalid credentials'))
@@ -260,7 +259,7 @@ describe('LoginPage', () => {
 
     // Password should still be there (component doesn't clear it)
     expect(passwordInput).toHaveValue('wrongpass')
-  }
+  })
 
   it('maintains form state during loading', async () => {
     // Create a promise that we can control

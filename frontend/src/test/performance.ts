@@ -1,3 +1,4 @@
+import React from 'react'
 import { vi } from 'vitest'
 
 // ============================================================================
@@ -81,7 +82,7 @@ export const simulateNetworkConditions = (type: 'fast' | 'slow' | '3g' | 'offlin
   const condition = conditions[type]
 
   // Mock fetch with delay
-  global.fetch = vi.fn().mockImplementation((url) =>
+  window.fetch = vi.fn().mockImplementation((_url) =>
     new Promise((resolve, reject) => {
       if (condition.delay === Infinity) {
         reject(new Error('Network offline'))
@@ -117,7 +118,7 @@ export const trackMemoryUsage = () => {
 /**
  * Throttle function execution for testing
  */
-export const createThrottledTest = (fn: Function, delay: number) => {
+export const createThrottledTest = (fn: (...args: any[]) => any, delay: number) => {
   let lastCall = 0
 
   return (...args: any[]) => {
@@ -166,7 +167,7 @@ export const measureReRenderPerformance = async (
 ) => {
   const { render, rerender } = await import('@testing-library/react')
 
-  const { container } = render(component, props)
+  render(component, props)
 
   const times: number[] = []
 

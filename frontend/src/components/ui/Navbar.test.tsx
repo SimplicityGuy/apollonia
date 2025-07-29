@@ -218,18 +218,18 @@ describe('Navbar', () => {
   })
 
   it('includes proper accessibility attributes', () => {
-    const { container } = render(<Navbar />)
+    render(<Navbar />)
 
     // Check for aria-hidden on decorative elements
-    const icons = container.querySelectorAll('[aria-hidden="true"]')
+    const icons = document.querySelectorAll('[aria-hidden="true"]')
     expect(icons.length).toBeGreaterThan(0)
 
     // Check for sr-only labels
-    const srOnlyElements = container.querySelectorAll('.sr-only')
+    const srOnlyElements = document.querySelectorAll('.sr-only')
     expect(srOnlyElements.length).toBeGreaterThan(0)
 
     // Check nav landmark
-    expect(container.querySelector('nav')).toBeInTheDocument()
+    expect(document.querySelector('nav')).toBeInTheDocument()
   })
 
   it('search input can be typed into', async () => {
@@ -244,7 +244,7 @@ describe('Navbar', () => {
 
   it('handles search form submission', async () => {
     const user = setupUser()
-    const { container } = render(<Navbar />)
+    render(<Navbar />)
 
     const searchInput = screen.getByRole('searchbox')
     const form = searchInput.closest('form')

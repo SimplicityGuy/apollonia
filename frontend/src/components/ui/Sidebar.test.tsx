@@ -2,7 +2,6 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Sidebar } from './Sidebar'
 import {
-  render,
   screen,
   setupUser,
   expectToHaveClasses,
@@ -104,7 +103,7 @@ describe('Sidebar', () => {
   })
 
   it('closes mobile sidebar when close button is clicked', async () => {
-    userEvent.setup()
+    setupUser()
     renderWithRouter(<Sidebar />)
 
     // The close button exists and is functional
@@ -310,7 +309,7 @@ describe('Sidebar', () => {
 
   it('preserves focus when toggling mobile sidebar', async () => {
     const user = setupUser()
-    const { container } = renderWithRouter(<Sidebar />)
+    renderWithRouter(<Sidebar />)
 
     // Get close button
     const closeButton = screen.getByRole('button', { name: /close sidebar/i })

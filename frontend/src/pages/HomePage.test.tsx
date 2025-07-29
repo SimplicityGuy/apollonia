@@ -7,8 +7,6 @@ import {
   screen,
   waitFor,
   createMockMediaFilesResponse,
-  mockSuccessResponse,
-  mockErrorResponse,
   getTableData,
   getTableHeaders,
   expectToHaveClasses,

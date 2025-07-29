@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react'
 import { render, RenderOptions, waitFor } from '@testing-library/react'
 import { BrowserRouter, MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -171,7 +172,7 @@ export const createMockCatalog = (overrides = {}) => ({
 // Mock API Responses
 // ============================================================================
 
-export const mockApiResponse = <T>(data: T, delay = 0) => {
+export const mockApiResponse = <T,>(data: T, delay = 0) => {
   return new Promise<{ data: T }>((resolve) => {
     setTimeout(() => resolve({ data }), delay)
   })
@@ -367,7 +368,7 @@ export const mockLocalStorage = () => {
 // Event Utilities
 // ============================================================================
 
-export const fireClickOutside = (element: HTMLElement) => {
+export const fireClickOutside = (_element: HTMLElement) => {
   const clickEvent = new MouseEvent('click', {
     bubbles: true,
     cancelable: true,

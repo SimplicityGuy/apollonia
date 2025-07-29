@@ -332,7 +332,7 @@ export class MockWebSocket {
     }, 100)
   }
 
-  send(data: string) {
+  send(_data: string) {
     // Mock send implementation
   }
 

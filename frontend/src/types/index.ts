@@ -75,7 +75,7 @@ export interface ProcessingJob {
   worker_id?: string
   priority: 'low' | 'normal' | 'high'
   attempts: number
-  result?: any
+  result?: unknown
 }
 
 export interface UploadProgress {
@@ -101,7 +101,7 @@ export interface PaginatedResponse<T> {
 export interface ApiError {
   message: string
   code?: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 export interface AuthTokens {
