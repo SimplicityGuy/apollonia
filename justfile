@@ -114,7 +114,8 @@ test-python-unit-ci path marks:
     --cov \
     --cov-report=xml \
     --cov-report=html \
-    --junit-xml=pytest-results.xml \
+    --junitxml=junit.xml \
+    -o junit_family=legacy \
     --maxfail=5 \
     --tb=short \
     -n auto
@@ -127,7 +128,8 @@ test-python-integration-ci:
     -m "integration and not e2e" \
     --cov \
     --cov-report=xml \
-    --junit-xml=integration-results.xml \
+    --junitxml=junit.xml \
+    -o junit_family=legacy \
     --maxfail=5 \
     --tb=short \
     -n auto
@@ -207,7 +209,7 @@ test-frontend:
 [group('test')]
 test-frontend-ci:
   echo "🎨 Running frontend tests in CI mode..."
-  cd frontend && npm run lint && npm run type-check && npm run test:ci -- --coverage --maxWorkers=50%
+  cd frontend && npm run lint && npm run type-check && npm run test:ci -- --coverage --reporter=junit --outputFile=test-report.junit.xml --maxWorkers=50%
 
 # Run frontend quality checks and build for dependencies workflow
 [group('test')]

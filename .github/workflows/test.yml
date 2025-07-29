@@ -111,7 +111,7 @@ jobs:
         run: |
           just test-python-unit-ci "${{ matrix.test-path }}" "${{ matrix.marks }}"
           # Rename the output file to match the matrix test group
-          mv pytest-results.xml pytest-results-${{ matrix.test-group }}.xml
+          mv junit.xml pytest-results-${{ matrix.test-group }}.xml
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -191,7 +191,9 @@ jobs:
         if: always()
         with:
           name: frontend-test-results
-          path: frontend/coverage/
+          path: |
+            frontend/coverage/
+            frontend/test-report.junit.xml
 
   # Integration tests with services - improved startup time
   integration-tests:
@@ -332,7 +334,7 @@ jobs:
         with:
           name: integration-test-results
           path: |
-            integration-results.xml
+            junit.xml
             coverage.xml
 
   # E2E tests - with Docker layer caching
