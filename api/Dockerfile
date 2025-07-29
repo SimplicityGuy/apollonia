@@ -44,7 +44,7 @@ COPY shared/ ./shared/
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH="/app:/shared:$PYTHONPATH"
+ENV PYTHONPATH="/app:/shared"
 ENV PYTHONUNBUFFERED=1
 
 # Change ownership
