@@ -296,8 +296,8 @@ describe('HomePage', () => {
     })
   })
 
-  it.skip('displays file counts correctly in different states', async () => {
-    const mixedStatusFiles = createMockMediaFilesResponse(10)
+  it('displays file counts correctly in different states', async () => {
+    const mixedStatusFiles = createMockMediaFilesResponse(4)
     mixedStatusFiles.items[0].processing_status = 'completed'
     mixedStatusFiles.items[1].processing_status = 'completed'
     mixedStatusFiles.items[2].processing_status = 'processing'
@@ -308,11 +308,10 @@ describe('HomePage', () => {
     render(<HomePage />)
 
     await waitFor(() => {
-      // Should show summary of different statuses
-      const statusSummary = screen.getByTestId('status-summary')
-      expect(statusSummary).toHaveTextContent('2 completed')
-      expect(statusSummary).toHaveTextContent('1 processing')
-      expect(statusSummary).toHaveTextContent('1 failed')
+      // Should show summary of different statuses using specific test IDs
+      expect(screen.getByTestId('status-completed')).toHaveTextContent('2 completed')
+      expect(screen.getByTestId('status-processing')).toHaveTextContent('1 processing')
+      expect(screen.getByTestId('status-failed')).toHaveTextContent('1 failed')
     })
   })
 

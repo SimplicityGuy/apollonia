@@ -14,6 +14,7 @@ export interface User {
   created_at: string
   last_login?: string
   preferences?: UserPreferences
+  unreadNotifications?: number
 }
 
 export interface UserPreferences {

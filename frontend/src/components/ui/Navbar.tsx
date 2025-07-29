@@ -50,19 +50,25 @@ export function Navbar() {
             type="search"
             name="q"
             aria-label="Search media files"
+            autoComplete="off"
             required
           />
-          <button type="submit" className="sr-only">Submit search</button>
+          <button type="submit" className="sr-only" tabIndex={-1}>Submit search</button>
         </form>
 
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           <button
             type="button"
-            className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+            className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 relative"
             aria-label="View notifications"
           >
             <span className="sr-only">View notifications</span>
             <BellIcon className="h-6 w-6" aria-hidden="true" />
+            {user?.unreadNotifications && user.unreadNotifications > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-xs font-medium flex items-center justify-center rounded-full">
+                {user.unreadNotifications > 99 ? '99+' : user.unreadNotifications}
+              </span>
+            )}
           </button>
 
           {/* Profile dropdown */}

@@ -142,7 +142,30 @@ export function HomePage() {
             </div>
           </div>
         ) : (
-          <div className="mt-4 overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+          <>
+            {/* Status Summary */}
+            {recentFiles?.items && recentFiles.items.length > 0 && (
+              <div className="mt-4 mb-4" data-testid="status-summary">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status Summary</h3>
+                <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  {(() => {
+                    const statusCounts = recentFiles.items.reduce((acc, file) => {
+                      const status = file.processing_status || 'unknown'
+                      acc[status] = (acc[status] || 0) + 1
+                      return acc
+                    }, {} as Record<string, number>)
+
+                    return Object.entries(statusCounts).map(([status, count]) => (
+                      <span key={status} data-testid={`status-${status}`}>
+                        {count} {status}
+                      </span>
+                    ))
+                  })()}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
             <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
@@ -193,7 +216,7 @@ export function HomePage() {
                             'inline-flex rounded-full px-2 text-xs font-semibold leading-5'
                           )}
                         >
-                          {file.processing_status}
+                          {file.processing_status || 'unknown'}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
@@ -211,6 +234,7 @@ export function HomePage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>
