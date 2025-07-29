@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import os
 import tempfile
+import uuid
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 from unittest.mock import patch
@@ -80,15 +81,15 @@ class TestEndToEnd:
             auth=(NEO4J_USER, NEO4J_PASSWORD),
         )
 
-        # Clean before test
+        # Clean ALL File nodes before test to ensure test isolation
         async with driver.session() as session:
-            await session.run("MATCH (n:File) WHERE n.path STARTS WITH '/test/' DETACH DELETE n")
+            await session.run("MATCH (n:File) DETACH DELETE n")
 
         yield
 
-        # Clean after test
+        # Clean ALL File nodes after test
         async with driver.session() as session:
-            await session.run("MATCH (n:File) WHERE n.path STARTS WITH '/test/' DETACH DELETE n")
+            await session.run("MATCH (n:File) DETACH DELETE n")
 
         await driver.close()
 
@@ -105,7 +106,9 @@ class TestEndToEnd:
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             # Start both services
             with Ingestor() as ingestor:
-                async with Populator() as populator:
+                # Use a unique queue name for this test
+                test_queue_name = f"apollonia-test-{uuid.uuid4().hex[:8]}"
+                async with Populator(queue_name=test_queue_name) as populator:
                     # Run services in background
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
@@ -187,7 +190,9 @@ class TestEndToEnd:
         """Test that neighbor file relationships are correctly created."""
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             with Ingestor() as ingestor:
-                async with Populator() as populator:
+                # Use a unique queue name for this test
+                test_queue_name = f"apollonia-test-{uuid.uuid4().hex[:8]}"
+                async with Populator(queue_name=test_queue_name) as populator:
                     # Run services
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
@@ -259,7 +264,9 @@ class TestEndToEnd:
         """Test that file updates are correctly handled."""
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             with Ingestor() as ingestor:
-                async with Populator() as populator:
+                # Use a unique queue name for this test
+                test_queue_name = f"apollonia-test-{uuid.uuid4().hex[:8]}"
+                async with Populator(queue_name=test_queue_name) as populator:
                     # Run services
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
@@ -330,7 +337,9 @@ class TestEndToEnd:
 
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             with Ingestor() as ingestor:
-                async with Populator() as populator:
+                # Use a unique queue name for this test
+                test_queue_name = f"apollonia-test-{uuid.uuid4().hex[:8]}"
+                async with Populator(queue_name=test_queue_name) as populator:
                     # Run services
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
@@ -422,7 +431,8 @@ class TestEndToEnd:
                     await asyncio.sleep(2)
 
                     # Now start populator - it should process queued messages
-                    async with Populator() as populator:
+                    test_queue_name = f"apollonia-test-{uuid.uuid4().hex[:8]}"
+                    async with Populator(queue_name=test_queue_name) as populator:
                         consume_task = asyncio.create_task(populator.consume())
 
                         try:
@@ -539,7 +549,9 @@ class TestEndToEnd:
         """Test handling of large files."""
         with patch("ingestor.ingestor.DATA_DIRECTORY", str(temp_data_dir)):
             with Ingestor() as ingestor:
-                async with Populator() as populator:
+                # Use a unique queue name for this test
+                test_queue_name = f"apollonia-test-{uuid.uuid4().hex[:8]}"
+                async with Populator(queue_name=test_queue_name) as populator:
                     # Run services
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())

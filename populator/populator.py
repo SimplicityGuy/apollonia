@@ -33,11 +33,16 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
 class Populator:
     """Service that consumes file metadata from AMQP and imports to Neo4j."""
 
-    def __init__(self) -> None:
-        """Initialize the populator."""
+    def __init__(self, queue_name: str | None = None) -> None:
+        """Initialize the populator.
+
+        Args:
+            queue_name: Optional custom queue name (for testing)
+        """
         self.amqp_connection: AbstractRobustConnection | None = None
         self.neo4j_driver: AsyncDriver | None = None
         self._running = True
+        self.queue_name = queue_name or AMQP_QUEUE
 
     async def __aenter__(self) -> Populator:
         """Set up connections."""
@@ -184,13 +189,13 @@ class Populator:
 
         # Declare and bind queue
         queue = await channel.declare_queue(
-            AMQP_QUEUE,
+            self.queue_name,
             durable=True,
             auto_delete=False,
         )
         await queue.bind(exchange, routing_key=AMQP_ROUTING_KEY)
 
-        logger.info("📥 Starting to consume messages from queue: %s", AMQP_QUEUE)
+        logger.info("📥 Starting to consume messages from queue: %s", self.queue_name)
 
         # Start consuming
         async with queue.iterator() as queue_iter:

@@ -101,15 +101,15 @@ class TestPopulatorIntegration:
             auth=(NEO4J_USER, NEO4J_PASSWORD),
         )
 
-        # Clean up test data before test
+        # Clean up ALL File nodes before test to ensure test isolation
         async with driver.session() as session:
-            await session.run("MATCH (n:File) WHERE n.path STARTS WITH '/test/' DETACH DELETE n")
+            await session.run("MATCH (n:File) DETACH DELETE n")
 
         yield driver
 
-        # Clean up test data after test
+        # Clean up ALL File nodes after test
         async with driver.session() as session:
-            await session.run("MATCH (n:File) WHERE n.path STARTS WITH '/test/' DETACH DELETE n")
+            await session.run("MATCH (n:File) DETACH DELETE n")
 
         await driver.close()
 
@@ -136,33 +136,32 @@ class TestPopulatorIntegration:
         }
 
         # Start populator with test-specific queue
-        with patch("populator.populator.AMQP_QUEUE", test_queue_name):
-            async with Populator() as populator:
-                # Run consumer in background
-                consume_task = asyncio.create_task(populator.consume())
+        async with Populator(queue_name=test_queue_name) as populator:
+            # Run consumer in background
+            consume_task = asyncio.create_task(populator.consume())
 
-                try:
-                    # Give consumer time to set up
-                    await asyncio.sleep(1)
+            try:
+                # Give consumer time to set up
+                await asyncio.sleep(1)
 
-                    # Publish message
-                    message = Message(
-                        body=orjson.dumps(test_data),
-                        delivery_mode=2,  # Persistent
-                        content_type="application/json",
-                    )
-                    await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
+                # Publish message
+                message = Message(
+                    body=orjson.dumps(test_data),
+                    delivery_mode=2,  # Persistent
+                    content_type="application/json",
+                )
+                await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
 
-                    # Give time to process
-                    await asyncio.sleep(2)
+                # Give time to process
+                await asyncio.sleep(2)
 
-                finally:
-                    # Stop populator
-                    populator.stop()
-                    # Cancel task with timeout
-                    consume_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
-                        await asyncio.wait_for(consume_task, timeout=5.0)
+            finally:
+                # Stop populator
+                populator.stop()
+                # Cancel task with timeout
+                consume_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(consume_task, timeout=5.0)
 
         # Verify in Neo4j
         async with neo4j_driver.session() as session:
@@ -217,35 +216,34 @@ class TestPopulatorIntegration:
             messages_data.append(data)
 
         # Start populator with test-specific queue
-        with patch("populator.populator.AMQP_QUEUE", test_queue_name):
-            async with Populator() as populator:
-                # Run consumer in background
-                consume_task = asyncio.create_task(populator.consume())
+        async with Populator(queue_name=test_queue_name) as populator:
+            # Run consumer in background
+            consume_task = asyncio.create_task(populator.consume())
 
-                try:
-                    # Give consumer more time to set up and consume any stray messages in CI
-                    await asyncio.sleep(3)
+            try:
+                # Give consumer more time to set up and consume any stray messages in CI
+                await asyncio.sleep(3)
 
-                    # Publish messages
-                    for data in messages_data:
-                        message = Message(
-                            body=orjson.dumps(data),
-                            delivery_mode=2,
-                            content_type="application/json",
-                        )
-                        await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
-                        await asyncio.sleep(0.2)  # More delay between messages for CI
+                # Publish messages
+                for data in messages_data:
+                    message = Message(
+                        body=orjson.dumps(data),
+                        delivery_mode=2,
+                        content_type="application/json",
+                    )
+                    await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
+                    await asyncio.sleep(0.2)  # More delay between messages for CI
 
-                    # Give more time to process in CI
-                    await asyncio.sleep(4)
+                # Give more time to process in CI
+                await asyncio.sleep(4)
 
-                finally:
-                    # Stop populator
-                    populator.stop()
-                    # Cancel task with timeout
-                    consume_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
-                        await asyncio.wait_for(consume_task, timeout=5.0)
+            finally:
+                # Stop populator
+                populator.stop()
+                # Cancel task with timeout
+                consume_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(consume_task, timeout=5.0)
 
         # Verify all files in Neo4j
         async with neo4j_driver.session() as session:
@@ -298,33 +296,32 @@ class TestPopulatorIntegration:
         }
 
         # Start populator with test-specific queue
-        with patch("populator.populator.AMQP_QUEUE", test_queue_name):
-            async with Populator() as populator:
-                # Run consumer in background
-                consume_task = asyncio.create_task(populator.consume())
+        async with Populator(queue_name=test_queue_name) as populator:
+            # Run consumer in background
+            consume_task = asyncio.create_task(populator.consume())
 
-                try:
-                    # Give consumer time to set up
-                    await asyncio.sleep(1)
+            try:
+                # Give consumer time to set up
+                await asyncio.sleep(1)
 
-                    # Publish update message
-                    message = Message(
-                        body=orjson.dumps(update_data),
-                        delivery_mode=2,
-                        content_type="application/json",
-                    )
-                    await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
+                # Publish update message
+                message = Message(
+                    body=orjson.dumps(update_data),
+                    delivery_mode=2,
+                    content_type="application/json",
+                )
+                await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
 
-                    # Give time to process
-                    await asyncio.sleep(2)
+                # Give time to process
+                await asyncio.sleep(2)
 
-                finally:
-                    # Stop populator
-                    populator.stop()
-                    # Cancel task with timeout
-                    consume_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
-                        await asyncio.wait_for(consume_task, timeout=5.0)
+            finally:
+                # Stop populator
+                populator.stop()
+                # Cancel task with timeout
+                consume_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(consume_task, timeout=5.0)
 
         # Verify node was updated
         async with neo4j_driver.session() as session:
@@ -364,37 +361,36 @@ class TestPopulatorIntegration:
             await original_process(message)
 
         # Start populator with test-specific queue
-        with patch("populator.populator.AMQP_QUEUE", test_queue_name):
-            async with Populator() as populator:
-                original_process = populator.process_message
-                # Use setattr to avoid mypy method assignment error
-                setattr(populator, "process_message", mock_process)  # noqa: B010
+        async with Populator(queue_name=test_queue_name) as populator:
+            original_process = populator.process_message
+            # Use setattr to avoid mypy method assignment error
+            setattr(populator, "process_message", mock_process)  # noqa: B010
 
-                # Run consumer in background
-                consume_task = asyncio.create_task(populator.consume())
+            # Run consumer in background
+            consume_task = asyncio.create_task(populator.consume())
 
-                try:
-                    # Give consumer time to set up
-                    await asyncio.sleep(1)
+            try:
+                # Give consumer time to set up
+                await asyncio.sleep(1)
 
-                    # Publish malformed messages
-                    for msg_body in messages:
-                        message = Message(
-                            body=msg_body,
-                            delivery_mode=2,
-                        )
-                        await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
+                # Publish malformed messages
+                for msg_body in messages:
+                    message = Message(
+                        body=msg_body,
+                        delivery_mode=2,
+                    )
+                    await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
 
-                    # Give time to process
-                    await asyncio.sleep(2)
+                # Give time to process
+                await asyncio.sleep(2)
 
-                finally:
-                    # Stop populator
-                    populator.stop()
-                    # Cancel task with timeout
-                    consume_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
-                        await asyncio.wait_for(consume_task, timeout=5.0)
+            finally:
+                # Stop populator
+                populator.stop()
+                # Cancel task with timeout
+                consume_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(consume_task, timeout=5.0)
 
         # All messages should have been processed (not crashed)
         assert len(processed) == 3
@@ -481,47 +477,46 @@ class TestPopulatorIntegration:
         ]
 
         # Start populator with test-specific queue
-        with patch("populator.populator.AMQP_QUEUE", test_queue_name):
-            async with Populator() as populator:
-                # Run consumer in background
-                consume_task = asyncio.create_task(populator.consume())
+        async with Populator(queue_name=test_queue_name) as populator:
+            # Run consumer in background
+            consume_task = asyncio.create_task(populator.consume())
 
-                try:
-                    # Give consumer time to set up
-                    await asyncio.sleep(1)
+            try:
+                # Give consumer time to set up
+                await asyncio.sleep(1)
 
-                    # Publish messages
-                    for file_info in files:
-                        data = {
-                            "file_path": file_info["file_path"],
-                            "sha256_hash": "hash",
-                            "xxh128_hash": "xxhash",
-                            "size": 1000,
-                            "modified_time": "2024-01-01T00:00:00",
-                            "accessed_time": "2024-01-01T00:00:00",
-                            "changed_time": "2024-01-01T00:00:00",
-                            "timestamp": "2024-01-01T00:00:00",
-                            "event_type": "IN_CREATE",
-                            "neighbors": file_info["neighbors"],
-                        }
+                # Publish messages
+                for file_info in files:
+                    data = {
+                        "file_path": file_info["file_path"],
+                        "sha256_hash": "hash",
+                        "xxh128_hash": "xxhash",
+                        "size": 1000,
+                        "modified_time": "2024-01-01T00:00:00",
+                        "accessed_time": "2024-01-01T00:00:00",
+                        "changed_time": "2024-01-01T00:00:00",
+                        "timestamp": "2024-01-01T00:00:00",
+                        "event_type": "IN_CREATE",
+                        "neighbors": file_info["neighbors"],
+                    }
 
-                        message = Message(
-                            body=orjson.dumps(data),
-                            delivery_mode=2,
-                            content_type="application/json",
-                        )
-                        await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
+                    message = Message(
+                        body=orjson.dumps(data),
+                        delivery_mode=2,
+                        content_type="application/json",
+                    )
+                    await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
 
-                    # Give time to process
-                    await asyncio.sleep(3)
+                # Give time to process
+                await asyncio.sleep(3)
 
-                finally:
-                    # Stop populator
-                    populator.stop()
-                    # Cancel task with timeout
-                    consume_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
-                        await asyncio.wait_for(consume_task, timeout=5.0)
+            finally:
+                # Stop populator
+                populator.stop()
+                # Cancel task with timeout
+                consume_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(consume_task, timeout=5.0)
 
         # Verify graph structure
         async with neo4j_driver.session() as session:
@@ -573,34 +568,33 @@ class TestPopulatorIntegration:
             messages_data.append(data)
 
         # Start populator with test-specific queue
-        with patch("populator.populator.AMQP_QUEUE", test_queue_name):
-            async with Populator() as populator:
-                # Run consumer in background
-                consume_task = asyncio.create_task(populator.consume())
+        async with Populator(queue_name=test_queue_name) as populator:
+            # Run consumer in background
+            consume_task = asyncio.create_task(populator.consume())
 
-                try:
-                    # Give consumer time to set up
-                    await asyncio.sleep(1)
+            try:
+                # Give consumer time to set up
+                await asyncio.sleep(1)
 
-                    # Publish all messages rapidly
-                    for data in messages_data:
-                        message = Message(
-                            body=orjson.dumps(data),
-                            delivery_mode=2,
-                            content_type="application/json",
-                        )
-                        await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
+                # Publish all messages rapidly
+                for data in messages_data:
+                    message = Message(
+                        body=orjson.dumps(data),
+                        delivery_mode=2,
+                        content_type="application/json",
+                    )
+                    await exchange.publish(message, routing_key=AMQP_ROUTING_KEY)
 
-                    # Give time to process all messages
-                    await asyncio.sleep(5)
+                # Give time to process all messages
+                await asyncio.sleep(5)
 
-                finally:
-                    # Stop populator
-                    populator.stop()
-                    # Cancel task with timeout
-                    consume_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
-                        await asyncio.wait_for(consume_task, timeout=5.0)
+            finally:
+                # Stop populator
+                populator.stop()
+                # Cancel task with timeout
+                consume_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(consume_task, timeout=5.0)
 
         # Verify all files were created
         async with neo4j_driver.session() as session:

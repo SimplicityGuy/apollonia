@@ -134,13 +134,21 @@ class TestIngestorIntegration:
                     await asyncio.wait_for(ingest_task, timeout=5.0)
 
         # Verify message was published
-        assert len(messages) > 0
-        message = messages[0]
-
         # Handle macOS /private/var symlink issue
         import os
 
-        assert message["file_path"] == os.path.realpath(str(test_file.absolute()))
+        expected_path = os.path.realpath(str(test_file.absolute()))
+
+        # Filter messages to only the one for our test file
+        test_messages = [msg for msg in messages if msg.get("file_path") == expected_path]
+
+        assert len(test_messages) == 1, (
+            f"Expected 1 message for {expected_path}, got {len(test_messages)}: "
+            f"{[m.get('file_path') for m in messages]}"
+        )
+        message = test_messages[0]
+
+        assert message["file_path"] == expected_path
         assert message["event_type"] == "IN_CREATE"
         assert "sha256_hash" in message
         assert "xxh128_hash" in message
