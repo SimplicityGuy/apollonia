@@ -86,8 +86,19 @@ class Populator:
         async with message.process():
             try:
                 # Parse message body
-                data = orjson.loads(message.body)
-                logger.info("🔍 Processing file: %s", data.get("file_path"))
+                try:
+                    data = orjson.loads(message.body)
+                except orjson.JSONDecodeError:
+                    logger.warning("⚠️ Skipping invalid JSON message")
+                    return
+
+                # Validate required fields
+                file_path = data.get("file_path")
+                if not file_path:
+                    logger.warning("⚠️ Skipping message with missing file_path")
+                    return
+
+                logger.info("🔍 Processing file: %s", file_path)
 
                 # Import to Neo4j
                 await self._import_to_neo4j(data)
