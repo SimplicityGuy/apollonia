@@ -5,7 +5,6 @@
 import asyncio
 import contextlib
 import os
-import sys
 import tempfile
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
@@ -19,27 +18,14 @@ from neo4j.exceptions import ServiceUnavailable
 from pika import BasicProperties, BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 
-# Import services conditionally for macOS
-if sys.platform != "darwin":
-    from ingestor.ingestor import AMQP_CONNECTION as INGESTOR_AMQP
-    from ingestor.ingestor import AMQP_EXCHANGE, Ingestor
-    from populator.populator import (
-        AMQP_CONNECTION as POPULATOR_AMQP,
-    )
-    from populator.populator import (
-        NEO4J_PASSWORD,
-        NEO4J_URI,
-        NEO4J_USER,
-        Populator,
-    )
-else:
-    # Define minimal config for macOS
-    INGESTOR_AMQP = "amqp://guest:guest@localhost:5672/"
-    POPULATOR_AMQP = "amqp://guest:guest@localhost:5672/"
-    AMQP_EXCHANGE = "apollonia"
-    NEO4J_URI = "bolt://localhost:7687"
-    NEO4J_USER = "neo4j"
-    NEO4J_PASSWORD = "password"  # noqa: S105
+from ingestor.ingestor import AMQP_CONNECTION as INGESTOR_AMQP
+from ingestor.ingestor import AMQP_EXCHANGE, Ingestor
+from populator.populator import (
+    NEO4J_PASSWORD,
+    NEO4J_URI,
+    NEO4J_USER,
+    Populator,
+)
 
 
 class TestEndToEnd:
@@ -106,7 +92,6 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_file_ingestion_to_neo4j(
@@ -181,7 +166,6 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_neighbor_file_relationships(
@@ -251,7 +235,6 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_file_update_handling(
@@ -314,7 +297,6 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_concurrent_file_processing(
@@ -382,7 +364,6 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_service_resilience(
@@ -504,7 +485,6 @@ class TestEndToEnd:
         channel2.queue_delete(queue_name)
         connection2.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_large_file_handling(

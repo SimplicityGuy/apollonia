@@ -150,7 +150,7 @@ Integration tests verify that components work together correctly:
 
 - **Platform Compatibility**:
 
-  - Tests are marked to skip on incompatible platforms (e.g., macOS for asyncinotify)
+  - Tests are marked to skip on incompatible platforms when needed
   - Docker-based tests for full system integration
 
 ### End-to-End Tests
@@ -346,7 +346,7 @@ vi.mock('react-router-dom', async () => {
 1. **Linux-Only Features**: Mark tests that require Linux
 
    ```python
-   @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
+   @pytest.mark.skipif(sys.platform != "linux", reason="Linux-specific test")
    ```
 
 1. **Docker Tests**: Mark tests that require Docker
@@ -442,10 +442,6 @@ pytest tests/e2e/test_frontend_e2e.py --tracing=on
 ```
 
 ## Common Issues and Solutions
-
-### Issue: Tests fail on macOS due to asyncinotify
-
-**Solution**: Tests are automatically skipped on macOS with appropriate markers.
 
 ### Issue: Integration tests fail due to missing services
 

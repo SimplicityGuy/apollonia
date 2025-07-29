@@ -5,8 +5,9 @@ AMQP message queue.
 
 ## Overview
 
-The Ingestor uses Linux's inotify system to efficiently monitor file system events. When files are
-created, moved, or modified in the watched directory, the service:
+The Ingestor uses the watchdog library to efficiently monitor file system events across platforms
+(Linux, macOS, Windows). When files are created, moved, or modified in the watched directory, the
+service:
 
 1. Detects the file system event
 1. Extracts comprehensive metadata
@@ -35,11 +36,11 @@ created, moved, or modified in the watched directory, the service:
 
 ### File Monitoring
 
-The service uses `asyncinotify` to monitor these events:
+The service uses `watchdog` to monitor these events:
 
-- `IN_CREATE`: New file created
-- `IN_MOVED_TO`: File moved into directory
-- `IN_CLOSE_WRITE`: File closed after writing
+- `on_created`: New file created
+- `on_moved`: File moved into directory
+- `on_modified`: File modified or closed after writing
 
 ### Metadata Extraction
 

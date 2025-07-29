@@ -107,7 +107,7 @@ for managing large media collections.
 
 - **Audio Analysis**: [xxhash](https://github.com/Cyan4973/xxHash) | [NumPy](https://numpy.org/) |
   [MoviePy](https://zulko.github.io/moviepy/)
-- **File Monitoring**: [asyncinotify](https://github.com/absperf/asyncinotify)
+- **File Monitoring**: [watchdog](https://github.com/gorakhargosh/watchdog)
 - **Data Serialization**: [orjson](https://github.com/ijl/orjson)
 
 ## Architecture

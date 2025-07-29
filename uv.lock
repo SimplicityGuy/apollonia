@@ -138,7 +138,6 @@ source = { editable = "." }
 dependencies = [
     { name = "aio-pika" },
     { name = "alembic" },
-    { name = "asyncinotify" },
     { name = "asyncpg" },
     { name = "essentia-tensorflow" },
     { name = "fastapi" },
@@ -154,6 +153,7 @@ dependencies = [
     { name = "strawberry-graphql", extra = ["fastapi"] },
     { name = "tensorflow" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "watchdog" },
     { name = "xxhash" },
 ]
 
@@ -224,7 +224,6 @@ requires-dist = [
     { name = "aio-pika", marker = "extra == 'integration'", specifier = ">=9.4.0" },
     { name = "alembic", specifier = ">=1.13.0" },
     { name = "apollonia", extras = ["dev", "test", "integration"], marker = "extra == 'all'" },
-    { name = "asyncinotify", specifier = ">=4.2.1" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "docker", marker = "extra == 'integration'", specifier = ">=7.0.0" },
@@ -263,6 +262,7 @@ requires-dist = [
     { name = "tensorflow", specifier = ">=2.15.0" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.27.0" },
+    { name = "watchdog", specifier = ">=6.0.0" },
     { name = "xxhash", specifier = ">=3.5.0" },
 ]
 provides-extras = ["dev", "test", "integration", "all"]
@@ -287,15 +287,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f3/af/4182184d3c338792894f34a62672919db7ca008c89abee9b564dd34d8029/astunparse-1.6.3.tar.gz", hash = "sha256:5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872", size = 18290, upload-time = "2019-12-22T18:12:13.129Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2b/03/13dde6512ad7b4557eb792fbcf0c653af6076b81e5941d36ec61f7ce6028/astunparse-1.6.3-py2.py3-none-any.whl", hash = "sha256:c2652417f2c8b5bb325c885ae329bdf3f86424075c4fd1a128674bc6fba4b8e8", size = 12732, upload-time = "2019-12-22T18:12:11.297Z" },
-]
-
-[[package]]
-name = "asyncinotify"
-version = "4.2.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7b/9d/a973f823c0927bc4822392f949c561eee831109c004ce1cf639c6e4b61a4/asyncinotify-4.2.1.tar.gz", hash = "sha256:8078b0b0d81c19043141ab0fc5654e89a4d3023dc3e4486aaa245b1ff5f5ddc9", size = 27792, upload-time = "2025-04-08T00:42:17.809Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/c6/d05a3db2b9b9c94785ba2612044d5b728b8c2ec53e2a8a70cb824c2401b8/asyncinotify-4.2.1-py3-none-any.whl", hash = "sha256:40a982e76e9450fbb56858620565cdeb21c35849585ceba1a1a90b8b74d1e15e", size = 17542, upload-time = "2025-04-08T00:42:16.677Z" },
 ]
 
 [[package]]

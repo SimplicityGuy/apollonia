@@ -11,9 +11,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import orjson
-from asyncinotify import Inotify, Mask
 from pika import BlockingConnection, DeliveryMode, URLParameters
 from pika.spec import BasicProperties
+from watchdog.events import (
+    FileSystemEventHandler,
+)
+from watchdog.observers import Observer
 
 from .media_prospector import MediaProspector
 from .media_utils import MediaFileDetector
@@ -83,31 +86,19 @@ class MediaIngestor:
         logger.info("🛑 Stopping media ingestor")
         self._running = False
 
-    async def _add_directory_watches(self, inotify: Inotify, base_dir: Path) -> None:
+    def _add_directory_watches(self, observer: Any, base_dir: Path) -> None:
         """Recursively add watches to directories.
 
         Args:
-            inotify: Inotify instance
+            observer: Observer instance
             base_dir: Base directory to watch
         """
-        dirs_to_watch = [base_dir]
+        # Create event handler
+        event_handler = self._create_event_handler()
 
-        if WATCH_SUBDIRS:
-            # Find all subdirectories
-            try:
-                for item in base_dir.rglob("*"):
-                    if item.is_dir() and not item.name.startswith("."):
-                        dirs_to_watch.append(item)
-            except OSError:
-                logger.exception("🚨 Failed to scan subdirectories of %s", base_dir)
-
-        # Add watches
-        for directory in dirs_to_watch:
-            try:
-                inotify.add_watch(str(directory), Mask.CREATE | Mask.MOVED_TO | Mask.CLOSE_WRITE)
-                logger.debug("👁️ Watching directory: %s", directory)
-            except OSError:
-                logger.exception("🚨 Failed to add watch for directory: %s", directory)
+        # Add watch for base directory
+        observer.schedule(event_handler, str(base_dir), recursive=WATCH_SUBDIRS)
+        logger.debug("👁️ Watching directory: %s (recursive=%s)", base_dir, WATCH_SUBDIRS)
 
     async def _process_file_event(self, event_path: Path) -> None:
         """Process a file event.
@@ -155,26 +146,61 @@ class MediaIngestor:
         for watch_dir in self.watch_dirs:
             watch_dir.mkdir(parents=True, exist_ok=True)
 
-        async with Inotify() as inotify:
-            # Add watches for all directories
-            for watch_dir in self.watch_dirs:
-                await self._add_directory_watches(inotify, watch_dir)
+        # Create and start observer
+        observer = Observer()
 
-            logger.info("✅ File monitoring active")
+        # Add watches for all directories
+        for watch_dir in self.watch_dirs:
+            self._add_directory_watches(observer, watch_dir)
 
-            # Process events
-            async for event in inotify:
-                if not self._running:
-                    break
+        observer.start()
+        logger.info("✅ File monitoring active")
 
-                event_path = Path(event.path)
+        try:
+            # Keep running until stopped
+            stop_event = asyncio.Event()
+            while self._running:
+                try:
+                    await asyncio.wait_for(stop_event.wait(), timeout=0.1)
+                except TimeoutError:
+                    continue
+        finally:
+            observer.stop()
+            observer.join()
 
-                # Handle new directory creation
-                if event_path.is_dir() and WATCH_SUBDIRS:
-                    logger.info("📁 New directory detected: %s", event_path)
-                    await self._add_directory_watches(inotify, event_path)
-                elif event_path.is_file():
-                    await self._process_file_event(event_path)
+    def _create_event_handler(self) -> FileSystemEventHandler:
+        """Create a file system event handler."""
+
+        class MediaIngestorEventHandler(FileSystemEventHandler):
+            def __init__(self, ingestor: MediaIngestor) -> None:
+                self.ingestor = ingestor
+                self.loop = asyncio.get_event_loop()
+
+            def on_created(self, event: Any) -> None:
+                """Handle file/directory creation events."""
+                if not event.is_directory:
+                    self.loop.create_task(
+                        self.ingestor._process_file_event(Path(str(event.src_path)))
+                    )
+                elif WATCH_SUBDIRS:
+                    # Note: With recursive=True in watchdog, new dirs are auto-watched
+                    logger.info("📁 New directory detected: %s", event.src_path)
+
+            def on_moved(self, event: Any) -> None:
+                """Handle file move events."""
+                if not event.is_directory:
+                    self.loop.create_task(
+                        self.ingestor._process_file_event(Path(str(event.dest_path)))
+                    )
+
+            def on_modified(self, event: Any) -> None:
+                """Handle file modification events."""
+                if not event.is_directory:
+                    self.loop.create_task(
+                        self.ingestor._process_file_event(Path(str(event.src_path)))
+                    )
+
+        return MediaIngestorEventHandler(self)
 
 
 def setup_logging() -> None:

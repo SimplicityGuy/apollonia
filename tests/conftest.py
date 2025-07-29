@@ -143,9 +143,6 @@ def pytest_runtest_setup(item: Any) -> None:
     if "linux_only" in item.keywords and sys.platform != "linux":
         pytest.skip("Test requires Linux")
 
-    if "requires_asyncinotify" in item.keywords and sys.platform == "darwin":
-        pytest.skip("asyncinotify not available on macOS")
-
 
 # Test reporting
 def pytest_report_header(config: Any) -> list[str]:  # noqa: ARG001

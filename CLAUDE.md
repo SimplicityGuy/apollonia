@@ -171,10 +171,10 @@ The ingestor publishes messages with this structure:
 
 #### Ingestor (`/ingestor/`)
 
-- Uses `asyncinotify` for file system monitoring
+- Uses `watchdog` for cross-platform file system monitoring
 - Implements file "prospecting" to find related files (neighbors)
 - Computes both SHA256 and xxh128 hashes for files
-- Handles inotify events: IN_CREATE, IN_MOVED_TO
+- Handles file events: creation, modification, and movement
 
 #### Populator (`/populator/`)
 
@@ -283,8 +283,7 @@ cd frontend && npm test
 
 ### Platform-Specific Notes
 
-- **asyncinotify**: Only works on Linux. Tests using it are automatically skipped on macOS with
-  `@pytest.mark.skipif(sys.platform == "darwin")`
+- **watchdog**: Cross-platform file monitoring library that works on Linux, macOS, and Windows
 - **Docker tests**: Require Docker to be running. Use `@pytest.mark.docker` marker
 - **Integration tests**: May require services (RabbitMQ, Neo4j) to be running
 

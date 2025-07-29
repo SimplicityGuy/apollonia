@@ -9,9 +9,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import orjson
-from asyncinotify import Inotify, Mask
 from pika import BlockingConnection, DeliveryMode, URLParameters
 from pika.spec import BasicProperties
+from watchdog.events import (
+    FileSystemEventHandler,
+)
+from watchdog.observers import Observer
 
 from .prospector import Prospector
 
@@ -79,32 +82,72 @@ class Ingestor:
         # Ensure the data directory exists
         Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
-        async with Inotify() as inotify:
-            inotify.add_watch(DATA_DIRECTORY, Mask.CREATE | Mask.MOVED_TO | Mask.CLOSE_WRITE)
+        # Create event handler
+        event_handler = self._create_event_handler()
 
-            async for event in inotify:
-                if not self._running:
-                    break
+        # Create and start observer
+        observer = Observer()
+        observer.schedule(event_handler, DATA_DIRECTORY, recursive=False)
+        observer.start()
 
+        try:
+            # Keep running until stopped
+            stop_event = asyncio.Event()
+            while self._running:
                 try:
-                    logger.debug("🔍 Processing event: %s for %s", event.mask, event.path)
-                    prospector = Prospector(event.path)
+                    await asyncio.wait_for(stop_event.wait(), timeout=0.1)
+                except TimeoutError:
+                    continue
+        finally:
+            observer.stop()
+            observer.join()
+
+    def _create_event_handler(self) -> FileSystemEventHandler:
+        """Create a file system event handler."""
+
+        class IngestorEventHandler(FileSystemEventHandler):
+            def __init__(self, ingestor: Ingestor) -> None:
+                self.ingestor = ingestor
+                self.loop = asyncio.get_event_loop()
+
+            def on_created(self, event: Any) -> None:
+                """Handle file creation events."""
+                if not event.is_directory:
+                    self.loop.create_task(self._process_file(str(event.src_path)))
+
+            def on_moved(self, event: Any) -> None:
+                """Handle file move events."""
+                if not event.is_directory:
+                    self.loop.create_task(self._process_file(str(event.dest_path)))
+
+            def on_modified(self, event: Any) -> None:
+                """Handle file modification events."""
+                if not event.is_directory:
+                    self.loop.create_task(self._process_file(str(event.src_path)))
+
+            async def _process_file(self, file_path: str) -> None:
+                """Process a file event."""
+                try:
+                    logger.debug("🔍 Processing event for %s", file_path)
+                    prospector = Prospector(Path(file_path))
                     data = await prospector.prospect()
 
-                    if self.amqp_channel:
+                    if self.ingestor.amqp_channel:
                         message_body = orjson.dumps(
                             data,
                             option=orjson.OPT_SORT_KEYS | orjson.OPT_INDENT_2,
                         )
-                        self.amqp_channel.basic_publish(
+                        self.ingestor.amqp_channel.basic_publish(
                             exchange=AMQP_EXCHANGE,
                             routing_key=ROUTING_KEY,
                             body=message_body,
-                            properties=self.amqp_properties,
+                            properties=self.ingestor.amqp_properties,
                         )
-                        logger.info("📤 Published event for file: %s", event.path)
+                        logger.info("📤 Published event for file: %s", file_path)
                 except Exception:
-                    logger.exception("💥 Error processing file event for %s", event.path)
+                    logger.exception("💥 Error processing file event for %s", file_path)
+
+        return IngestorEventHandler(self)
 
 
 def setup_logging() -> None:

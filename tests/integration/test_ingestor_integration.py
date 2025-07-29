@@ -3,7 +3,6 @@
 
 import asyncio
 import contextlib
-import sys
 import tempfile
 import time
 from collections.abc import Generator
@@ -17,30 +16,13 @@ from pika import BlockingConnection, URLParameters
 from pika.channel import Channel
 from pika.exceptions import AMQPConnectionError
 
-# Import prospector without asyncinotify on macOS
-if sys.platform != "darwin":
-    from ingestor.ingestor import (
-        AMQP_CONNECTION,
-        AMQP_EXCHANGE,
-        DATA_DIRECTORY,
-        ROUTING_KEY,
-        Ingestor,
-    )
-    from ingestor.prospector import Prospector
-else:
-    # Define minimal stubs for macOS testing
-    AMQP_CONNECTION = "amqp://guest:guest@localhost:5672/"
-    AMQP_EXCHANGE = "apollonia"
-    DATA_DIRECTORY = "/data"
-    ROUTING_KEY = "file.created"
-
-    # Define stub classes for type checking
-    class Ingestor:
-        pass
-
-    class Prospector:
-        def __init__(self, path: Any) -> None:
-            pass
+from ingestor.ingestor import (
+    AMQP_CONNECTION,
+    AMQP_EXCHANGE,
+    ROUTING_KEY,
+    Ingestor,
+)
+from ingestor.prospector import Prospector
 
 
 class TestIngestorIntegration:
@@ -104,7 +86,6 @@ class TestIngestorIntegration:
         channel.stop_consuming()
         connection.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_ingestor_publishes_file_events(
@@ -153,7 +134,6 @@ class TestIngestorIntegration:
         assert "xxh128_hash" in message
         assert message["size"] == 13  # "Hello, World!" is 13 bytes
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_ingestor_handles_multiple_files(
@@ -203,7 +183,6 @@ class TestIngestorIntegration:
         for test_file in files:
             assert str(test_file.absolute()) in file_paths
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_ingestor_finds_neighbors(
@@ -254,7 +233,6 @@ class TestIngestorIntegration:
         assert "video.srt" in neighbor_names
         assert "video.nfo" in neighbor_names
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Prospector not available on macOS")
     @pytest.mark.integration
     def test_prospector_with_real_files(self, temp_data_dir: Path) -> None:
         """Test prospector with real files."""
@@ -283,7 +261,6 @@ class TestIngestorIntegration:
         assert "test.txt" in neighbor_names
         assert "test.info" in neighbor_names
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     def test_ingestor_handles_amqp_disconnection(self, temp_data_dir: Path) -> None:
         """Test that ingestor handles AMQP disconnection gracefully."""
@@ -319,7 +296,6 @@ class TestIngestorIntegration:
                 assert ingestor.amqp_connection is mock_connection
                 assert ingestor.amqp_channel is mock_channel
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_ingestor_processes_existing_files_on_startup(
