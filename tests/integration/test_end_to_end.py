@@ -106,7 +106,7 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_file_ingestion_to_neo4j(
@@ -181,7 +181,7 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_neighbor_file_relationships(
@@ -251,7 +251,7 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_file_update_handling(
@@ -314,7 +314,7 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_concurrent_file_processing(
@@ -382,7 +382,7 @@ class TestEndToEnd:
 
         await driver.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_service_resilience(
@@ -504,7 +504,7 @@ class TestEndToEnd:
         channel2.queue_delete(queue_name)
         connection2.close()
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Ingestor requires Linux")
+    @pytest.mark.skipif(sys.platform == "darwin", reason="asyncinotify requires Linux")
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_large_file_handling(
