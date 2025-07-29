@@ -341,10 +341,20 @@ describe('LoginPage', () => {
 
     const submitButton = screen.getByRole('button', { name: 'Sign in' })
 
-    // Click multiple times rapidly
-    await user.click(submitButton)
-    await user.click(submitButton)
-    await user.click(submitButton)
+    // Click multiple times rapidly with proper user events
+    const clickPromises = [
+      user.click(submitButton),
+      user.click(submitButton),
+      user.click(submitButton)
+    ]
+
+    // Execute all clicks simultaneously
+    await Promise.all(clickPromises)
+
+    // Wait a bit for all potential async operations to complete
+    await waitFor(() => {
+      expect(mockAuthStore.login).toHaveBeenCalled()
+    })
 
     // Should only call login once
     expect(mockAuthStore.login).toHaveBeenCalledTimes(1)

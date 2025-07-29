@@ -155,14 +155,14 @@ describe('Sidebar', () => {
     // Test navigation by rendering at different routes
 
     // First, test dashboard route
-    const { unmount } = renderWithRouter(<Sidebar />, '/')
+    const { unmount } = renderWithRouter(<Sidebar />, { route: '/' })
     const dashboardLinks = screen.getAllByText('Dashboard')
     expect(dashboardLinks[1].closest('a')).toHaveClass('bg-gray-800', 'text-white')
 
     unmount()
 
     // Then test catalogs route
-    renderWithRouter(<Sidebar />, '/catalogs')
+    renderWithRouter(<Sidebar />, { route: '/catalogs' })
     const catalogLinks = screen.getAllByText('Catalogs')
     catalogLinks.forEach(link => {
       const linkElement = link.closest('a')

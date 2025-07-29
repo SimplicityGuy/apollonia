@@ -14,8 +14,9 @@ export function Navbar() {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 dark:border-gray-800 dark:bg-gray-950">
-      <button type="button" className="-m-2.5 p-2.5 text-gray-700 lg:hidden dark:text-gray-200">
+    <header role="banner" className="flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 dark:border-gray-800 dark:bg-gray-950">
+      <nav>
+      <button type="button" className="-m-2.5 p-2.5 text-gray-700 lg:hidden dark:text-gray-200" aria-label="Open sidebar">
         <span className="sr-only">Open sidebar</span>
         <svg
           className="h-6 w-6"
@@ -33,7 +34,7 @@ export function Navbar() {
       </button>
 
       {/* Search */}
-      <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+      <div className="hidden lg:block flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
         <form className="relative flex flex-1" action="/search" method="GET">
           <label htmlFor="search-field" className="sr-only">
             Search
@@ -48,13 +49,17 @@ export function Navbar() {
             placeholder="Search media files..."
             type="search"
             name="q"
+            aria-label="Search media files"
+            required
           />
+          <button type="submit" className="sr-only">Submit search</button>
         </form>
 
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           <button
             type="button"
             className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+            aria-label="View notifications"
           >
             <span className="sr-only">View notifications</span>
             <BellIcon className="h-6 w-6" aria-hidden="true" />
@@ -113,6 +118,7 @@ export function Navbar() {
           </Menu>
         </div>
       </div>
+      </nav>
     </header>
   )
 }
