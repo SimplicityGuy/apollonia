@@ -166,7 +166,7 @@ async def test_graphql_query(auth_token: str) -> None:
 
     async with (
         aiohttp.ClientSession() as session,
-        session.post(f"{API_URL}/graphql/graphql", json={"query": query}, headers=headers) as resp,
+        session.post(f"{API_URL}/graphql", json={"query": query}, headers=headers) as resp,
     ):
         assert resp.status == 200
         result = await resp.json()
