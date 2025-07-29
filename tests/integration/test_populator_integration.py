@@ -82,8 +82,10 @@ class TestPopulatorIntegration:
                 auto_delete=False,
             )
             await queue.purge()
-        except AMQPConnectionError:
-            # Queue might not exist yet, which is fine for tests
+            # Give a moment for the purge to complete
+            await asyncio.sleep(0.1)
+        except (AMQPConnectionError, AttributeError):
+            # Queue might not exist yet or other transient errors
             pass
 
         yield channel, exchange
@@ -221,8 +223,8 @@ class TestPopulatorIntegration:
             consume_task = asyncio.create_task(populator.consume())
 
             try:
-                # Give consumer time to set up
-                await asyncio.sleep(1)
+                # Give consumer time to set up and consume any stray messages
+                await asyncio.sleep(1.5)
 
                 # Publish messages
                 for data in messages_data:

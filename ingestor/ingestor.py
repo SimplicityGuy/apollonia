@@ -118,6 +118,11 @@ class Ingestor:
                 if not event.is_directory:
                     self.loop.create_task(self._process_file(str(event.src_path)))
 
+            def on_modified(self, event: Any) -> None:
+                """Handle file modification events."""
+                if not event.is_directory:
+                    self.loop.create_task(self._process_file(str(event.src_path)))
+
             def on_moved(self, event: Any) -> None:
                 """Handle file move events."""
                 if not event.is_directory:
