@@ -116,27 +116,36 @@ class Ingestor:
             def on_created(self, event: Any) -> None:
                 """Handle file creation events."""
                 if not event.is_directory:
-                    self.loop.create_task(self._process_file(str(event.src_path)))
+                    self.loop.create_task(self._process_file(str(event.src_path), "IN_CREATE"))
 
             def on_modified(self, event: Any) -> None:
                 """Handle file modification events."""
                 if not event.is_directory:
-                    self.loop.create_task(self._process_file(str(event.src_path)))
+                    # Only process modifications after a longer delay to avoid duplicates
+                    self.loop.create_task(
+                        self._process_file(str(event.src_path), "IN_MODIFY", delay=1.0)
+                    )
 
             def on_moved(self, event: Any) -> None:
                 """Handle file move events."""
                 if not event.is_directory:
-                    self.loop.create_task(self._process_file(str(event.dest_path)))
+                    self.loop.create_task(self._process_file(str(event.dest_path), "IN_MOVED"))
 
-            async def _process_file(self, file_path: str) -> None:
+            async def _process_file(
+                self, file_path: str, event_type: str = "IN_CREATE", delay: float = 0
+            ) -> None:
                 """Process a file event."""
+                # Apply delay if specified
+                if delay > 0:
+                    await asyncio.sleep(delay)
+
                 try:
                     # Check if we've recently processed this file
                     current_time = asyncio.get_event_loop().time()
                     if file_path in self._recent_files:
                         last_processed = self._recent_files[file_path]
-                        # 0.5 second debounce for faster updates in CI
-                        if current_time - last_processed < 0.5:
+                        # 2 second debounce to prevent duplicates in CI
+                        if current_time - last_processed < 2.0:
                             logger.debug("⏭️ Skipping duplicate event for %s", file_path)
                             return
 
@@ -155,6 +164,8 @@ class Ingestor:
                     logger.debug("🔍 Processing event for %s", file_path)
                     prospector = Prospector(Path(file_path))
                     data = await prospector.prospect()
+                    # Override event type with the actual event
+                    data["event_type"] = event_type
 
                     if self.ingestor.amqp_channel:
                         message_body = orjson.dumps(

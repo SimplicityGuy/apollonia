@@ -141,8 +141,13 @@ class Populator:
                 logger.error("Missing required field 'file_path' in message data: %s", data)
                 return
 
+            # Normalize the file path to ensure consistency
+            import os
+
+            normalized_path = os.path.realpath(data["file_path"])
+
             params = {
-                "file_path": data["file_path"],
+                "file_path": normalized_path,
                 "sha256_hash": data.get("sha256_hash", ""),
                 "xxh128_hash": data.get("xxh128_hash", ""),
                 "size": data.get("size", 0),
@@ -160,7 +165,17 @@ class Populator:
                 logger.debug("✅ Created/updated file node: %s", data["file_path"])
 
             # Create relationships to neighbor files
-            for neighbor_path in data.get("neighbors", []):
+            neighbors = data.get("neighbors", [])
+            logger.debug("🔗 Processing %d neighbors for %s", len(neighbors), normalized_path)
+
+            for neighbor_path in neighbors:
+                normalized_neighbor = os.path.realpath(neighbor_path)
+                logger.debug(
+                    "🔗 Creating neighbor relationship: %s -> %s",
+                    normalized_path,
+                    normalized_neighbor,
+                )
+
                 neighbor_query = """
                 MERGE (f1:File {path: $file_path})
                 MERGE (f2:File {path: $neighbor_path})
@@ -168,8 +183,8 @@ class Populator:
                 """
                 await session.run(
                     neighbor_query,
-                    file_path=data["file_path"],
-                    neighbor_path=neighbor_path,
+                    file_path=normalized_path,
+                    neighbor_path=normalized_neighbor,
                 )
 
     async def consume(self) -> None:
