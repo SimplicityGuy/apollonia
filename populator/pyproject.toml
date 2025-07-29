@@ -32,7 +32,7 @@ dev = [
 ]
 
 [project.scripts]
-apollonia-populator = "populator.populator:main"
+apollonia-populator = "populator:main"
 
 [project.urls]
 Homepage = "https://github.com/SimplicityGuy/apollonia"

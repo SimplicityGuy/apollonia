@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/health", status_code=status.HTTP_200_OK)
 async def health_check() -> dict[str, str]:
     """Basic health check endpoint."""
-    return {"status": "ok", "message": "🌟 Apollonia API is healthy!"}
+    return {"status": "healthy", "message": "🌟 Apollonia API is healthy!"}
 
 
 @router.get("/health/ready", status_code=status.HTTP_200_OK)

@@ -3,23 +3,18 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import strawberry
 from strawberry import field
+from strawberry.scalars import JSON as StrawberryJSON
 
-# Type alias for JSON fields
-JSONType: TypeAlias = Any
-
-# Define JSON scalar type for GraphQL
-JSON = strawberry.scalar(
-    JSONType,
-    name="JSON",
-    description="The `JSON` scalar type represents JSON values.",
-    serialize=lambda v: v,
-    parse_value=lambda v: v,
-)
+# For type checking, use Any; at runtime, use the Strawberry JSON scalar
+if TYPE_CHECKING:
+    JSON = Any
+else:
+    JSON = StrawberryJSON
 
 
 @strawberry.type
@@ -31,7 +26,7 @@ class Catalog:
     name: str
     description: str | None
     media_count: int
-    settings: JSONType
+    settings: JSON
     created_at: datetime
     updated_at: datetime
 
@@ -68,7 +63,7 @@ class MediaFile:
     mime_type: str | None
     hash_sha256: str | None
     hash_xxh128: str | None
-    metadata: JSONType
+    metadata: JSON
     status: str
     created_at: datetime
     updated_at: datetime
@@ -93,7 +88,7 @@ class MediaAnalysis:
     id: UUID
     media_file_id: UUID
     status: str
-    results: JSONType
+    results: JSON
     error: str | None
     created_at: datetime
     updated_at: datetime
@@ -179,8 +174,8 @@ class SearchResultItem:
     mime_type: str | None
     created_at: datetime
     updated_at: datetime
-    metadata: JSONType
-    analysis: JSONType | None
+    metadata: JSON
+    analysis: JSON | None
 
 
 @strawberry.type
