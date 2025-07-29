@@ -87,7 +87,7 @@ describe('HomePage', () => {
   })
 
   it('renders recent files table with properly formatted data', async () => {
-    render(<HomePage />)
+    const { container } = render(<HomePage />)
 
     await waitFor(() => {
       // Check filenames are displayed
@@ -97,9 +97,8 @@ describe('HomePage', () => {
     })
 
     // Check table structure
-    const { container } = render(<HomePage />)
     const headers = getTableHeaders(container)
-    expect(headers).toEqual(['Name', 'Type', 'Size', 'Status'])
+    expect(headers).toEqual(['Name', 'Type', 'Size', 'Status', 'View'])
 
     // Check file data is properly formatted
     const tableData = getTableData(container)
@@ -138,7 +137,7 @@ describe('HomePage', () => {
 
     // Check headers
     const headers = getTableHeaders(container)
-    expect(headers).toEqual(['Name', 'Type', 'Size', 'Status'])
+    expect(headers).toEqual(['Name', 'Type', 'Size', 'Status', 'View'])
 
     // Check table is accessible
     const tableHeaders = container.querySelectorAll('th')

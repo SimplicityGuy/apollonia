@@ -277,7 +277,7 @@ export const createMockAuthStore = (overrides = {}) => ({
 })
 
 export const createMockMediaStore = (overrides = {}) => ({
-  files: createMockMediaFilesResponse().items,
+  files: [],
   selectedFile: null,
   loading: false,
   error: null,

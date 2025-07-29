@@ -110,6 +110,9 @@ export const customRender = (
 export * from '@testing-library/react'
 export { customRender as render }
 
+// Re-export mock utilities
+export * from './mocks'
+
 // ============================================================================
 // User Event Setup
 // ============================================================================

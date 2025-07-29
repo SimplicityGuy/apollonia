@@ -14,10 +14,14 @@ export function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Prevent multiple submissions
+    if (isLoading) return
+
     setIsLoading(true)
 
     try {
-      await login(formData.username, formData.password)
+      await login(formData.username.trim(), formData.password)
       toast.success('Welcome back!')
       navigate('/')
     } catch (_error) {

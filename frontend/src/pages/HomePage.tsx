@@ -117,59 +117,68 @@ export function HomePage() {
           <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Size
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Status
                 </th>
-                <th className="relative px-6 py-3">
+                <th scope="col" className="relative px-6 py-3">
                   <span className="sr-only">View</span>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-              {recentFiles?.items?.map((file) => (
-                <tr key={file.id}>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                    {file.filename}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {file.media_type}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {formatBytes(file.file_size)}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span
-                      className={classNames(
-                        file.processing_status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : file.processing_status === 'processing'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800',
-                        'inline-flex rounded-full px-2 text-xs font-semibold leading-5'
-                      )}
-                    >
-                      {file.processing_status}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                    <a
-                      href={`/files/${file.id}`}
-                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400"
-                    >
-                      View
-                    </a>
+              {!recentFiles?.items || recentFiles.items.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No files found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentFiles.items.map((file) => (
+                  <tr key={file.id}>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                      {file.filename}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      {file.media_type}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      {formatBytes(file.file_size)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      <span
+                        className={classNames(
+                          file.processing_status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : file.processing_status === 'processing'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800',
+                          'inline-flex rounded-full px-2 text-xs font-semibold leading-5'
+                        )}
+                      >
+                        {file.processing_status}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                      <a
+                        href={`/files/${file.id}`}
+                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400"
+                        aria-label={`View details for ${file.filename}`}
+                      >
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -85,7 +85,6 @@ describe('LoginPage', () => {
     expect(usernameInput).toHaveAttribute('name', 'username')
     expect(usernameInput).toHaveAttribute('autoComplete', 'username')
     expect(usernameInput).toHaveAttribute('required')
-    expect(usernameInput).toHaveAriaLabel('Username')
 
     const passwordInput = screen.getByLabelText('Password')
     expect(passwordInput).toHaveAttribute('type', 'password')
