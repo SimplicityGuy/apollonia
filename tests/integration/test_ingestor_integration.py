@@ -2,6 +2,7 @@
 # mypy: disable-error-code="name-defined,attr-defined"
 
 import asyncio
+import contextlib
 import sys
 import tempfile
 import time
@@ -125,16 +126,21 @@ class TestIngestorIntegration:
             test_file = temp_data_dir / "test.txt"
             test_file.write_text("Hello, World!")
 
-            # Process some AMQP messages
-            connection_process_time = time.time() + 2  # 2 seconds timeout
-            while time.time() < connection_process_time:
-                channel.connection.process_data_events(time_limit=0.1)
-                if messages:
-                    break
+            try:
+                # Process some AMQP messages
+                connection_process_time = time.time() + 2  # 2 seconds timeout
+                while time.time() < connection_process_time:
+                    channel.connection.process_data_events(time_limit=0.1)
+                    if messages:
+                        break
 
-            # Stop ingestor
-            ingestor.stop()
-            await ingest_task
+            finally:
+                # Stop ingestor
+                ingestor.stop()
+                # Cancel task with timeout
+                ingest_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(ingest_task, timeout=5.0)
 
         # Verify message was published
         assert len(messages) > 0
@@ -171,16 +177,21 @@ class TestIngestorIntegration:
                 files.append(test_file)
                 await asyncio.sleep(0.1)  # Small delay between files
 
-            # Process AMQP messages
-            connection_process_time = time.time() + 3
-            while time.time() < connection_process_time:
-                channel.connection.process_data_events(time_limit=0.1)
-                if len(messages) >= 3:
-                    break
+            try:
+                # Process AMQP messages
+                connection_process_time = time.time() + 3
+                while time.time() < connection_process_time:
+                    channel.connection.process_data_events(time_limit=0.1)
+                    if len(messages) >= 3:
+                        break
 
-            # Stop ingestor
-            ingestor.stop()
-            await ingest_task
+            finally:
+                # Stop ingestor
+                ingestor.stop()
+                # Cancel task with timeout
+                ingest_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(ingest_task, timeout=5.0)
 
         # Verify all files were processed
         assert len(messages) >= 3
@@ -213,16 +224,21 @@ class TestIngestorIntegration:
                 main_file = temp_data_dir / "video.mp4"
                 main_file.write_text("video content")
 
-                # Process AMQP messages
-                connection_process_time = time.time() + 2
-                while time.time() < connection_process_time:
-                    channel.connection.process_data_events(time_limit=0.1)
-                    if messages:
-                        break
+                try:
+                    # Process AMQP messages
+                    connection_process_time = time.time() + 2
+                    while time.time() < connection_process_time:
+                        channel.connection.process_data_events(time_limit=0.1)
+                        if messages:
+                            break
 
-                # Stop ingestor
-                ingestor.stop()
-                await ingest_task
+                finally:
+                    # Stop ingestor
+                    ingestor.stop()
+                    # Cancel task with timeout
+                    ingest_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                        await asyncio.wait_for(ingest_task, timeout=5.0)
 
         # Verify message contains neighbors
         assert len(messages) > 0
@@ -325,16 +341,21 @@ class TestIngestorIntegration:
             new_file = temp_data_dir / "new.txt"
             new_file.write_text("New file")
 
-            # Process AMQP messages
-            connection_process_time = time.time() + 2
-            while time.time() < connection_process_time:
-                channel.connection.process_data_events(time_limit=0.1)
-                if messages:
-                    break
+            try:
+                # Process AMQP messages
+                connection_process_time = time.time() + 2
+                while time.time() < connection_process_time:
+                    channel.connection.process_data_events(time_limit=0.1)
+                    if messages:
+                        break
 
-            # Stop ingestor
-            ingestor.stop()
-            await ingest_task
+            finally:
+                # Stop ingestor
+                ingestor.stop()
+                # Cancel task with timeout
+                ingest_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(ingest_task, timeout=5.0)
 
         # Should only process the new file (existing files are not watched)
         assert len(messages) == 1

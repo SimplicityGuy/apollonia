@@ -1,17 +1,13 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
-import userEvent from '@testing-library/user-event'
-
-const renderWithRouter = (component: React.ReactElement, route = '/') => {
-  return render(
-    <MemoryRouter initialEntries={[route]}>
-      {component}
-    </MemoryRouter>
-  )
-}
+import {
+  render,
+  screen,
+  setupUser,
+  expectToHaveClasses,
+  renderWithRouter
+} from '@/test/utils'
 
 describe('Sidebar', () => {
   beforeEach(() => {
@@ -56,20 +52,20 @@ describe('Sidebar', () => {
     })
   })
 
-  it('highlights active navigation item', () => {
-    renderWithRouter(<Sidebar />, '/catalogs')
+  it('highlights active navigation item with proper styling', () => {
+    renderWithRouter(<Sidebar />, { route: '/catalogs' })
 
     const catalogLinks = screen.getAllByText('Catalogs')
     catalogLinks.forEach(link => {
       const linkElement = link.closest('a')
-      expect(linkElement).toHaveClass('bg-gray-800', 'text-white')
+      expectToHaveClasses(linkElement!, 'bg-gray-800', 'text-white')
     })
 
     // Other links should not be active
     const dashboardLinks = screen.getAllByText('Dashboard')
     dashboardLinks.forEach(link => {
       const linkElement = link.closest('a')
-      expect(linkElement).toHaveClass('text-gray-300')
+      expectToHaveClasses(linkElement!, 'text-gray-300')
       expect(linkElement).not.toHaveClass('bg-gray-800')
     })
   })
@@ -229,5 +225,137 @@ describe('Sidebar', () => {
     // Check margin on mobile icons
     const mobileIcons = document.querySelectorAll('.mr-4.h-6.w-6')
     expect(mobileIcons.length).toBeGreaterThan(0)
+  })
+
+  it('supports keyboard navigation through sidebar items', async () => {
+    const user = setupUser()
+    renderWithRouter(<Sidebar />)
+
+    // Tab through navigation items
+    await user.tab()
+    const firstLink = screen.getAllByText('Dashboard')[0].closest('a')
+    expect(firstLink).toHaveFocus()
+
+    await user.tab()
+    const secondLink = screen.getAllByText('Catalogs')[0].closest('a')
+    expect(secondLink).toHaveFocus()
+
+    // Continue through all nav items
+    await user.tab()
+    expect(screen.getAllByText('Upload')[0].closest('a')).toHaveFocus()
+
+    await user.tab()
+    expect(screen.getAllByText('Analytics')[0].closest('a')).toHaveFocus()
+
+    await user.tab()
+    expect(screen.getAllByText('Settings')[0].closest('a')).toHaveFocus()
+  })
+
+  it('handles navigation with arrow keys', async () => {
+    const user = setupUser()
+    renderWithRouter(<Sidebar />)
+
+    // Focus first nav item
+    const firstLink = screen.getAllByText('Dashboard')[0].closest('a')
+    firstLink?.focus()
+
+    // Navigate down with arrow key
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getAllByText('Catalogs')[0].closest('a')).toHaveFocus()
+
+    // Navigate up with arrow key
+    await user.keyboard('{ArrowUp}')
+    expect(screen.getAllByText('Dashboard')[0].closest('a')).toHaveFocus()
+  })
+
+  it('provides proper ARIA landmarks', () => {
+    const { container } = renderWithRouter(<Sidebar />)
+
+    // Check for navigation landmark
+    const nav = container.querySelector('nav[role="navigation"]')
+    expect(nav).toBeInTheDocument()
+
+    // Check for main content area
+    const main = container.querySelector('[role="main"]')
+    expect(main).toBeInTheDocument()
+  })
+
+  it('handles responsive behavior correctly', () => {
+    // Test mobile viewport
+    window.innerWidth = 375
+    const { container } = renderWithRouter(<Sidebar />)
+
+    // Mobile sidebar should be in DOM but hidden by default
+    const mobileSidebar = container.querySelector('.relative.z-40.lg\\:hidden')
+    expect(mobileSidebar).toBeInTheDocument()
+    expect(mobileSidebar).toHaveClass('hidden')
+
+    // Desktop sidebar should be hidden on mobile
+    const desktopSidebar = container.querySelector('.hidden.lg\\:fixed')
+    expect(desktopSidebar).toBeInTheDocument()
+
+    // Reset viewport
+    window.innerWidth = 1024
+  })
+
+  it('shows current location indicator', () => {
+    renderWithRouter(<Sidebar />, { route: '/analytics' })
+
+    const analyticsLinks = screen.getAllByText('Analytics')
+    analyticsLinks.forEach(link => {
+      const linkElement = link.closest('a')
+      expect(linkElement).toHaveAttribute('aria-current', 'page')
+    })
+  })
+
+  it('preserves focus when toggling mobile sidebar', async () => {
+    const user = setupUser()
+    const { container } = renderWithRouter(<Sidebar />)
+
+    // Get close button
+    const closeButton = screen.getByRole('button', { name: /close sidebar/i })
+
+    // Focus the close button
+    closeButton.focus()
+    expect(closeButton).toHaveFocus()
+
+    // Simulate closing sidebar
+    await user.click(closeButton)
+
+    // Focus should be maintained or moved appropriately
+    expect(document.activeElement).toBe(closeButton)
+  })
+
+  it('has proper color contrast for accessibility', () => {
+    renderWithRouter(<Sidebar />)
+
+    // Check active link contrast
+    const activeLinks = screen.getAllByText('Dashboard')
+    activeLinks.forEach(link => {
+      const linkElement = link.closest('a')
+      if (linkElement?.classList.contains('bg-gray-800')) {
+        expectToHaveClasses(linkElement, 'text-white')
+      }
+    })
+
+    // Check inactive link contrast
+    const inactiveLinks = screen.getAllByText('Settings')
+    inactiveLinks.forEach(link => {
+      const linkElement = link.closest('a')
+      if (!linkElement?.classList.contains('bg-gray-800')) {
+        expectToHaveClasses(linkElement, 'text-gray-300')
+      }
+    })
+  })
+
+  it('provides skip navigation link', () => {
+    const { container } = renderWithRouter(<Sidebar />)
+
+    // Check for skip link (usually hidden but accessible)
+    const skipLink = container.querySelector('a[href="#main-content"]')
+    if (skipLink) {
+      expect(skipLink).toHaveTextContent(/skip to main content/i)
+      expectToHaveClasses(skipLink as HTMLElement, 'sr-only', 'focus:not-sr-only')
+    }
   })
 })

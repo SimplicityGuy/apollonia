@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
-import { beforeEach, vi } from 'vitest'
+import { beforeEach, afterEach, vi } from 'vitest'
+import './matchers'
 
 // Extend global for vitest environment
 declare global {
@@ -10,6 +11,43 @@ declare global {
 // Global test setup
 beforeEach(() => {
   // Reset any mocks or global state before each test
+  vi.clearAllMocks()
+
+  // Clear all timers
+  vi.clearAllTimers()
+
+  // Reset document body
+  document.body.innerHTML = ''
+
+  // Reset viewport
+  window.innerWidth = 1024
+  window.innerHeight = 768
+
+  // Mock console methods to reduce noise in tests
+  global.console.warn = vi.fn()
+  global.console.error = vi.fn()
+})
+
+afterEach(() => {
+  // Cleanup after each test
+  vi.resetAllMocks()
+
+  // Restore real timers if they were mocked
+  vi.useRealTimers()
+
+  // Clear any remaining DOM elements
+  document.body.innerHTML = ''
+
+  // Check for console errors and warnings
+  if ((console.error as any).mock?.calls.length > 0) {
+    const errors = (console.error as any).mock.calls
+    console.log('Console errors during test:', errors)
+  }
+
+  if ((console.warn as any).mock?.calls.length > 0) {
+    const warnings = (console.warn as any).mock.calls
+    console.log('Console warnings during test:', warnings)
+  }
 })
 
 // Mock IntersectionObserver for components that use it

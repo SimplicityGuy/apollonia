@@ -3,6 +3,7 @@
 # ruff: noqa: SIM117
 
 import asyncio
+import contextlib
 import os
 import sys
 import tempfile
@@ -124,25 +125,31 @@ class TestEndToEnd:
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
 
-                    # Give services time to start
-                    await asyncio.sleep(2)
+                    try:
+                        # Give services time to start
+                        await asyncio.sleep(2)
 
-                # Create test files
-                test_files = []
-                for i in range(3):
-                    file_path = temp_data_dir / f"test_file_{i}.txt"
-                    file_path.write_text(f"This is test file {i}")
-                    test_files.append(file_path)
-                    await asyncio.sleep(0.5)  # Small delay between files
+                        # Create test files
+                        test_files = []
+                        for i in range(3):
+                            file_path = temp_data_dir / f"test_file_{i}.txt"
+                            file_path.write_text(f"This is test file {i}")
+                            test_files.append(file_path)
+                            await asyncio.sleep(0.5)  # Small delay between files
 
-                # Give time for processing
-                await asyncio.sleep(5)
+                        # Give time for processing
+                        await asyncio.sleep(5)
 
-                # Stop services
-                ingestor.stop()
-                populator.stop()
-                await ingest_task
-                await consume_task
+                    finally:
+                        # Stop services
+                        ingestor.stop()
+                        populator.stop()
+
+                        # Cancel tasks with timeout
+                        for task in [ingest_task, consume_task]:
+                            task.cancel()
+                            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                                await asyncio.wait_for(task, timeout=5.0)
 
         # Verify in Neo4j
         driver = AsyncGraphDatabase.driver(
@@ -197,21 +204,27 @@ class TestEndToEnd:
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
 
-                # Give services time to start
-                await asyncio.sleep(2)
+                    try:
+                        # Give services time to start
+                        await asyncio.sleep(2)
 
-                # Touch the main file to trigger processing
-                main_file = temp_data_dir / "movie.mp4"
-                main_file.touch()
+                        # Touch the main file to trigger processing
+                        main_file = temp_data_dir / "movie.mp4"
+                        main_file.touch()
 
-                # Give time for processing
-                await asyncio.sleep(5)
+                        # Give time for processing
+                        await asyncio.sleep(5)
 
-                # Stop services
-                ingestor.stop()
-                populator.stop()
-                await ingest_task
-                await consume_task
+                    finally:
+                        # Stop services
+                        ingestor.stop()
+                        populator.stop()
+
+                        # Cancel tasks with timeout
+                        for task in [ingest_task, consume_task]:
+                            task.cancel()
+                            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                                await asyncio.wait_for(task, timeout=5.0)
 
         # Verify relationships in Neo4j
         driver = AsyncGraphDatabase.driver(
@@ -258,21 +271,27 @@ class TestEndToEnd:
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
 
-                # Give services time to start and process initial file
-                await asyncio.sleep(3)
+                    try:
+                        # Give services time to start and process initial file
+                        await asyncio.sleep(3)
 
-                # Update the file
-                test_file.write_text("Updated content with more text")
-                test_file.touch()  # Update modification time
+                        # Update the file
+                        test_file.write_text("Updated content with more text")
+                        test_file.touch()  # Update modification time
 
-                # Give time for processing
-                await asyncio.sleep(3)
+                        # Give time for processing
+                        await asyncio.sleep(3)
 
-                # Stop services
-                ingestor.stop()
-                populator.stop()
-                await ingest_task
-                await consume_task
+                    finally:
+                        # Stop services
+                        ingestor.stop()
+                        populator.stop()
+
+                        # Cancel tasks with timeout
+                        for task in [ingest_task, consume_task]:
+                            task.cancel()
+                            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                                await asyncio.wait_for(task, timeout=5.0)
 
         # Verify in Neo4j
         driver = AsyncGraphDatabase.driver(
@@ -314,24 +333,30 @@ class TestEndToEnd:
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
 
-                # Give services time to start
-                await asyncio.sleep(2)
+                    try:
+                        # Give services time to start
+                        await asyncio.sleep(2)
 
-                # Create multiple files rapidly
-                test_files = []
-                for i in range(num_files):
-                    file_path = temp_data_dir / f"concurrent_{i}.dat"
-                    file_path.write_bytes(os.urandom(1024))  # Random 1KB content
-                    test_files.append(file_path)
+                        # Create multiple files rapidly
+                        test_files = []
+                        for i in range(num_files):
+                            file_path = temp_data_dir / f"concurrent_{i}.dat"
+                            file_path.write_bytes(os.urandom(1024))  # Random 1KB content
+                            test_files.append(file_path)
 
-                # Give time for processing
-                await asyncio.sleep(10)
+                        # Give time for processing
+                        await asyncio.sleep(10)
 
-                # Stop services
-                ingestor.stop()
-                populator.stop()
-                await ingest_task
-                await consume_task
+                    finally:
+                        # Stop services
+                        ingestor.stop()
+                        populator.stop()
+
+                        # Cancel tasks with timeout
+                        for task in [ingest_task, consume_task]:
+                            task.cancel()
+                            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                                await asyncio.wait_for(task, timeout=5.0)
 
         # Verify all files were processed
         driver = AsyncGraphDatabase.driver(
@@ -377,30 +402,40 @@ class TestEndToEnd:
                 # Create file while populator is not running
                 test_file.write_text("Content created before populator")
 
-                # Wait a bit
-                await asyncio.sleep(2)
+                try:
+                    # Wait a bit
+                    await asyncio.sleep(2)
 
-                # Now start populator - it should process queued messages
-                async with Populator() as populator:
-                    consume_task = asyncio.create_task(populator.consume())
+                    # Now start populator - it should process queued messages
+                    async with Populator() as populator:
+                        consume_task = asyncio.create_task(populator.consume())
 
-                    # Give time to process queued message
-                    await asyncio.sleep(3)
+                        try:
+                            # Give time to process queued message
+                            await asyncio.sleep(3)
 
-                    # Create another file while both are running
-                    test_file2 = temp_data_dir / "resilience_test2.txt"
-                    test_file2.write_text("Content created with both running")
+                            # Create another file while both are running
+                            test_file2 = temp_data_dir / "resilience_test2.txt"
+                            test_file2.write_text("Content created with both running")
 
-                    # Give time to process
-                    await asyncio.sleep(3)
+                            # Give time to process
+                            await asyncio.sleep(3)
 
-                    # Stop populator
-                    populator.stop()
-                    await consume_task
+                        finally:
+                            # Stop populator
+                            populator.stop()
+                            # Cancel consume_task with timeout
+                            consume_task.cancel()
+                            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                                await asyncio.wait_for(consume_task, timeout=5.0)
 
-                # Stop ingestor
-                ingestor.stop()
-                await ingest_task
+                finally:
+                    # Stop ingestor
+                    ingestor.stop()
+                    # Cancel ingest_task with timeout
+                    ingest_task.cancel()
+                    with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                        await asyncio.wait_for(ingest_task, timeout=5.0)
 
         # Verify both files were processed
         driver = AsyncGraphDatabase.driver(
@@ -491,20 +526,26 @@ class TestEndToEnd:
                     ingest_task = asyncio.create_task(ingestor.ingest())
                     consume_task = asyncio.create_task(populator.consume())
 
-                # Give services time to start
-                await asyncio.sleep(2)
+                    try:
+                        # Give services time to start
+                        await asyncio.sleep(2)
 
-                # Touch the file to trigger processing
-                large_file.touch()
+                        # Touch the file to trigger processing
+                        large_file.touch()
 
-                # Give more time for processing large file
-                await asyncio.sleep(10)
+                        # Give more time for processing large file
+                        await asyncio.sleep(10)
 
-                # Stop services
-                ingestor.stop()
-                populator.stop()
-                await ingest_task
-                await consume_task
+                    finally:
+                        # Stop services
+                        ingestor.stop()
+                        populator.stop()
+
+                        # Cancel tasks with timeout
+                        for task in [ingest_task, consume_task]:
+                            task.cancel()
+                            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                                await asyncio.wait_for(task, timeout=5.0)
 
         # Verify in Neo4j
         driver = AsyncGraphDatabase.driver(

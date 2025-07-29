@@ -141,7 +141,7 @@ class TestAMQPIntegration:
                 "apollonia-integration-test", durable=True, auto_delete=True
             )
 
-            await queue.bind(exchange, routing_key="file.created")
+            await queue.bind(exchange, routing_key="")  # Fanout exchange doesn't use routing keys
 
             # Simulate ingestor publishing
             file_metadata = {
@@ -160,11 +160,12 @@ class TestAMQPIntegration:
                     content_encoding="application/json",
                     delivery_mode=2,
                 ),
-                routing_key="file.created",
+                routing_key="",  # Fanout exchange doesn't use routing keys
             )
 
             # Simulate populator consuming
             messages_received = []
+            consumer_tag = None
 
             async def process_message(message: Any) -> None:
                 async with message.process():
@@ -172,10 +173,17 @@ class TestAMQPIntegration:
                     messages_received.append(data)
 
             # Consume one message
-            await queue.consume(process_message, no_ack=False)
+            consumer_tag = await queue.consume(process_message, no_ack=False)
 
-            # Wait for message
-            await asyncio.sleep(0.5)
+            # Wait for message with timeout
+            for _ in range(10):  # Try for 1 second
+                if messages_received:
+                    break
+                await asyncio.sleep(0.1)
+
+            # Cancel consumer
+            if consumer_tag:
+                await queue.cancel(consumer_tag)
 
             # Verify
             assert len(messages_received) == 1
@@ -242,14 +250,24 @@ class TestAMQPIntegration:
             # Start consumers
             consumer_tasks = [asyncio.create_task(consumer(i)) for i in range(3)]
 
-            # Wait for all messages to be consumed
-            await asyncio.sleep(1.0)
-
-            # Cancel consumers
-            for task in consumer_tasks:
-                task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await task
+            try:
+                # Wait for all messages to be consumed with timeout
+                await asyncio.wait_for(
+                    asyncio.gather(*consumer_tasks, return_exceptions=True), timeout=5.0
+                )
+            except TimeoutError:
+                # Cancel consumers on timeout
+                for task in consumer_tasks:
+                    task.cancel()
+                    with contextlib.suppress(TimeoutError, asyncio.CancelledError):
+                        await asyncio.wait_for(task, timeout=1.0)
+            finally:
+                # Ensure all tasks are cancelled
+                for task in consumer_tasks:
+                    if not task.done():
+                        task.cancel()
+                        with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                            await task
 
             # Verify all messages were consumed
             message_ids = [msg[1] for msg in consumed_messages]
