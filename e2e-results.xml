@@ -1,0 +1,962 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="22" failures="7" skipped="5" tests="34" time="62.805" timestamp="2025-07-29T13:54:24.406275-07:00" hostname="MacBookPro.hsd1.wa.comcast.net"><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_complete_file_processing_pipeline" time="61.900"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_rabbitmq_message_flow" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_service_health_endpoints" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_multiple_file_processing" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_neighbor_file_relationships_docker" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_service_restart_resilience" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_docker_volume_persistence" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_docker_logs_availability" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_docker_e2e.TestDockerE2E" name="test_resource_usage_monitoring" time="0.000"><error message="failed on setup with &quot;Failed: Services did not become ready in time&quot;">self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+    @pytest.fixture(scope="class")
+    def docker_compose_up(self) -&gt; Iterator[None]:
+        """Start all services using docker-compose."""
+        project_root = Path(__file__).parent.parent.parent
+
+        # Check if we should skip Docker setup
+        if os.getenv("E2E_SKIP_DOCKER"):
+            yield
+            return
+
+        # Start services
+        subprocess.run(
+            ["docker-compose", "up", "-d"],
+            cwd=project_root,
+            check=True,
+        )
+
+        # Wait for services to be ready
+&gt;       self._wait_for_services()
+
+project_root = PosixPath('/Users/Robert/Code/public/apollonia')
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+
+tests/e2e/test_docker_e2e.py:35:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+timeout = 60
+
+    def _wait_for_services(self, timeout: int = 60) -&gt; None:
+        """Wait for all services to be ready."""
+        start_time = time.time()
+
+        while time.time() - start_time &lt; timeout:
+            try:
+                # Check RabbitMQ
+                requests.get(
+                    "http://localhost:15672/api/health/checks/alarms",
+                    auth=("guest", "guest"),
+                    timeout=5,
+                )
+
+                # Check Neo4j
+                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+                with driver.session() as session:
+                    session.run("RETURN 1")
+                driver.close()
+
+                # If we get here, services are ready
+                return
+
+            except Exception:
+                time.sleep(2)
+
+&gt;       pytest.fail("Services did not become ready in time")
+E       Failed: Services did not become ready in time
+
+driver     = &lt;neo4j._sync.driver.BoltDriver object at 0x1108b7710&gt;
+self       = &lt;tests.e2e.test_docker_e2e.TestDockerE2E object at 0x105934320&gt;
+session    = &lt;neo4j._sync.work.session.Session object at 0x1108b73e0&gt;
+start_time = 1753822466.205942
+timeout    = 60
+
+tests/e2e/test_docker_e2e.py:71: Failed</error></testcase><testcase classname="tests.e2e.test_e2e.TestEndToEnd" name="test_docker_services_running" time="0.001"><skipped type="pytest.skip" message="Docker not available">/Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py:66: Docker not available</skipped></testcase><testcase classname="tests.e2e.test_e2e.TestEndToEnd" name="test_file_processing_flow" time="0.000"><skipped type="pytest.skip" message="Docker not available">/Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py:84: Docker not available</skipped></testcase><testcase classname="tests.e2e.test_e2e.TestEndToEnd" name="test_neo4j_data_verification" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py, line 125&#10;      @pytest.mark.asyncio&#10;      async def test_neo4j_data_verification(self, _docker_compose_project: str) -&gt; None:&#10;          &quot;&quot;&quot;Verify data was stored in Neo4j.&quot;&quot;&quot;&#10;          from neo4j import AsyncGraphDatabase&#10;&#10;          # Wait for any pending processing&#10;          await asyncio.sleep(5)&#10;&#10;          # Connect to Neo4j&#10;          driver = AsyncGraphDatabase.driver(&quot;bolt://localhost:7687&quot;, auth=(&quot;neo4j&quot;, &quot;apollonia&quot;))&#10;&#10;          try:&#10;              async with driver.session() as session:&#10;                  # Count file nodes&#10;                  result = await session.run(&quot;MATCH (f:File) RETURN count(f) AS count&quot;)&#10;                  record = await result.single()&#10;&#10;                  # Should have at least one file from our test&#10;                  assert record is not None&#10;                  assert record[&quot;count&quot;] &gt; 0&#10;&#10;                  # Check for recent files&#10;                  result = await session.run(&quot;&quot;&quot;&#10;                      MATCH (f:File)&#10;                      WHERE f.discovered &gt; datetime() - duration('PT5M')&#10;                      RETURN f.path AS path&#10;                      ORDER BY f.discovered DESC&#10;                      LIMIT 10&#10;                  &quot;&quot;&quot;)&#10;&#10;                  recent_files = [record[&quot;path&quot;] async for record in result]&#10;                  assert len(recent_files) &gt; 0&#10;&#10;          finally:&#10;              await driver.close()&#10;E       fixture '_docker_compose_project' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, authenticated_page, backend_server, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, docker_client, docker_compose_project, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py:125&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py, line 125
+      @pytest.mark.asyncio
+      async def test_neo4j_data_verification(self, _docker_compose_project: str) -&gt; None:
+          """Verify data was stored in Neo4j."""
+          from neo4j import AsyncGraphDatabase
+
+          # Wait for any pending processing
+          await asyncio.sleep(5)
+
+          # Connect to Neo4j
+          driver = AsyncGraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "apollonia"))
+
+          try:
+              async with driver.session() as session:
+                  # Count file nodes
+                  result = await session.run("MATCH (f:File) RETURN count(f) AS count")
+                  record = await result.single()
+
+                  # Should have at least one file from our test
+                  assert record is not None
+                  assert record["count"] &gt; 0
+
+                  # Check for recent files
+                  result = await session.run("""
+                      MATCH (f:File)
+                      WHERE f.discovered &gt; datetime() - duration('PT5M')
+                      RETURN f.path AS path
+                      ORDER BY f.discovered DESC
+                      LIMIT 10
+                  """)
+
+                  recent_files = [record["path"] async for record in result]
+                  assert len(recent_files) &gt; 0
+
+          finally:
+              await driver.close()
+E       fixture '_docker_compose_project' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, authenticated_page, backend_server, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, docker_client, docker_compose_project, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py:125</error></testcase><testcase classname="tests.e2e.test_e2e.TestEndToEnd" name="test_health_checks" time="0.000"><skipped type="pytest.skip" message="Docker not available">/Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py:161: Docker not available</skipped></testcase><testcase classname="tests.e2e.test_e2e.TestEndToEnd" name="test_service_restart_recovery" time="0.000"><skipped type="pytest.skip" message="Docker not available">/Users/Robert/Code/public/apollonia/tests/e2e/test_e2e.py:185: Docker not available</skipped></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_homepage_loads" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 35&#10;      def test_homepage_loads(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 35
+      def test_homepage_loads(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_navigation_menu" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 51&#10;      def test_navigation_menu(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 51
+      def test_navigation_menu(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_search_functionality" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 70&#10;      def test_search_functionality(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 70
+      def test_search_functionality(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_user_authentication_flow" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 86&#10;      def test_user_authentication_flow(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 86
+      def test_user_authentication_flow(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_file_upload_page" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 130&#10;      def test_file_upload_page(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 130
+      def test_file_upload_page(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_recent_files_table" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 164&#10;      def test_recent_files_table(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 164
+      def test_recent_files_table(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_responsive_design" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 220&#10;      def test_responsive_design(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 220
+      def test_responsive_design(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_dark_mode_toggle" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 238&#10;      def test_dark_mode_toggle(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 238
+      def test_dark_mode_toggle(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_error_handling" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 256&#10;      def test_error_handling(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 256
+      def test_error_handling(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_catalog_page_functionality" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 276&#10;      def test_catalog_page_functionality(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 276
+      def test_catalog_page_functionality(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_keyboard_navigation" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 317&#10;      def test_keyboard_navigation(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 317
+      def test_keyboard_navigation(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_frontend_e2e.TestFrontendE2E" name="test_loading_states" time="0.000"><error message="failed on setup with &quot;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 333&#10;      def test_loading_states(self, page: Page, base_url: str) -&gt; None:&#10;file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26&#10;      @pytest.fixture(autouse=True)&#10;      def setup_teardown(self, page: Page) -&gt; Iterator[None]:&#10;E       fixture 'page' not found&#10;&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26&quot;">file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 333
+      def test_loading_states(self, page: Page, base_url: str) -&gt; None:
+file /Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py, line 26
+      @pytest.fixture(autouse=True)
+      def setup_teardown(self, page: Page) -&gt; Iterator[None]:
+E       fixture 'page' not found
+&gt;       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, api_url, authenticated_page, backend_server, base_url, benchmark_timer, browser_context_args, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, class_mocker, cleanup_test_data, configure_logging, cov, doctest_namespace, event_loop, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, frontend_server, mock_api_responses, mocker, module_mocker, monkeypatch, no_cover, package_mocker, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, session_mocker, setup_teardown, test_data, test_env, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/Robert/Code/public/apollonia/tests/e2e/test_frontend_e2e.py:26</error></testcase><testcase classname="tests.e2e.test_full_flow" name="test_health_check" time="0.005"><failure message="AssertionError: assert 'ok' == 'healthy'&#10;  &#10;  - healthy&#10;  + ok">@pytest.mark.asyncio
+    async def test_health_check() -&gt; None:
+        """Test that all services are healthy."""
+        async with aiohttp.ClientSession() as session:
+            # Check API health
+            async with session.get(f"{API_URL}/health") as resp:
+                assert resp.status == 200
+                data = await resp.json()
+&gt;               assert data["status"] == "healthy"
+E               AssertionError: assert 'ok' == 'healthy'
+E
+E                 - healthy
+E                 + ok
+
+data       = {'message': '#x1F31F Apollonia API is healthy!', 'status': 'ok'}
+resp       = &lt;ClientResponse(http://localhost:8000/health) [200 OK]&gt;
+&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '58', 'Content-Type': 'application/json', 'x-request-id': '4afc7e93-6d3a-4d7a-bdbd-de6f8d3ea977', 'x-process-time': '0.00029659271240234375')&gt;
+
+session    = &lt;aiohttp.client.ClientSession object at 0x1108d2690&gt;
+
+tests/e2e/test_full_flow.py:69: AssertionError</failure></testcase><testcase classname="tests.e2e.test_full_flow" name="test_file_upload_and_processing" time="0.004"><failure message="AssertionError: assert 405 == 200&#10; +  where 405 = &lt;ClientResponse(http://localhost:8000/api/v1/media/upload) [405 Method Not Allowed]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Allow': 'GET', 'Content-Length': '31', 'Content-Type': 'application/json', 'x-request-id': '81dd3b3f-d144-41cc-8987-21d266791f66', 'x-process-time': '0.0002624988555908203')&gt;\n.status">test_media_files = {'audio': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_audio.mp3'), 'video': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_video.mp4')}
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+
+    @pytest.mark.asyncio
+    async def test_file_upload_and_processing(
+        test_media_files: dict[str, Path], auth_token: str
+    ) -&gt; None:
+        """Test complete file upload and processing flow."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        async with aiohttp.ClientSession() as session:
+            # Upload audio file
+            with test_media_files["audio"].open("rb") as f:
+                data = aiohttp.FormData()
+                data.add_field("file", f, filename="test_audio.mp3", content_type="audio/mpeg")
+
+                async with session.post(
+                    f"{API_URL}/api/v1/media/upload", data=data, headers=headers
+                ) as resp:
+&gt;                   assert resp.status == 200
+E                   AssertionError: assert 405 == 200
+E                    +  where 405 = &lt;ClientResponse(http://localhost:8000/api/v1/media/upload) [405 Method Not Allowed]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Allow': 'GET', 'Content-Length': '31', 'Content-Type': 'application/json', 'x-request-id': '81dd3b3f-d144-41cc-8987-21d266791f66', 'x-process-time': '0.0002624988555908203')&gt;\n.status
+
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+data       = &lt;aiohttp.formdata.FormData object at 0x1108d3b60&gt;
+f          = &lt;_io.BufferedReader name='/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_audio.mp3'&gt;
+headers    = {'Authorization': 'Bearer &lt;coroutine object auth_token at 0x11089e350&gt;'}
+resp       = &lt;ClientResponse(http://localhost:8000/api/v1/media/upload) [405 Method Not Allowed]&gt;
+&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Allow': 'GET', 'Content-Length': '31', 'Content-Type': 'application/json', 'x-request-id': '81dd3b3f-d144-41cc-8987-21d266791f66', 'x-process-time': '0.0002624988555908203')&gt;
+
+session    = &lt;aiohttp.client.ClientSession object at 0x1108d32f0&gt;
+test_media_files = {'audio': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_audio.mp3'),
+ 'video': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_video.mp4')}
+
+tests/e2e/test_full_flow.py:93: AssertionError</failure></testcase><testcase classname="tests.e2e.test_full_flow" name="test_catalog_operations" time="0.003"><failure message="AssertionError: assert 404 == 200&#10; +  where 404 = &lt;ClientResponse(http://localhost:8000/api/v1/catalogs) [404 Not Found]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': 'a6746d6e-09ce-426f-9010-3ea77e52e650', 'x-process-time': '0.00022864341735839844')&gt;\n.status">auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+
+    @pytest.mark.asyncio
+    async def test_catalog_operations(auth_token: str) -&gt; None:
+        """Test catalog creation and management."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        async with aiohttp.ClientSession() as session:
+            # Create catalog
+            catalog_data = {"name": "Test Catalog", "description": "E2E test catalog"}
+            async with session.post(
+                f"{API_URL}/api/v1/catalogs", json=catalog_data, headers=headers
+            ) as resp:
+&gt;               assert resp.status == 200
+E               AssertionError: assert 404 == 200
+E                +  where 404 = &lt;ClientResponse(http://localhost:8000/api/v1/catalogs) [404 Not Found]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': 'a6746d6e-09ce-426f-9010-3ea77e52e650', 'x-process-time': '0.00022864341735839844')&gt;\n.status
+
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+catalog_data = {'description': 'E2E test catalog', 'name': 'Test Catalog'}
+headers    = {'Authorization': 'Bearer &lt;coroutine object auth_token at 0x11089e350&gt;'}
+resp       = &lt;ClientResponse(http://localhost:8000/api/v1/catalogs) [404 Not Found]&gt;
+&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': 'a6746d6e-09ce-426f-9010-3ea77e52e650', 'x-process-time': '0.00022864341735839844')&gt;
+
+session    = &lt;aiohttp.client.ClientSession object at 0x110d25190&gt;
+
+tests/e2e/test_full_flow.py:123: AssertionError</failure></testcase><testcase classname="tests.e2e.test_full_flow" name="test_graphql_query" time="0.005"><failure message="AssertionError: assert 404 == 200&#10; +  where 404 = &lt;ClientResponse(http://localhost:8000/graphql) [404 Not Found]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': '26871213-3744-4fbd-b271-f31daa0b67c4', 'x-process-time': '0.0002090930938720703')&gt;\n.status">auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+
+    @pytest.mark.asyncio
+    async def test_graphql_query(auth_token: str) -&gt; None:
+        """Test GraphQL endpoint."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        query = """
+        query {
+            files(limit: 10) {
+                items {
+                    id
+                    filename
+                    mediaType
+                    fileSize
+                }
+                total
+            }
+        }
+        """
+
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(f"{API_URL}/graphql", json={"query": query}, headers=headers) as resp,
+        ):
+&gt;           assert resp.status == 200
+E           AssertionError: assert 404 == 200
+E            +  where 404 = &lt;ClientResponse(http://localhost:8000/graphql) [404 Not Found]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': '26871213-3744-4fbd-b271-f31daa0b67c4', 'x-process-time': '0.0002090930938720703')&gt;\n.status
+
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+headers    = {'Authorization': 'Bearer &lt;coroutine object auth_token at 0x11089e350&gt;'}
+query      = ('\n'
+ '    query {\n'
+ '        files(limit: 10) {\n'
+ '            items {\n'
+ '                id\n'
+ '                filename\n'
+ '                mediaType\n'
+ '                fileSize\n'
+ '            }\n'
+ '            total\n'
+ '        }\n'
+ '    }\n'
+ '    ')
+resp       = &lt;ClientResponse(http://localhost:8000/graphql) [404 Not Found]&gt;
+&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': '26871213-3744-4fbd-b271-f31daa0b67c4', 'x-process-time': '0.0002090930938720703')&gt;
+
+session    = &lt;aiohttp.client.ClientSession object at 0x110d262d0&gt;
+
+tests/e2e/test_full_flow.py:163: AssertionError</failure></testcase><testcase classname="tests.e2e.test_full_flow" name="test_analytics_endpoint" time="0.003"><failure message="AssertionError: assert 404 == 200&#10; +  where 404 = &lt;ClientResponse(http://localhost:8000/api/v1/analytics) [404 Not Found]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': '4c34e728-d2d1-4315-b0dd-384dd8f19d71', 'x-process-time': '0.0002124309539794922')&gt;\n.status">auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+
+    @pytest.mark.asyncio
+    async def test_analytics_endpoint(auth_token: str) -&gt; None:
+        """Test analytics data retrieval."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(f"{API_URL}/api/v1/analytics", headers=headers) as resp,
+        ):
+&gt;           assert resp.status == 200
+E           AssertionError: assert 404 == 200
+E            +  where 404 = &lt;ClientResponse(http://localhost:8000/api/v1/analytics) [404 Not Found]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': '4c34e728-d2d1-4315-b0dd-384dd8f19d71', 'x-process-time': '0.0002124309539794922')&gt;\n.status
+
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+headers    = {'Authorization': 'Bearer &lt;coroutine object auth_token at 0x11089e350&gt;'}
+resp       = &lt;ClientResponse(http://localhost:8000/api/v1/analytics) [404 Not Found]&gt;
+&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json', 'x-request-id': '4c34e728-d2d1-4315-b0dd-384dd8f19d71', 'x-process-time': '0.0002124309539794922')&gt;
+
+session    = &lt;aiohttp.client.ClientSession object at 0x110d27110&gt;
+
+tests/e2e/test_full_flow.py:178: AssertionError</failure></testcase><testcase classname="tests.e2e.test_full_flow" name="test_search_functionality" time="0.006"><failure message="AssertionError: assert 401 == 200&#10; +  where 401 = &lt;ClientResponse(http://localhost:8000/api/v1/media/search?q=test&amp;media_type=audio) [401 Unauthorized]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'WWW-Authenticate': 'Bearer', 'Content-Length': '43', 'Content-Type': 'application/json', 'x-request-id': 'acb6e332-8507-4257-92f7-25e00b05519b', 'x-process-time': '0.0009069442749023438')&gt;\n.status">auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+
+    @pytest.mark.asyncio
+    async def test_search_functionality(auth_token: str) -&gt; None:
+        """Test media file search."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        async with aiohttp.ClientSession() as session:
+            # Search for files
+            params = {"q": "test", "media_type": "audio"}
+            async with session.get(
+                f"{API_URL}/api/v1/media/search", params=params, headers=headers
+            ) as resp:
+&gt;               assert resp.status == 200
+E               AssertionError: assert 401 == 200
+E                +  where 401 = &lt;ClientResponse(http://localhost:8000/api/v1/media/search?q=test&amp;media_type=audio) [401 Unauthorized]&gt;\n&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'WWW-Authenticate': 'Bearer', 'Content-Length': '43', 'Content-Type': 'application/json', 'x-request-id': 'acb6e332-8507-4257-92f7-25e00b05519b', 'x-process-time': '0.0009069442749023438')&gt;\n.status
+
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+headers    = {'Authorization': 'Bearer &lt;coroutine object auth_token at 0x11089e350&gt;'}
+params     = {'media_type': 'audio', 'q': 'test'}
+resp       = &lt;ClientResponse(http://localhost:8000/api/v1/media/search?q=test&amp;media_type=audio) [401 Unauthorized]&gt;
+&lt;CIMultiDictProxy('Date': 'Tue, 29 Jul 2025 20:55:26 GMT', 'Server': 'uvicorn', 'WWW-Authenticate': 'Bearer', 'Content-Length': '43', 'Content-Type': 'application/json', 'x-request-id': 'acb6e332-8507-4257-92f7-25e00b05519b', 'x-process-time': '0.0009069442749023438')&gt;
+
+session    = &lt;aiohttp.client.ClientSession object at 0x110d6aea0&gt;
+
+tests/e2e/test_full_flow.py:196: AssertionError</failure></testcase><testcase classname="tests.e2e.test_full_flow" name="test_database_schema" time="0.000"><skipped type="pytest.skip" message="This test expects PostgreSQL but the project uses Neo4j">/Users/Robert/Code/public/apollonia/tests/e2e/test_full_flow.py:202: This test expects PostgreSQL but the project uses Neo4j</skipped></testcase><testcase classname="tests.e2e.test_full_flow" name="test_concurrent_uploads" time="0.014"><failure message="assert 405 == 200">test_media_files = {'audio': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_audio.mp3'), 'video': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_video.mp4')}
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+
+    @pytest.mark.asyncio
+    async def test_concurrent_uploads(test_media_files: dict[str, Path], auth_token: str) -&gt; None:
+        """Test handling of concurrent file uploads."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        async def upload_file(session: aiohttp.ClientSession, file_path: Path, filename: str) -&gt; Any:
+            with file_path.open("rb") as f:
+                data = aiohttp.FormData()
+                data.add_field("file", f, filename=filename)
+
+                async with session.post(
+                    f"{API_URL}/api/v1/media/upload", data=data, headers=headers
+                ) as resp:
+                    return resp.status, await resp.json()
+
+        async with aiohttp.ClientSession() as session:
+            # Upload multiple files concurrently
+            tasks = []
+            for i in range(5):
+                task = upload_file(session, test_media_files["audio"], f"concurrent_test_{i}.mp3")
+                tasks.append(task)
+
+            results = await asyncio.gather(*tasks)
+
+            # All uploads should succeed
+            for status, data in results:
+&gt;               assert status == 200
+E               assert 405 == 200
+
+auth_token = &lt;coroutine object auth_token at 0x11089e350&gt;
+data       = {'detail': 'Method Not Allowed'}
+headers    = {'Authorization': 'Bearer &lt;coroutine object auth_token at 0x11089e350&gt;'}
+i          = 4
+results    = [(405, {'detail': 'Method Not Allowed'}),
+ (405, {'detail': 'Method Not Allowed'}),
+ (405, {'detail': 'Method Not Allowed'}),
+ (405, {'detail': 'Method Not Allowed'}),
+ (405, {'detail': 'Method Not Allowed'})]
+session    = &lt;aiohttp.client.ClientSession object at 0x110d693d0&gt;
+status     = 405
+task       = &lt;coroutine object test_concurrent_uploads.&lt;locals&gt;.upload_file at 0x1108a9ea0&gt;
+tasks      = [&lt;coroutine object test_concurrent_uploads.&lt;locals&gt;.upload_file at 0x1108a9a20&gt;,
+ &lt;coroutine object test_concurrent_uploads.&lt;locals&gt;.upload_file at 0x1108a9b40&gt;,
+ &lt;coroutine object test_concurrent_uploads.&lt;locals&gt;.upload_file at 0x1108a9c60&gt;,
+ &lt;coroutine object test_concurrent_uploads.&lt;locals&gt;.upload_file at 0x1108a9d80&gt;,
+ &lt;coroutine object test_concurrent_uploads.&lt;locals&gt;.upload_file at 0x1108a9ea0&gt;]
+test_media_files = {'audio': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_audio.mp3'),
+ 'video': PosixPath('/var/folders/dr/wp4x7x7j6sn2_pb9lgptd7280000gn/T/tmp25431tkr/test_video.mp4')}
+upload_file = &lt;function test_concurrent_uploads.&lt;locals&gt;.upload_file at 0x110d01b20&gt;
+
+tests/e2e/test_full_flow.py:249: AssertionError</failure></testcase></testsuite></testsuites>

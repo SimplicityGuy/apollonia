@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL for media catalog
   postgres:
@@ -73,8 +71,8 @@ services:
   # Media Ingestor Service
   media-ingestor:
     build:
-      context: ./ingestor
-      dockerfile: Dockerfile.media
+      context: .
+      dockerfile: ./ingestor/Dockerfile.media
     container_name: apollonia-media-ingestor
     depends_on:
       rabbitmq:
@@ -88,12 +86,13 @@ services:
       - ./data/music:/music
       - ./data/videos:/videos
     restart: unless-stopped
+    profiles: ["media", "full"]  # Only start with --profile media or --profile full
 
   # ML Analyzer Service
   analyzer:
     build:
-      context: ./analyzer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./analyzer/Dockerfile
     container_name: apollonia-analyzer
     depends_on:
       rabbitmq:
@@ -110,12 +109,13 @@ services:
       - ./data/music:/music:ro
       - ./data/videos:/videos:ro
     restart: unless-stopped
+    profiles: ["ml", "full"]  # Only start with --profile ml or --profile full
 
   # Database Populator Service (enhanced)
   populator:
     build:
-      context: ./populator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./populator/Dockerfile
     container_name: apollonia-populator
     depends_on:
       rabbitmq:
@@ -135,8 +135,8 @@ services:
   # API Service
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./api/Dockerfile
     container_name: apollonia-api
     depends_on:
       postgres:
@@ -180,8 +180,8 @@ services:
   # Original Ingestor (kept for backward compatibility)
   ingestor:
     build:
-      context: ./ingestor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./ingestor/Dockerfile
     container_name: apollonia-ingestor
     depends_on:
       rabbitmq:

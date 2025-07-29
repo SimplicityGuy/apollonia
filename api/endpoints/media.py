@@ -7,7 +7,15 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -224,12 +232,12 @@ async def upload_media_file(
     return MediaFileResponse.from_orm(media_file)
 
 
-@router.delete("/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{media_id}", response_class=Response)
 async def delete_media_file(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_active_user),
-) -> None:
+) -> Response:
     """Delete media file."""
     logger.info("🗑️ Deleting media file: %s", media_id)
 
@@ -266,3 +274,5 @@ async def delete_media_file(
     await cache_delete(f"media:analysis:{media_id}")
 
     logger.info("✅ Deleted media file: %s", media_id)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

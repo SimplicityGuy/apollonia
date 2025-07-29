@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -200,12 +200,12 @@ async def update_catalog(
     return CatalogResponse.from_orm(catalog)
 
 
-@router.delete("/{catalog_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{catalog_id}", response_class=Response)
 async def delete_catalog(
     catalog_id: UUID,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_active_user),
-) -> None:
+) -> Response:
     """Delete catalog."""
     logger.info("🗑️ Deleting catalog: %s", catalog_id)
 
@@ -232,6 +232,8 @@ async def delete_catalog(
     await cache_delete(f"catalog:{catalog_id}")
 
     logger.info("✅ Deleted catalog: %s", catalog_id)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{catalog_id}/media", response_model=PaginatedResponse)

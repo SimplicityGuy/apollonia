@@ -9,8 +9,14 @@ from uuid import UUID
 import strawberry
 from strawberry import field
 
-# Type alias for JSON fields in GraphQL
-JSON = Any
+# Define JSON scalar type for GraphQL
+JSON = strawberry.scalar(
+    Any,
+    name="JSON",
+    description="The `JSON` scalar type represents JSON values.",
+    serialize=lambda v: v,
+    parse_value=lambda v: v,
+)
 
 
 @strawberry.type

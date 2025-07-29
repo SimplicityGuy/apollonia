@@ -375,6 +375,11 @@ jobs:
         with:
           node-version: '22'
 
+      - name: 🐋 Install docker-compose
+        uses: alexellis/arkade-get@1eef818e467c387d3f50cfe0d2c565d1cbe82b03 # master
+        with:
+          docker-compose: latest
+
       - name: 💾 Cache Docker layers
         uses: actions/cache@v4
         with:
@@ -386,10 +391,12 @@ jobs:
       - name: 🐋 Build services with cache
         timeout-minutes: 20
         run: |
-          docker buildx bake \
-            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
-            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
-            --load
+          # Use docker-compose build instead of buildx bake to avoid privilege issues
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          docker-compose build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --parallel
 
       - name: 🌐 Run E2E tests
         timeout-minutes: 15

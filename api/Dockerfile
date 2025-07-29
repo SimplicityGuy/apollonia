@@ -39,8 +39,8 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
-COPY api/ .
-COPY --from=builder /shared /shared
+COPY api/ ./api/
+COPY shared/ ./shared/
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"

@@ -186,7 +186,7 @@ test-integration:
 [group('test')]
 test-e2e:
   echo "🌐 Running end-to-end tests..."
-  echo "🚀 Starting services..."
+  echo "🚀 Starting services (without ML services)..."
   docker-compose up -d
   echo "⏳ Waiting for services to be ready..."
   sleep 30
