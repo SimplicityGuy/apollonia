@@ -1,0 +1,32 @@
+name: 'Upload Coverage'
+description: 'Upload coverage files to Codecov with proper flags'
+inputs:
+  codecov-token:
+    description: 'Codecov token'
+    required: true
+  coverage-files:
+    description: 'Coverage files to upload (comma-separated)'
+    required: false
+    default: './coverage.xml'
+  flags:
+    description: 'Codecov flags for this coverage'
+    required: true
+  name-suffix:
+    description: 'Suffix for the coverage name'
+    required: true
+  fail-on-error:
+    description: 'Fail if upload fails'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: 📤 Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ inputs.codecov-token }}
+        files: ${{ inputs.coverage-files }}
+        flags: ${{ inputs.flags }}
+        name: apollonia-${{ inputs.name-suffix }}-coverage
+        fail_ci_if_error: ${{ inputs.fail-on-error }}

@@ -1,0 +1,63 @@
+name: 'Security Scan'
+description: 'Run security scans on Python and JavaScript code'
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.12'
+  upload-sarif:
+    description: 'Upload SARIF results to GitHub'
+    required: false
+    default: 'true'
+  scan-python:
+    description: 'Run Python security scans'
+    required: false
+    default: 'true'
+  scan-javascript:
+    description: 'Run JavaScript security scans'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: 🔧 Setup Python environment
+      if: inputs.scan-python == 'true'
+      uses: ./.github/actions/setup-python-env
+      with:
+        python-version: ${{ inputs.python-version }}
+        install-just: false
+        cache-key-prefix: security-scan
+
+    - name: 🔒 Run pip-audit security scan
+      if: inputs.scan-python == 'true'
+      shell: bash
+      run: |
+        uv run pip-audit --format=json --output=pip-audit-report.json --progress-spinner=off || true
+
+    - name: 🔒 Run bandit security scan
+      if: inputs.scan-python == 'true'
+      shell: bash
+      run: |
+        uv run bandit -r . -f json -o bandit-report.json || true
+
+    - name: 🔍 Initialize CodeQL
+      if: inputs.upload-sarif == 'true'
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ inputs.scan-python == 'true' && inputs.scan-javascript == 'true' && 'python, javascript' || inputs.scan-python == 'true' && 'python' || 'javascript' }}
+        queries: security-and-quality
+
+    - name: 🔍 Perform CodeQL Analysis
+      if: inputs.upload-sarif == 'true'
+      uses: github/codeql-action/analyze@v3
+
+    - name: 📤 Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          pip-audit-report.json
+          bandit-report.json
+        if-no-files-found: ignore

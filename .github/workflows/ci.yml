@@ -1,5 +1,5 @@
 ---
-name: CI
+name: CI/CD Pipeline
 
 on:
   pull_request:
@@ -7,14 +7,26 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  workflow_call:
+    inputs:
+      skip_tests:
+        description: 'Skip test execution'
+        type: boolean
+        default: false
+      push_images:
+        description: 'Push Docker images to registry'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.actor }}/apollonia
+
 jobs:
-  # Call all workflows in parallel
+  # Quality checks (fast feedback)
   quality:
     name: Quality Checks
     uses: ./.github/workflows/quality.yml
@@ -23,9 +35,52 @@ jobs:
       security-events: write
       checks: write
 
+  # Security scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔒 Run security scans
+        uses: ./.github/actions/security-scan
+        with:
+          python-version: '3.12'
+          upload-sarif: true
+          scan-python: true
+          scan-javascript: true
+
+  # Dependency review for PRs
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          warn-only: false
+
+  # Comprehensive testing
   tests:
-    name: Tests
+    name: Test Suite
+    if: ${{ !inputs.skip_tests }}
     uses: ./.github/workflows/test.yml
+    needs: quality
     permissions:
       contents: read
       checks: write
@@ -33,40 +88,50 @@ jobs:
       packages: read
     secrets: inherit
 
+  # Docker builds and deployment
   docker:
-    name: Docker Build
+    name: Docker Build & Deploy
     uses: ./.github/workflows/docker.yml
+    needs: [quality, tests]
+    if: ${{ !cancelled() && (needs.tests.result == 'success' || needs.tests.result == 'skipped') }}
     permissions:
       contents: read
       packages: write
       security-events: write
       id-token: write
+    secrets: inherit
+    with:
+      push_images: ${{ inputs.push_images || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
   # Final status check
   ci-status:
-    name: CI Status
+    name: CI/CD Status
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [quality, tests, docker]
+    needs: [quality, security, tests, docker]
     if: always()
 
     steps:
-      - name: 📊 CI Summary
+      - name: 📊 CI/CD Pipeline Summary
         run: |
-          echo "## 🚀 CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Quality Checks | ${{ needs.quality.result == 'success' && '✅ Passed' || needs.quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ needs.tests.result == 'success' && '✅ Passed' || needs.tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security.result == 'success' && '✅ Passed' || needs.security.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | ${{ needs.tests.result == 'success' && '✅ Passed' || needs.tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Build | ${{ needs.docker.result == 'success' && '✅ Passed' || needs.docker.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Overall status
-          if [[ "${{ needs.quality.result }}" == "success" && "${{ needs.tests.result }}" == "success" && "${{ needs.docker.result }}" == "success" ]]; then
+          # Set overall status
+          if [[ "${{ needs.quality.result }}" == "success" && \
+                "${{ needs.security.result }}" == "success" && \
+                ("${{ needs.tests.result }}" == "success" || "${{ needs.tests.result }}" == "skipped") && \
+                "${{ needs.docker.result }}" == "success" ]]; then
             echo "### ✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
             exit 0
           else
-            echo "### ❌ Some checks failed or were skipped" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ Some checks failed" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi

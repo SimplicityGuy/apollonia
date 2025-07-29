@@ -1,0 +1,59 @@
+name: 'Wait for Services'
+description: 'Wait for Docker services to be healthy'
+inputs:
+  services:
+    description: 'Space-separated list of services to check'
+    required: true
+    default: 'rabbitmq postgres neo4j redis'
+  timeout:
+    description: 'Timeout in seconds'
+    required: false
+    default: '60'
+
+runs:
+  using: composite
+  steps:
+    - name: ⏳ Wait for services
+      shell: bash
+      run: |
+        echo "⏳ Waiting for services to be ready..."
+
+        # Function to check service health
+        check_service() {
+          local service=$1
+          local check_cmd=$2
+          local max_attempts=$(( ${{ inputs.timeout }} / 2 ))
+          local attempt=0
+
+          while [ $attempt -lt $max_attempts ]; do
+            if eval "$check_cmd" > /dev/null 2>&1; then
+              echo "✅ $service is ready"
+              return 0
+            fi
+            attempt=$((attempt + 1))
+            sleep 2
+          done
+
+          echo "❌ $service failed to start"
+          return 1
+        }
+
+        # Service health check commands
+        declare -A health_checks=(
+          ["rabbitmq"]="curl -f http://localhost:15672"
+          ["postgres"]="pg_isready -h localhost -p 5432 -U test"
+          ["neo4j"]="curl -f http://localhost:7474"
+          ["redis"]="redis-cli -h localhost ping"
+        )
+
+        # Run health checks in parallel
+        for service in ${{ inputs.services }}; do
+          if [[ -n "${health_checks[$service]}" ]]; then
+            check_service "$service" "${health_checks[$service]}" &
+          fi
+        done
+
+        # Wait for all checks to complete
+        wait
+
+        echo "✅ All requested services are ready"

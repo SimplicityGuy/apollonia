@@ -1,0 +1,24 @@
+name: 'Publish Test Results'
+description: 'Publish test results to GitHub PR'
+inputs:
+  test-files:
+    description: 'Test result files (glob pattern)'
+    required: true
+  check-name:
+    description: 'Name for the check'
+    required: true
+  comment-mode:
+    description: 'Comment mode for results'
+    required: false
+    default: 'failures'
+
+runs:
+  using: composite
+  steps:
+    - name: 📊 Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: ${{ inputs.test-files }}
+        comment_mode: ${{ inputs.comment-mode }}
+        check_name: ${{ inputs.check-name }}

@@ -2,10 +2,8 @@
 
 ## 🚀 CI/CD Status
 
-[![CI/CD Pipeline](https://github.com/SimplicityGuy/apollonia/actions/workflows/build.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/build.yml)
-[![Quality Checks](https://github.com/SimplicityGuy/apollonia/actions/workflows/quality.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/quality.yml)
-[![Tests](https://github.com/SimplicityGuy/apollonia/actions/workflows/test.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/test.yml)
-[![Docker Build](https://github.com/SimplicityGuy/apollonia/actions/workflows/docker.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/docker.yml)
+[![CI/CD Pipeline](https://github.com/SimplicityGuy/apollonia/actions/workflows/ci.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/ci.yml)
+[![Performance Benchmarks](https://github.com/SimplicityGuy/apollonia/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/benchmarks.yml)
 [![Dependencies](https://github.com/SimplicityGuy/apollonia/actions/workflows/dependencies.yml/badge.svg)](https://github.com/SimplicityGuy/apollonia/actions/workflows/dependencies.yml)
 
 ## 📦 Project Info

@@ -2,10 +2,6 @@
 name: Tests
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
   workflow_call:
     secrets:
@@ -129,14 +125,13 @@ jobs:
           mv junit.xml pytest-results-${{ matrix.test-group }}.xml
 
       - name: 📤 Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.12'
+        uses: ./.github/actions/upload-coverage
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
           flags: ${{ matrix.test-group }}
-          name: apollonia-${{ matrix.test-group }}-coverage
-          fail_ci_if_error: false
+          name-suffix: ${{ matrix.test-group }}
 
       - name: 📤 Upload test results
         uses: actions/upload-artifact@v4
@@ -149,12 +144,11 @@ jobs:
             .coverage
 
       - name: 📊 Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always() && matrix.python-version == '3.12'
+        uses: ./.github/actions/publish-test-results
         with:
-          files: pytest-results-${{ matrix.test-group }}.xml
-          comment_mode: failures
-          check_name: Python ${{ matrix.test-group }} Test Results
+          test-files: pytest-results-${{ matrix.test-group }}.xml
+          check-name: Python ${{ matrix.test-group }} Test Results
 
   # Frontend tests - with better caching
   frontend-tests:
@@ -193,13 +187,12 @@ jobs:
         run: just test-frontend-ci
 
       - name: 📤 Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: ./.github/actions/upload-coverage
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./frontend/coverage/lcov.info
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./frontend/coverage/lcov.info
           flags: frontend
-          name: apollonia-frontend-coverage
-          fail_ci_if_error: false
+          name-suffix: frontend
 
       - name: 📤 Upload test results
         uses: actions/upload-artifact@v4
@@ -301,40 +294,11 @@ jobs:
             .pytest_cache
           key: integration-test-data-${{ runner.os }}-${{ hashFiles('tests/fixtures/**') }}
 
-      - name: ⏳ Wait for services (optimized)
-        run: |
-          echo "⏳ Waiting for services to be ready..."
-
-          # Parallel health checks
-          check_service() {
-            local service=$1
-            local check_cmd=$2
-            local max_attempts=30
-            local attempt=0
-
-            while [ $attempt -lt $max_attempts ]; do
-              if eval "$check_cmd" > /dev/null 2>&1; then
-                echo "✅ $service is ready"
-                return 0
-              fi
-              attempt=$((attempt + 1))
-              sleep 1
-            done
-
-            echo "❌ $service failed to start"
-            return 1
-          }
-
-          # Run health checks in parallel
-          check_service "RabbitMQ" "curl -f http://localhost:15672" &
-          check_service "PostgreSQL" "pg_isready -h localhost -p 5432 -U test" &
-          check_service "Neo4j" "curl -f http://localhost:7474" &
-          check_service "Redis" "redis-cli -h localhost ping" &
-
-          # Wait for all checks to complete
-          wait
-
-          echo "✅ All services are ready"
+      - name: ⏳ Wait for services
+        uses: ./.github/actions/wait-for-services
+        with:
+          services: 'rabbitmq postgres neo4j redis'
+          timeout: '60'
 
       - name: 🔗 Run integration tests with coverage
         timeout-minutes: 15
@@ -347,13 +311,12 @@ jobs:
           mv .coverage .coverage.integration
 
       - name: 📤 Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: ./.github/actions/upload-coverage
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
           flags: integration
-          name: apollonia-integration-coverage
-          fail_ci_if_error: false
+          name-suffix: integration
 
       - name: 📤 Upload integration test results
         uses: actions/upload-artifact@v4
@@ -462,13 +425,12 @@ jobs:
         run: docker-compose down -v
 
       - name: 📤 Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: ./.github/actions/upload-coverage
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
           flags: e2e
-          name: apollonia-e2e-coverage
-          fail_ci_if_error: false
+          name-suffix: e2e
 
       - name: 📤 Upload E2E test results
         uses: actions/upload-artifact@v4

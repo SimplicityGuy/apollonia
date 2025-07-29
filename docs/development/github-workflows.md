@@ -19,21 +19,47 @@ Located in `.github/actions/`:
 
 - **`setup-python-env`**: Standardized Python environment setup with uv and caching
 - **`setup-frontend-env`**: Node.js setup with npm caching and dependency installation
+- **`upload-coverage`**: Reusable coverage upload to Codecov with proper flags
+- **`wait-for-services`**: Parallel health checks for Docker services
+- **`security-scan`**: Combined security scanning for Python and JavaScript
+
+## Workflow Architecture
+
+### Simplified Structure
+
+The workflow system has been streamlined to eliminate duplication:
+
+1. **`ci.yml`**: Main entry point for all CI/CD operations
+1. **Individual workflows**: Now only callable (no push/PR triggers)
+1. **Reusable actions**: DRY principle implementation
+1. **Scheduled workflows**: Benchmarks and dependency updates
 
 ## Workflow Overview
 
-### Main Pipeline (`build.yml`)
+### Main Pipeline (`ci.yml`)
 
-The orchestrating workflow that coordinates all other workflows:
+The unified CI/CD pipeline that orchestrates all checks:
 
-- **Triggers**: Push to main, PRs, weekly schedule, manual dispatch
-- **Dependencies**: quality → tests → docker + security
-- **Timeout**: Jobs range from 5-20 minutes
+- **Triggers**: Push to main, PRs, manual dispatch
+- **Dependencies**: quality → tests + security → docker
+- **Timeout**: Jobs range from 5-30 minutes
 - **Features**:
-  - Overall status reporting with parallel final jobs
-  - Performance benchmarking (15 min timeout)
-  - Dependency review for PRs (5 min timeout)
-  - Security scanning with CodeQL (15 min timeout)
+  - Integrated security scanning for all runs
+  - Dependency review for PRs
+  - Optional test skipping for quick iterations
+  - Docker image push control
+  - Overall status reporting
+
+### Performance Benchmarks (`benchmarks.yml`)
+
+Dedicated workflow for performance tracking:
+
+- **Triggers**: Weekly schedule (Sundays 2 AM UTC), manual dispatch, main branch pushes
+- **Features**:
+  - Historical performance tracking
+  - Automatic regression detection (>150% threshold)
+  - GitHub Pages deployment for results
+  - Alert comments on performance degradation
 
 ### Quality Checks (`quality.yml`)
 
@@ -243,10 +269,8 @@ gh workflow run test.yml
 Add to your README:
 
 ```markdown
-![CI/CD](https://github.com/username/apollonia/actions/workflows/build.yml/badge.svg)
-![Quality](https://github.com/username/apollonia/actions/workflows/quality.yml/badge.svg)
-![Tests](https://github.com/username/apollonia/actions/workflows/test.yml/badge.svg)
-![Docker](https://github.com/username/apollonia/actions/workflows/docker.yml/badge.svg)
+![CI/CD](https://github.com/username/apollonia/actions/workflows/ci.yml/badge.svg)
+![Benchmarks](https://github.com/username/apollonia/actions/workflows/benchmarks.yml/badge.svg)
 ![Dependencies](https://github.com/username/apollonia/actions/workflows/dependencies.yml/badge.svg)
 ```
 
