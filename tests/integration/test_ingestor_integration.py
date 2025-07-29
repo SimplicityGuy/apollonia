@@ -3,8 +3,10 @@
 
 import asyncio
 import contextlib
+import os
 import tempfile
 import time
+import uuid
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
@@ -64,9 +66,10 @@ class TestIngestorIntegration:
         )
 
         # Create temporary queue with unique name to avoid cross-test contamination
-        import uuid
-
-        test_queue_name = f"test-ingestor-{uuid.uuid4().hex[:8]}"
+        test_queue_name = (
+            f"test-ingestor-{os.getpid()}-{uuid.uuid4().hex[:8]}-"
+            f"{int(time.time() * 1000000) % 1000000}"
+        )
         result = channel.queue_declare(queue=test_queue_name, exclusive=True, auto_delete=True)
         queue_name = result.method.queue
 
@@ -135,7 +138,6 @@ class TestIngestorIntegration:
 
         # Verify message was published
         # Handle macOS /private/var symlink issue
-        import os
 
         expected_path = os.path.realpath(str(test_file.absolute()))
 
@@ -200,7 +202,6 @@ class TestIngestorIntegration:
 
         # Check each message
         file_paths = [msg["file_path"] for msg in messages]
-        import os
 
         for test_file in files:
             # Handle macOS /private/var symlink issue
@@ -253,7 +254,6 @@ class TestIngestorIntegration:
 
         # Find the message for the main file (video.mp4)
         # Handle macOS /private/var symlink issue
-        import os
 
         main_file_path = os.path.realpath(str(main_file.absolute()))
 
@@ -288,8 +288,9 @@ class TestIngestorIntegration:
         prospector = Prospector(test_file)
         result = asyncio.run(prospector.prospect())
 
-        # Verify results
-        assert result["file_path"] == str(test_file.absolute())
+        # Verify results - use realpath to handle macOS symlinks
+
+        assert result["file_path"] == os.path.realpath(str(test_file.absolute()))
         assert result["size"] == len(test_content)
         assert len(result["sha256_hash"]) == 64
         assert len(result["xxh128_hash"]) == 32
@@ -381,7 +382,6 @@ class TestIngestorIntegration:
         # Should only process the new file (existing files are not watched)
         # Filter messages to only those from our test directory
         # Handle macOS /private/var symlink issue
-        import os
 
         temp_dir_resolved = os.path.realpath(str(temp_data_dir))
         test_messages = [msg for msg in messages if msg["file_path"].startswith(temp_dir_resolved)]

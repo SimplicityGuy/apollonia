@@ -121,24 +121,15 @@ class Ingestor:
             def on_modified(self, event: Any) -> None:
                 """Handle file modification events."""
                 if not event.is_directory:
-                    # Only process modifications after a longer delay to avoid duplicates
-                    self.loop.create_task(
-                        self._process_file(str(event.src_path), "IN_MODIFY", delay=1.0)
-                    )
+                    self.loop.create_task(self._process_file(str(event.src_path), "IN_MODIFY"))
 
             def on_moved(self, event: Any) -> None:
                 """Handle file move events."""
                 if not event.is_directory:
                     self.loop.create_task(self._process_file(str(event.dest_path), "IN_MOVED"))
 
-            async def _process_file(
-                self, file_path: str, event_type: str = "IN_CREATE", delay: float = 0
-            ) -> None:
+            async def _process_file(self, file_path: str, event_type: str = "IN_CREATE") -> None:
                 """Process a file event."""
-                # Apply delay if specified
-                if delay > 0:
-                    await asyncio.sleep(delay)
-
                 try:
                     # Check if we've recently processed this file
                     current_time = asyncio.get_event_loop().time()

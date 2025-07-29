@@ -120,10 +120,12 @@ test-python-unit-ci path marks:
     --tb=short \
     -n auto
 
-# Run Python integration tests for CI
+# Run Python integration tests for CI (sequential to avoid race conditions)
 [group('test')]
 test-python-integration-ci:
+  #!/usr/bin/env bash
   echo "🔗 Running Python integration tests for CI..."
+  export NEO4J_PASSWORD="apollonia"
   uv run pytest tests/integration \
     -m "integration and not e2e" \
     --cov \
@@ -132,7 +134,7 @@ test-python-integration-ci:
     -o junit_family=legacy \
     --maxfail=5 \
     --tb=short \
-    -n auto
+    -v
 
 # Run Python unit tests only (quick check)
 [group('test')]
@@ -162,17 +164,23 @@ test-coverage:
     --junit-xml=pytest-results.xml \
     tests/unit tests/ingestor tests/populator tests/analyzer
 
-# Run integration tests
+# Run integration tests (sequential for maximum reliability)
 [group('test')]
 test-integration:
+  #!/usr/bin/env bash
   echo "🔗 Running integration tests..."
-  uv run pytest -v \
+  export NEO4J_PASSWORD="apollonia"
+  uv run pytest tests/integration \
+    -m "integration and not e2e" \
     --cov=ingestor \
     --cov=populator \
     --cov=analyzer \
     --cov-report=xml \
-    --junit-xml=integration-results.xml \
-    tests/integration
+    --cov-report=html \
+    --junitxml=integration-results.xml \
+    --maxfail=5 \
+    --tb=short \
+    -v
 
 # Run end-to-end tests
 [group('test')]
