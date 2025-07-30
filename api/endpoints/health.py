@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, status
@@ -14,11 +15,19 @@ from ..utils.cache import get_cache
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Application version - should match pyproject.toml
+APP_VERSION = "0.1.0"
+
 
 @router.get("/health", status_code=status.HTTP_200_OK)
-async def health_check() -> dict[str, str]:
+async def health_check() -> dict[str, Any]:
     """Basic health check endpoint."""
-    return {"status": "healthy", "message": "🌟 Apollonia API is healthy!"}
+    return {
+        "status": "healthy",
+        "message": "🌟 Apollonia API is healthy!",
+        "version": APP_VERSION,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @router.get("/health/ready", status_code=status.HTTP_200_OK)
