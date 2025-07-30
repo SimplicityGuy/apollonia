@@ -613,7 +613,7 @@ tree:
 [group('util')]
 todo:
   echo "📝 TODOs in codebase:"
-  rg "TODO|FIXME|HACK|XXX" --type py --type ts --type tsx
+  rg "TODO|FIXME|HACK|XXX" --type py --type ts --type js -g "*.tsx" -g "*.jsx"
 
 # Check for outdated dependencies
 [group('util')]
