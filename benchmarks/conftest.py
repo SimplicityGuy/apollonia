@@ -13,11 +13,6 @@ def pytest_addoption(parser: Any) -> None:
     )
 
 
-def pytest_configure(config: Any) -> None:
-    """Configure pytest for benchmarks."""
-    config.addinivalue_line("markers", "slow: marks tests as slow (deselect with '-m not slow')")
-
-
 def pytest_benchmark_generate_json(
     config: Any,
     benchmarks: list[Any],

@@ -29,16 +29,6 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop.close()
 
 
-# Configure pytest
-def pytest_configure(config: Any) -> None:
-    """Configure pytest with custom markers."""
-    config.addinivalue_line("markers", "integration: mark test as integration test")
-    config.addinivalue_line("markers", "docker: mark test as requiring Docker")
-    config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line("markers", "e2e: mark test as end-to-end test")
-    config.addinivalue_line("markers", "authenticated: mark test as requiring authentication")
-
-
 # Configure test collection
 def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:  # noqa: ARG001
     """Modify test collection to add markers based on test location."""
@@ -135,13 +125,6 @@ def cleanup_test_data(request: Any, test_env: dict[str, Any]) -> Generator[None,
     test_data_path = Path(test_env["test_data_dir"])
     if test_data_path.exists():
         shutil.rmtree(test_data_path, ignore_errors=True)
-
-
-# Platform-specific test skipping
-def pytest_runtest_setup(item: Any) -> None:
-    """Skip tests based on platform requirements."""
-    if "linux_only" in item.keywords and sys.platform != "linux":
-        pytest.skip("Test requires Linux")
 
 
 # Test reporting

@@ -199,11 +199,3 @@ def mock_api_responses(page: Any, test_data: dict[str, Any]) -> Any:
     page.route("**/api/health", lambda route: route.fulfill(status=200, json={"status": "healthy"}))
 
     return page
-
-
-# Playwright pytest plugin configuration
-def pytest_configure(config: Any) -> None:
-    """Configure pytest with custom markers."""
-    config.addinivalue_line("markers", "e2e: mark test as end-to-end test")
-    config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line("markers", "authenticated: mark test as requiring authentication")

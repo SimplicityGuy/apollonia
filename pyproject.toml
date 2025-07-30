@@ -234,14 +234,44 @@ module = "aiofiles"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q --strict-markers"
-testpaths = ["tests"]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "-v",
+    "--showlocals",
+    "--strict-markers",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--durations=10",
+]
+testpaths = ["tests", "frontend/src"]
 pythonpath = ["."]
 asyncio_mode = "auto"
+norecursedirs = [".git", ".tox", "dist", "build", "*.egg", "node_modules", "__pycache__", ".pytest_cache", ".venv", "venv"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+timeout = 300
+timeout_method = "thread"
+console_output_style = "progress"
+doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
+filterwarnings = [
+    "ignore::DeprecationWarning:aio_pika.*",
+    "ignore::DeprecationWarning:neo4j.*",
+    "error::UserWarning",
+    "error::FutureWarning",
+]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m not integration')",
     "e2e: marks tests as end-to-end tests (deselect with '-m not e2e')",
+    "playwright: marks tests as requiring Playwright for browser automation (deselect with '-m not playwright')",
+    "slow: marks tests as slow running (deselect with '-m not slow')",
+    "docker: marks tests as requiring Docker (deselect with '-m not docker')",
 ]
 
 [tool.coverage.run]
