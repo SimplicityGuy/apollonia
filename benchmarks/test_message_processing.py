@@ -2,11 +2,12 @@
 
 import json
 from datetime import UTC, datetime
+from typing import Any, cast
 
 import orjson
 
 
-def create_file_metadata(num_neighbors: int = 10) -> dict:
+def create_file_metadata(num_neighbors: int = 10) -> dict[str, Any]:
     """Create a sample file metadata message."""
     return {
         "file_path": "/data/test/sample_file.mp4",
@@ -20,81 +21,81 @@ def create_file_metadata(num_neighbors: int = 10) -> dict:
     }
 
 
-def serialize_json(data: dict) -> bytes:
+def serialize_json(data: dict[str, Any]) -> bytes:
     """Serialize data using standard json library."""
     return json.dumps(data).encode("utf-8")
 
 
-def deserialize_json(data: bytes) -> dict:
+def deserialize_json(data: bytes) -> dict[str, Any]:
     """Deserialize data using standard json library."""
-    return json.loads(data.decode("utf-8"))
+    return cast("dict[str, Any]", json.loads(data.decode("utf-8")))
 
 
-def serialize_orjson(data: dict) -> bytes:
+def serialize_orjson(data: dict[str, Any]) -> bytes:
     """Serialize data using orjson library."""
     return orjson.dumps(data)
 
 
-def deserialize_orjson(data: bytes) -> dict:
+def deserialize_orjson(data: bytes) -> dict[str, Any]:
     """Deserialize data using orjson library."""
-    return orjson.loads(data)
+    return cast("dict[str, Any]", orjson.loads(data))
 
 
 class TestMessageSerializationPerformance:
     """Benchmark tests for message serialization performance."""
 
-    def test_json_serialize_small(self, benchmark):
+    def test_json_serialize_small(self, benchmark: Any) -> None:
         """Benchmark standard JSON serialization of small message."""
         data = create_file_metadata(num_neighbors=10)
         result = benchmark(serialize_json, data)
         assert isinstance(result, bytes)
 
-    def test_orjson_serialize_small(self, benchmark):
+    def test_orjson_serialize_small(self, benchmark: Any) -> None:
         """Benchmark orjson serialization of small message."""
         data = create_file_metadata(num_neighbors=10)
         result = benchmark(serialize_orjson, data)
         assert isinstance(result, bytes)
 
-    def test_json_deserialize_small(self, benchmark):
+    def test_json_deserialize_small(self, benchmark: Any) -> None:
         """Benchmark standard JSON deserialization of small message."""
         data = serialize_json(create_file_metadata(num_neighbors=10))
         result = benchmark(deserialize_json, data)
         assert isinstance(result, dict)
 
-    def test_orjson_deserialize_small(self, benchmark):
+    def test_orjson_deserialize_small(self, benchmark: Any) -> None:
         """Benchmark orjson deserialization of small message."""
         data = serialize_orjson(create_file_metadata(num_neighbors=10))
         result = benchmark(deserialize_orjson, data)
         assert isinstance(result, dict)
 
-    def test_json_serialize_large(self, benchmark):
+    def test_json_serialize_large(self, benchmark: Any) -> None:
         """Benchmark standard JSON serialization of large message."""
         data = create_file_metadata(num_neighbors=1000)
         result = benchmark(serialize_json, data)
         assert isinstance(result, bytes)
 
-    def test_orjson_serialize_large(self, benchmark):
+    def test_orjson_serialize_large(self, benchmark: Any) -> None:
         """Benchmark orjson serialization of large message."""
         data = create_file_metadata(num_neighbors=1000)
         result = benchmark(serialize_orjson, data)
         assert isinstance(result, bytes)
 
-    def test_json_round_trip(self, benchmark):
+    def test_json_round_trip(self, benchmark: Any) -> None:
         """Benchmark standard JSON round trip (serialize + deserialize)."""
         data = create_file_metadata(num_neighbors=100)
 
-        def round_trip():
+        def round_trip() -> dict[str, Any]:
             serialized = serialize_json(data)
             return deserialize_json(serialized)
 
         result = benchmark(round_trip)
         assert result["file_path"] == data["file_path"]
 
-    def test_orjson_round_trip(self, benchmark):
+    def test_orjson_round_trip(self, benchmark: Any) -> None:
         """Benchmark orjson round trip (serialize + deserialize)."""
         data = create_file_metadata(num_neighbors=100)
 
-        def round_trip():
+        def round_trip() -> dict[str, Any]:
             serialized = serialize_orjson(data)
             return deserialize_orjson(serialized)
 

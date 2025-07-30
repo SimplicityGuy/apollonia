@@ -1,6 +1,7 @@
 """Performance benchmarks for Neo4j graph operations."""
 
 import asyncio
+from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -91,7 +92,7 @@ async def batch_insert_nodes(driver: MockNeo4jDriver, nodes: list[dict[str, Any]
 
 
 @pytest.fixture
-def mock_driver():
+def mock_driver() -> Generator[MockNeo4jDriver, None, None]:
     """Create mock Neo4j driver."""
     driver = MockNeo4jDriver()
     yield driver
@@ -101,51 +102,55 @@ def mock_driver():
 class TestNeo4jPerformance:
     """Benchmark tests for Neo4j operations."""
 
-    def test_single_node_insert(self, benchmark, mock_driver):
+    def test_single_node_insert(self, benchmark: Any, mock_driver: MockNeo4jDriver) -> None:
         """Benchmark single node insertion."""
         data = create_file_node_data(num_neighbors=0)
 
-        def insert():
+        def insert() -> Any:
             return asyncio.run(insert_single_node(mock_driver, data))
 
         result = benchmark(insert)
         assert result["nodes_created"] == 1
 
-    def test_node_with_few_relationships(self, benchmark, mock_driver):
+    def test_node_with_few_relationships(
+        self, benchmark: Any, mock_driver: MockNeo4jDriver
+    ) -> None:
         """Benchmark node insertion with few relationships."""
         data = create_file_node_data(num_neighbors=5)
 
-        def insert():
+        def insert() -> Any:
             return asyncio.run(insert_node_with_relationships(mock_driver, data))
 
         result = benchmark(insert)
         assert result["relationships_created"] == 5
 
-    def test_node_with_many_relationships(self, benchmark, mock_driver):
+    def test_node_with_many_relationships(
+        self, benchmark: Any, mock_driver: MockNeo4jDriver
+    ) -> None:
         """Benchmark node insertion with many relationships."""
         data = create_file_node_data(num_neighbors=50)
 
-        def insert():
+        def insert() -> Any:
             return asyncio.run(insert_node_with_relationships(mock_driver, data))
 
         result = benchmark(insert)
         assert result["relationships_created"] == 50
 
-    def test_batch_insert_small(self, benchmark, mock_driver):
+    def test_batch_insert_small(self, benchmark: Any, mock_driver: MockNeo4jDriver) -> None:
         """Benchmark small batch insertion."""
         nodes = [create_file_node_data(num_neighbors=0) for _ in range(10)]
 
-        def insert():
+        def insert() -> Any:
             return asyncio.run(batch_insert_nodes(mock_driver, nodes))
 
         result = benchmark(insert)
         assert result is not None
 
-    def test_batch_insert_large(self, benchmark, mock_driver):
+    def test_batch_insert_large(self, benchmark: Any, mock_driver: MockNeo4jDriver) -> None:
         """Benchmark large batch insertion."""
         nodes = [create_file_node_data(num_neighbors=0) for _ in range(100)]
 
-        def insert():
+        def insert() -> Any:
             return asyncio.run(batch_insert_nodes(mock_driver, nodes))
 
         result = benchmark(insert)

@@ -50,13 +50,19 @@ jobs:
           restore-keys: |
             benchmark-data-${{ runner.os }}-
 
+      - name: 🔧 Fix pytest-benchmark compatibility
+        run: |
+          # Downgrade pytest-benchmark to 4.0.0 for JSON compatibility
+          # Version 5.x has a known serialization issue
+          uv pip install pytest-benchmark==4.0.0
+
       - name: ⚡ Run performance benchmarks
         timeout-minutes: 20
         run: just test-benchmarks
 
       - name: 📊 Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
-        if: hashFiles('benchmark-results.json') != ''
+        if: always() && hashFiles('benchmark-results.json') != ''
         with:
           tool: 'pytest'
           output-file-path: benchmark-results.json

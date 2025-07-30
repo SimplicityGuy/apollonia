@@ -40,16 +40,16 @@ export function Sidebar() {
       {/* Mobile sidebar */}
       <div className={`relative z-40 lg:hidden ${sidebarOpen ? '' : 'hidden'}`}>
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          className="bg-opacity-75 fixed inset-0 bg-gray-600"
           onClick={() => setSidebarOpen(false)}
         />
 
         <div className="fixed inset-0 flex">
           <div className="relative flex w-full max-w-xs flex-1 flex-col bg-gray-900">
-            <div className="absolute right-0 top-0 -mr-12 pt-2">
+            <div className="absolute top-0 right-0 -mr-12 pt-2">
               <button
                 type="button"
-                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:ring-2 focus:ring-white focus:outline-none focus:ring-inset"
                 onClick={() => setSidebarOpen(false)}
                 tabIndex={-1}
               >
@@ -58,7 +58,7 @@ export function Sidebar() {
               </button>
             </div>
 
-            <div className="h-0 flex-1 overflow-y-auto pb-4 pt-5">
+            <div className="h-0 flex-1 overflow-y-auto pt-5 pb-4">
               <div className="flex flex-shrink-0 items-center px-4">
                 <h1 className="text-xl font-bold text-white">Apollonia</h1>
               </div>
@@ -67,13 +67,13 @@ export function Sidebar() {
                   <NavLink
                     key={item.name}
                     to={item.href}
-                    ref={(el) => { navRefs.current[index] = el }}
+                    ref={(el) => {
+                      navRefs.current[index] = el
+                    }}
                     onKeyDown={(e) => handleKeyDown(e, index)}
                     className={({ isActive }) =>
                       `group flex items-center rounded-md px-2 py-2 text-base font-medium hover:bg-gray-700 hover:text-white ${
-                        isActive
-                          ? 'bg-gray-800 text-white'
-                          : 'text-gray-300'
+                        isActive ? 'bg-gray-800 text-white' : 'text-gray-300'
                       }`
                     }
                   >
@@ -102,13 +102,13 @@ export function Sidebar() {
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  ref={(el) => { navRefs.current[index + navigation.length] = el }}
+                  ref={(el) => {
+                    navRefs.current[index + navigation.length] = el
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, index + navigation.length)}
                   className={({ isActive }) =>
                     `group flex items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-gray-700 hover:text-white ${
-                      isActive
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-300'
+                      isActive ? 'bg-gray-800 text-white' : 'text-gray-300'
                     }`
                   }
                 >

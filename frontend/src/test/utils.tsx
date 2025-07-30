@@ -77,10 +77,7 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   wrapper?: React.ComponentType<any>
 }
 
-export const customRender = (
-  ui: React.ReactElement,
-  options?: CustomRenderOptions
-) => {
+export const customRender = (ui: React.ReactElement, options?: CustomRenderOptions) => {
   const { route = '/', initialEntries, wrapper: Wrapper, ...renderOptions } = options || {}
 
   if (Wrapper) {
@@ -90,9 +87,7 @@ export const customRender = (
   if (initialEntries) {
     return render(ui, {
       wrapper: ({ children }) => (
-        <MemoryRouterWrapper initialEntries={initialEntries}>
-          {children}
-        </MemoryRouterWrapper>
+        <MemoryRouterWrapper initialEntries={initialEntries}>{children}</MemoryRouterWrapper>
       ),
       ...renderOptions,
     })
@@ -123,15 +118,10 @@ export const setupUser = () => userEvent.setup()
 // Custom Matchers and Assertions
 // ============================================================================
 
-export const expectToHaveBeenCalledWithDeep = (
-  mock: any,
-  expectedArgs: any[]
-) => {
+export const expectToHaveBeenCalledWithDeep = (mock: any, expectedArgs: any[]) => {
   expect(mock).toHaveBeenCalled()
   const calls = mock.mock.calls
-  const match = calls.some((call: any[]) =>
-    JSON.stringify(call) === JSON.stringify(expectedArgs)
-  )
+  const match = calls.some((call: any[]) => JSON.stringify(call) === JSON.stringify(expectedArgs))
   expect(match).toBe(true)
 }
 
@@ -230,15 +220,15 @@ export const submitForm = async (buttonText = 'Submit') => {
 
 export const getTableData = (container: HTMLElement) => {
   const rows = container.querySelectorAll('tbody tr')
-  return Array.from(rows).map(row => {
+  return Array.from(rows).map((row) => {
     const cells = row.querySelectorAll('td')
-    return Array.from(cells).map(cell => cell.textContent?.trim() || '')
+    return Array.from(cells).map((cell) => cell.textContent?.trim() || '')
   })
 }
 
 export const getTableHeaders = (container: HTMLElement) => {
   const headers = container.querySelectorAll('thead th')
-  return Array.from(headers).map(header => header.textContent?.trim() || '')
+  return Array.from(headers).map((header) => header.textContent?.trim() || '')
 }
 
 // ============================================================================
@@ -285,20 +275,20 @@ export const expectToBeAccessible = async (container: HTMLElement) => {
 
   // All images should have alt text
   const images = container.querySelectorAll('img')
-  images.forEach(img => {
+  images.forEach((img) => {
     expect(img).toHaveAttribute('alt')
   })
 
   // All form inputs should have labels
   const inputs = container.querySelectorAll('input, select, textarea')
-  inputs.forEach(input => {
+  inputs.forEach((input) => {
     const label = container.querySelector(`label[for="${input.id}"]`)
     expect(label).toBeInTheDocument()
   })
 
   // All buttons should have accessible text
   const buttons = container.querySelectorAll('button')
-  buttons.forEach(button => {
+  buttons.forEach((button) => {
     expect(button.textContent || button.getAttribute('aria-label')).toBeTruthy()
   })
 }
@@ -317,13 +307,13 @@ export const debugState = (component: any) => {
 // ============================================================================
 
 export const expectToHaveClasses = (element: HTMLElement, ...classes: string[]) => {
-  classes.forEach(className => {
+  classes.forEach((className) => {
     expect(element).toHaveClass(className)
   })
 }
 
 export const expectNotToHaveClasses = (element: HTMLElement, ...classes: string[]) => {
-  classes.forEach(className => {
+  classes.forEach((className) => {
     expect(element).not.toHaveClass(className)
   })
 }
@@ -355,7 +345,7 @@ export const mockLocalStorage = () => {
       delete storage[key]
     },
     clear: () => {
-      Object.keys(storage).forEach(key => delete storage[key])
+      Object.keys(storage).forEach((key) => delete storage[key])
     },
   }
 

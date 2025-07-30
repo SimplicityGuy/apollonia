@@ -11,7 +11,7 @@ import {
   fillForm,
   submitForm,
   createMockAuthStore,
-  expectToHaveClasses
+  expectToHaveClasses,
 } from '@/test/utils'
 
 // Mock dependencies
@@ -69,8 +69,8 @@ describe('LoginPage', () => {
     render(<LoginPage />)
 
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'testpass123'
+      Username: 'testuser',
+      Password: 'testpass123',
     })
 
     expect(screen.getByLabelText('Username')).toHaveValue('testuser')
@@ -102,8 +102,8 @@ describe('LoginPage', () => {
 
     // Fill and submit form
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'testpass123'
+      Username: 'testuser',
+      Password: 'testpass123',
     })
     await submitForm('Sign in')
 
@@ -122,8 +122,8 @@ describe('LoginPage', () => {
 
     // Fill and submit form
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'wrongpass'
+      Username: 'testuser',
+      Password: 'wrongpass',
     })
     await submitForm('Sign in')
 
@@ -149,8 +149,8 @@ describe('LoginPage', () => {
 
     // Fill and submit form
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'testpass123'
+      Username: 'testuser',
+      Password: 'testpass123',
     })
     const user = setupUser()
     await user.click(submitButton)
@@ -225,8 +225,8 @@ describe('LoginPage', () => {
 
     // Fill form
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'testpass123'
+      Username: 'testuser',
+      Password: 'testpass123',
     })
 
     // Press enter in password field
@@ -246,8 +246,8 @@ describe('LoginPage', () => {
 
     // Fill and submit form
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'wrongpass'
+      Username: 'testuser',
+      Password: 'wrongpass',
     })
     await submitForm('Sign in')
 
@@ -272,8 +272,8 @@ describe('LoginPage', () => {
 
     // Fill and submit form
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'testpass123'
+      Username: 'testuser',
+      Password: 'testpass123',
     })
     await submitForm('Sign in')
 
@@ -291,8 +291,8 @@ describe('LoginPage', () => {
     render(<LoginPage />)
 
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'testpass123'
+      Username: 'testuser',
+      Password: 'testpass123',
     })
     await submitForm('Sign in')
 
@@ -305,8 +305,8 @@ describe('LoginPage', () => {
     render(<LoginPage />)
 
     await fillForm({
-      'Username': '  testuser  ',
-      'Password': 'testpass123'
+      Username: '  testuser  ',
+      Password: 'testpass123',
     })
     await submitForm('Sign in')
 
@@ -335,8 +335,8 @@ describe('LoginPage', () => {
     const user = setupUser()
 
     await fillForm({
-      'Username': 'testuser',
-      'Password': 'testpass123'
+      Username: 'testuser',
+      Password: 'testpass123',
     })
 
     const submitButton = screen.getByRole('button', { name: 'Sign in' })
@@ -345,7 +345,7 @@ describe('LoginPage', () => {
     const clickPromises = [
       user.click(submitButton),
       user.click(submitButton),
-      user.click(submitButton)
+      user.click(submitButton),
     ]
 
     // Execute all clicks simultaneously
@@ -369,8 +369,8 @@ describe('LoginPage', () => {
     const password = 'complexPassword123!'
 
     await fillForm({
-      'Username': username,
-      'Password': password
+      Username: username,
+      Password: password,
     })
     await submitForm('Sign in')
 

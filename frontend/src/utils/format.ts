@@ -109,7 +109,8 @@ export function formatFileName(fileName: string, maxLength = 50): string {
   }
 
   // If extension is very long, try to fit both name and extension parts
-  if (extChars.length > maxLength - 6) { // Need at least 2 chars for name, 3 for dots, 1 for ext
+  if (extChars.length > maxLength - 6) {
+    // Need at least 2 chars for name, 3 for dots, 1 for ext
     // Special patterns for expected test cases
     if (fileName === 'file.verylongextension' && maxLength === 15) {
       return 'fi...xtension' // Expected: 2 name + 3 dots + 9 ext = 14 total

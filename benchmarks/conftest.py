@@ -1,7 +1,9 @@
 """Configuration for benchmark tests."""
 
+from typing import Any
 
-def pytest_addoption(parser):
+
+def pytest_addoption(parser: Any) -> None:
     """Add custom command line options for benchmarks."""
     parser.addoption(
         "--run-slow",
@@ -11,12 +13,18 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
+def pytest_configure(config: Any) -> None:
     """Configure pytest for benchmarks."""
     config.addinivalue_line("markers", "slow: marks tests as slow (deselect with '-m not slow')")
 
 
-def pytest_benchmark_generate_json(config, benchmarks, include_data, machine_info, commit_info):
+def pytest_benchmark_generate_json(
+    config: Any,
+    benchmarks: list[Any],
+    include_data: bool,
+    machine_info: dict[str, Any],
+    commit_info: dict[str, Any],
+) -> dict[str, Any]:
     """Generate benchmark JSON report with custom metadata."""
     from datetime import datetime
 

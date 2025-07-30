@@ -7,7 +7,7 @@ import type {
   User,
   AnalyticsData,
   ProcessingJob,
-  UploadProgress
+  UploadProgress,
 } from '@/types'
 
 // ============================================================================
@@ -165,7 +165,7 @@ export const createMockAnalyticsData = (overrides: Partial<AnalyticsData> = {}):
   },
   storage_trend: Array.from({ length: 30 }, (_, i) => ({
     date: createDate(29 - i),
-    size: 4497558138880 + (i * 36700160000), // Growing by ~34GB per day
+    size: 4497558138880 + i * 36700160000, // Growing by ~34GB per day
   })),
   upload_trend: Array.from({ length: 30 }, (_, i) => ({
     date: createDate(29 - i),
@@ -203,7 +203,9 @@ export const createMockProcessingJob = (overrides: Partial<ProcessingJob> = {}):
 // Upload Progress Mocks
 // ============================================================================
 
-export const createMockUploadProgress = (overrides: Partial<UploadProgress> = {}): UploadProgress => ({
+export const createMockUploadProgress = (
+  overrides: Partial<UploadProgress> = {}
+): UploadProgress => ({
   id: `upload-${Math.random().toString(36).substr(2, 9)}`,
   filename: 'large-video.mp4',
   size: 1073741824, // 1GB
@@ -220,31 +222,33 @@ export const createMockUploadProgress = (overrides: Partial<UploadProgress> = {}
 // ============================================================================
 
 export const mockSuccessResponse = <T>(data: T, delay = 100) => {
-  return vi.fn().mockImplementation(() =>
-    new Promise((resolve) => {
-      setTimeout(() => resolve({ data }), delay)
-    })
+  return vi.fn().mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(() => resolve({ data }), delay)
+      })
   )
 }
 
 export const mockErrorResponse = (message = 'API Error', status = 500, delay = 100) => {
-  return vi.fn().mockImplementation(() =>
-    new Promise((_, reject) => {
-      setTimeout(() => reject({
-        response: {
-          status,
-          data: { message },
-        },
-      }), delay)
-    })
+  return vi.fn().mockImplementation(
+    () =>
+      new Promise((_, reject) => {
+        setTimeout(
+          () =>
+            reject({
+              response: {
+                status,
+                data: { message },
+              },
+            }),
+          delay
+        )
+      })
   )
 }
 
-export const mockPaginatedResponse = <T>(
-  items: T[],
-  page = 1,
-  size = 10
-) => {
+export const mockPaginatedResponse = <T>(items: T[], page = 1, size = 10) => {
   const start = (page - 1) * size
   const end = start + size
   const paginatedItems = items.slice(start, end)

@@ -82,7 +82,7 @@ export function UploadPage() {
       <div className="mt-6">
         <div
           {...getRootProps()}
-          className={`relative block w-full rounded-lg border-2 border-dashed p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+          className={`relative block w-full rounded-lg border-2 border-dashed p-12 text-center hover:border-gray-400 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none ${
             isDragActive
               ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
               : 'border-gray-300 dark:border-gray-700'

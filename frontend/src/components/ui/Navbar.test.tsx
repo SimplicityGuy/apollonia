@@ -9,7 +9,7 @@ import {
   waitFor,
   setupUser,
   createMockUser,
-  expectToHaveClasses
+  expectToHaveClasses,
 } from '@/test/utils'
 
 // Mock react-router-dom

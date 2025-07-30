@@ -23,9 +23,7 @@ expect.extend({
     return {
       pass,
       message: () =>
-        pass
-          ? `expected button not to be disabled`
-          : `expected button to be disabled`,
+        pass ? `expected button not to be disabled` : `expected button to be disabled`,
       actual: received,
     }
   },
@@ -93,7 +91,9 @@ expect.extend({
     }
 
     // Check submit button exists
-    const submitButton = received.querySelector('button[type="submit"], button:not([type="button"])')
+    const submitButton = received.querySelector(
+      'button[type="submit"], button:not([type="button"])'
+    )
     if (!submitButton) {
       issues.push('Form has no submit button')
     }

@@ -1,7 +1,13 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api'
-import { ArrowLeftIcon, DocumentIcon, PhotoIcon, VideoCameraIcon, MusicalNoteIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowLeftIcon,
+  DocumentIcon,
+  PhotoIcon,
+  VideoCameraIcon,
+  MusicalNoteIcon,
+} from '@heroicons/react/24/outline'
 import type { Catalog } from '@/types/catalog'
 import type { MediaFilesResponse } from '@/types/media'
 
@@ -45,18 +51,18 @@ export function CatalogDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Link
             to="/catalogs"
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <ArrowLeftIcon className="h-4 w-4 mr-1" />
+            <ArrowLeftIcon className="mr-1 h-4 w-4" />
             Back to Catalogs
           </Link>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-8">
+        <div className="mb-8 overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
               {catalog.name}
@@ -67,27 +73,25 @@ export function CatalogDetailPage() {
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700">
             <dl>
-              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 dark:bg-gray-900">
                 <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Total Files
                 </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 dark:text-white">
                   {catalog.media_count || 0}
                 </dd>
               </div>
-              <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Created
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 dark:bg-gray-800">
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Created</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 dark:text-white">
                   {new Date(catalog.created_at).toLocaleDateString()}
                 </dd>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 dark:bg-gray-900">
                 <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Last Updated
                 </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 dark:text-white">
                   {new Date(catalog.updated_at).toLocaleDateString()}
                 </dd>
               </div>
@@ -96,11 +100,9 @@ export function CatalogDetailPage() {
         </div>
 
         <div>
-          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Media Files
-          </h4>
+          <h4 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">Media Files</h4>
           {mediaFiles?.items.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="py-12 text-center">
               <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No files</h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -109,7 +111,7 @@ export function CatalogDetailPage() {
               <div className="mt-6">
                 <Link
                   to="/upload"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                  className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
                 >
                   Upload Files
                 </Link>
@@ -120,16 +122,14 @@ export function CatalogDetailPage() {
               {mediaFiles?.items.map((file) => (
                 <div
                   key={file.id}
-                  className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg"
+                  className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800"
                 >
                   <div className="p-5">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        {getFileIcon(file.media_type)}
-                      </div>
+                      <div className="flex-shrink-0">{getFileIcon(file.media_type)}</div>
                       <div className="ml-5 w-0 flex-1">
                         <dl>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                          <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
                             {file.filename}
                           </dt>
                           <dd className="flex items-center text-sm text-gray-900 dark:text-white">
@@ -141,7 +141,7 @@ export function CatalogDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-900 px-5 py-3">
+                  <div className="bg-gray-50 px-5 py-3 dark:bg-gray-900">
                     <div className="text-sm">
                       <Link
                         to={`/media/${file.id}`}

@@ -5,7 +5,7 @@ export interface Catalog {
   created_at: string
   updated_at: string
   media_count: number
-  file_count?: number  // Optional for backward compatibility
+  file_count?: number // Optional for backward compatibility
 }
 
 export interface CatalogResponse {

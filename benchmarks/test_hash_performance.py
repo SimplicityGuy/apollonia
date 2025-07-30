@@ -2,7 +2,9 @@
 
 import hashlib
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import pytest
 import xxhash
@@ -36,7 +38,7 @@ def compute_xxh128(file_path: Path) -> str:
 
 
 @pytest.fixture(scope="session")
-def small_test_file() -> Path:
+def small_test_file() -> Generator[Path, None, None]:
     """Create a 1MB test file."""
     file_path = generate_test_file(1)
     yield file_path
@@ -44,7 +46,7 @@ def small_test_file() -> Path:
 
 
 @pytest.fixture(scope="session")
-def medium_test_file() -> Path:
+def medium_test_file() -> Generator[Path, None, None]:
     """Create a 10MB test file."""
     file_path = generate_test_file(10)
     yield file_path
@@ -52,7 +54,7 @@ def medium_test_file() -> Path:
 
 
 @pytest.fixture(scope="session")
-def large_test_file() -> Path:
+def large_test_file() -> Generator[Path, None, None]:
     """Create a 100MB test file."""
     file_path = generate_test_file(100)
     yield file_path
@@ -62,34 +64,34 @@ def large_test_file() -> Path:
 class TestHashPerformance:
     """Benchmark tests for hash performance."""
 
-    def test_sha256_small_file(self, benchmark, small_test_file):
+    def test_sha256_small_file(self, benchmark: Any, small_test_file: Path) -> None:
         """Benchmark SHA256 hashing of a small file."""
         result = benchmark(compute_sha256, small_test_file)
         assert len(result) == 64  # SHA256 hex digest length
 
-    def test_xxh128_small_file(self, benchmark, small_test_file):
+    def test_xxh128_small_file(self, benchmark: Any, small_test_file: Path) -> None:
         """Benchmark xxHash128 hashing of a small file."""
         result = benchmark(compute_xxh128, small_test_file)
         assert len(result) == 32  # xxHash128 hex digest length
 
-    def test_sha256_medium_file(self, benchmark, medium_test_file):
+    def test_sha256_medium_file(self, benchmark: Any, medium_test_file: Path) -> None:
         """Benchmark SHA256 hashing of a medium file."""
         result = benchmark(compute_sha256, medium_test_file)
         assert len(result) == 64
 
-    def test_xxh128_medium_file(self, benchmark, medium_test_file):
+    def test_xxh128_medium_file(self, benchmark: Any, medium_test_file: Path) -> None:
         """Benchmark xxHash128 hashing of a medium file."""
         result = benchmark(compute_xxh128, medium_test_file)
         assert len(result) == 32
 
     @pytest.mark.slow
-    def test_sha256_large_file(self, benchmark, large_test_file):
+    def test_sha256_large_file(self, benchmark: Any, large_test_file: Path) -> None:
         """Benchmark SHA256 hashing of a large file."""
         result = benchmark(compute_sha256, large_test_file)
         assert len(result) == 64
 
     @pytest.mark.slow
-    def test_xxh128_large_file(self, benchmark, large_test_file):
+    def test_xxh128_large_file(self, benchmark: Any, large_test_file: Path) -> None:
         """Benchmark xxHash128 hashing of a large file."""
         result = benchmark(compute_xxh128, large_test_file)
         assert len(result) == 32

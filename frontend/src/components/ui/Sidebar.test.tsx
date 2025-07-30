@@ -1,12 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Sidebar } from './Sidebar'
-import {
-  screen,
-  setupUser,
-  expectToHaveClasses,
-  renderWithRouter
-} from '@/test/utils'
+import { screen, setupUser, expectToHaveClasses, renderWithRouter } from '@/test/utils'
 
 describe('Sidebar', () => {
   beforeEach(() => {
@@ -24,7 +19,7 @@ describe('Sidebar', () => {
     renderWithRouter(<Sidebar />)
 
     const navItems = ['Dashboard', 'Catalogs', 'Upload', 'Analytics', 'Settings']
-    navItems.forEach(item => {
+    navItems.forEach((item) => {
       // Each item appears twice (mobile and desktop)
       const elements = screen.getAllByText(item)
       expect(elements.length).toBe(2)
@@ -44,7 +39,7 @@ describe('Sidebar', () => {
 
     links.forEach(({ name, href }) => {
       const linkElements = screen.getAllByText(name)
-      linkElements.forEach(element => {
+      linkElements.forEach((element) => {
         const link = element.closest('a')
         expect(link).toHaveAttribute('href', href)
       })
@@ -55,14 +50,14 @@ describe('Sidebar', () => {
     renderWithRouter(<Sidebar />, { route: '/catalogs' })
 
     const catalogLinks = screen.getAllByText('Catalogs')
-    catalogLinks.forEach(link => {
+    catalogLinks.forEach((link) => {
       const linkElement = link.closest('a')
       expectToHaveClasses(linkElement!, 'bg-gray-800', 'text-white')
     })
 
     // Other links should not be active
     const dashboardLinks = screen.getAllByText('Dashboard')
-    dashboardLinks.forEach(link => {
+    dashboardLinks.forEach((link) => {
       const linkElement = link.closest('a')
       expectToHaveClasses(linkElement!, 'text-gray-300')
       expect(linkElement).not.toHaveClass('bg-gray-800')
@@ -129,7 +124,7 @@ describe('Sidebar', () => {
     renderWithRouter(<Sidebar />, '/other')
 
     const dashboardLinks = screen.getAllByText('Dashboard')
-    dashboardLinks.forEach(link => {
+    dashboardLinks.forEach((link) => {
       const linkElement = link.closest('a')
       const className = linkElement?.className || ''
       expect(className).toContain('hover:bg-gray-700')
@@ -164,7 +159,7 @@ describe('Sidebar', () => {
     // Then test catalogs route
     renderWithRouter(<Sidebar />, { route: '/catalogs' })
     const catalogLinks = screen.getAllByText('Catalogs')
-    catalogLinks.forEach(link => {
+    catalogLinks.forEach((link) => {
       const linkElement = link.closest('a')
       expect(linkElement).toHaveClass('bg-gray-800', 'text-white')
     })
@@ -190,7 +185,7 @@ describe('Sidebar', () => {
 
     // Check text colors
     const inactiveLinks = screen.getAllByText('Upload')
-    inactiveLinks.forEach(link => {
+    inactiveLinks.forEach((link) => {
       const linkElement = link.closest('a')
       expect(linkElement).toHaveClass('text-gray-300')
     })
@@ -205,7 +200,7 @@ describe('Sidebar', () => {
 
     // Check padding on links
     const links = screen.getAllByText('Dashboard')
-    links.forEach(link => {
+    links.forEach((link) => {
       const linkElement = link.closest('a')
       expect(linkElement).toHaveClass('px-2', 'py-2')
     })
@@ -301,7 +296,7 @@ describe('Sidebar', () => {
     renderWithRouter(<Sidebar />, { route: '/analytics' })
 
     const analyticsLinks = screen.getAllByText('Analytics')
-    analyticsLinks.forEach(link => {
+    analyticsLinks.forEach((link) => {
       const linkElement = link.closest('a')
       expect(linkElement).toHaveAttribute('aria-current', 'page')
     })
@@ -330,7 +325,7 @@ describe('Sidebar', () => {
 
     // Check active link contrast
     const activeLinks = screen.getAllByText('Dashboard')
-    activeLinks.forEach(link => {
+    activeLinks.forEach((link) => {
       const linkElement = link.closest('a')
       if (linkElement?.classList.contains('bg-gray-800')) {
         expectToHaveClasses(linkElement, 'text-white')
@@ -339,7 +334,7 @@ describe('Sidebar', () => {
 
     // Check inactive link contrast
     const inactiveLinks = screen.getAllByText('Settings')
-    inactiveLinks.forEach(link => {
+    inactiveLinks.forEach((link) => {
       const linkElement = link.closest('a')
       if (!linkElement?.classList.contains('bg-gray-800')) {
         expectToHaveClasses(linkElement, 'text-gray-300')

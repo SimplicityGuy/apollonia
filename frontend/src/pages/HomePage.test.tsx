@@ -11,7 +11,7 @@ import {
   getTableHeaders,
   expectToHaveClasses,
   setupUser,
-  waitForLoadingToFinish
+  waitForLoadingToFinish,
 } from '@/test/utils'
 
 // Mock the API service
@@ -37,7 +37,7 @@ describe('HomePage', () => {
     render(<HomePage />)
     const statNames = ['Total Media Files', 'Analyzed Files', 'Processing Queue', 'Storage Used']
 
-    statNames.forEach(name => {
+    statNames.forEach((name) => {
       expect(screen.getByText(name)).toBeInTheDocument()
     })
 
@@ -53,7 +53,7 @@ describe('HomePage', () => {
 
     // Check increase indicators
     const increaseIndicators = screen.getAllByText(/1.34%|2.94%|4.35%/)
-    increaseIndicators.forEach(indicator => {
+    increaseIndicators.forEach((indicator) => {
       expect(indicator).toHaveClass('text-green-600')
     })
 
@@ -91,7 +91,7 @@ describe('HomePage', () => {
 
     await waitFor(() => {
       // Check filenames are displayed
-      mockMediaFiles.items.forEach(file => {
+      mockMediaFiles.items.forEach((file) => {
         expect(screen.getByText(file.filename)).toBeInTheDocument()
       })
     })
@@ -144,7 +144,7 @@ describe('HomePage', () => {
 
     // Check table is accessible
     const tableHeaders = container.querySelectorAll('th')
-    tableHeaders.forEach(header => {
+    tableHeaders.forEach((header) => {
       expect(header).toHaveAttribute('scope', 'col')
     })
   })
@@ -154,16 +154,19 @@ describe('HomePage', () => {
 
     await waitFor(() => {
       // Get links that have href attributes pointing to files
-      const viewLinks = screen.getAllByRole('link').filter(link =>
-        link.getAttribute('href')?.startsWith('/files/')
-      )
+      const viewLinks = screen
+        .getAllByRole('link')
+        .filter((link) => link.getAttribute('href')?.startsWith('/files/'))
       expect(viewLinks).toHaveLength(mockMediaFiles.items.length)
 
       viewLinks.forEach((link, index) => {
         expect(link).toHaveAttribute('href', `/files/${mockMediaFiles.items[index].id}`)
         expect(link).toHaveTextContent('View')
         // Check accessibility
-        expect(link).toHaveAttribute('aria-label', expect.stringContaining(mockMediaFiles.items[index].filename))
+        expect(link).toHaveAttribute(
+          'aria-label',
+          expect.stringContaining(mockMediaFiles.items[index].filename)
+        )
       })
     })
   })
@@ -216,13 +219,13 @@ describe('HomePage', () => {
     // Check for screen reader only text
     const srOnlyElements = screen.getAllByText(/Increased by|Decreased by/)
     expect(srOnlyElements.length).toBeGreaterThan(0)
-    srOnlyElements.forEach(element => {
+    srOnlyElements.forEach((element) => {
       expect(element).toHaveClass('sr-only')
     })
 
     // Check ARIA labels on interactive elements
     const viewAllLinks = screen.getAllByText('View all')
-    viewAllLinks.forEach(link => {
+    viewAllLinks.forEach((link) => {
       expect(link.closest('a')).toHaveAttribute('aria-label')
     })
 
@@ -335,9 +338,9 @@ describe('HomePage', () => {
       await user.tab()
     }
 
-    const firstFileLink = screen.getAllByRole('link').find(link =>
-      link.getAttribute('href')?.startsWith('/files/')
-    )
+    const firstFileLink = screen
+      .getAllByRole('link')
+      .find((link) => link.getAttribute('href')?.startsWith('/files/'))
     expect(firstFileLink).toHaveFocus()
   })
 

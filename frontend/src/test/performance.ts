@@ -61,10 +61,11 @@ Benchmark Results for ${name}:
  * Mock slow API responses for performance testing
  */
 export const mockSlowAPI = (delay = 2000) => {
-  return vi.fn().mockImplementation(() =>
-    new Promise((resolve) => {
-      setTimeout(() => resolve({ data: 'slow response' }), delay)
-    })
+  return vi.fn().mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(() => resolve({ data: 'slow response' }), delay)
+      })
   )
 }
 
@@ -76,25 +77,26 @@ export const simulateNetworkConditions = (type: 'fast' | 'slow' | '3g' | 'offlin
     fast: { delay: 50, throughput: Infinity },
     slow: { delay: 2000, throughput: 50000 },
     '3g': { delay: 500, throughput: 200000 },
-    offline: { delay: Infinity, throughput: 0 }
+    offline: { delay: Infinity, throughput: 0 },
   }
 
   const condition = conditions[type]
 
   // Mock fetch with delay
-  window.fetch = vi.fn().mockImplementation((_url) =>
-    new Promise((resolve, reject) => {
-      if (condition.delay === Infinity) {
-        reject(new Error('Network offline'))
-      } else {
-        setTimeout(() => {
-          resolve({
-            ok: true,
-            json: async () => ({ data: 'response' })
-          })
-        }, condition.delay)
-      }
-    })
+  window.fetch = vi.fn().mockImplementation(
+    (_url) =>
+      new Promise((resolve, reject) => {
+        if (condition.delay === Infinity) {
+          reject(new Error('Network offline'))
+        } else {
+          setTimeout(() => {
+            resolve({
+              ok: true,
+              json: async () => ({ data: 'response' }),
+            })
+          }, condition.delay)
+        }
+      })
   )
 
   return condition
@@ -109,7 +111,7 @@ export const trackMemoryUsage = () => {
     return {
       usedJSHeapSize: memory.usedJSHeapSize,
       totalJSHeapSize: memory.totalJSHeapSize,
-      jsHeapSizeLimit: memory.jsHeapSizeLimit
+      jsHeapSizeLimit: memory.jsHeapSizeLimit,
     }
   }
   return null
@@ -133,10 +135,7 @@ export const createThrottledTest = (fn: (...args: any[]) => any, delay: number) 
 /**
  * Test render performance
  */
-export const measureRenderPerformance = async (
-  component: React.ComponentType,
-  props: any = {}
-) => {
+export const measureRenderPerformance = async (component: React.ComponentType, props: any = {}) => {
   const { render } = await import('@testing-library/react')
 
   const start = performance.now()
