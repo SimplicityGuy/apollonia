@@ -11,9 +11,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 WORKDIR /app
 
-# Copy dependency files and source
+# Copy dependency files
 COPY ingestor/pyproject.toml .
-COPY ingestor/ ./
+
+# Create package directory and copy source
+RUN mkdir -p ingestor
+COPY ingestor/__init__.py ingestor/
+COPY ingestor/__main__.py ingestor/
+COPY ingestor/*.py ingestor/
 
 # Install dependencies
 RUN uv venv && \

@@ -25,20 +25,24 @@ class TestDockerE2E:
             return
 
         try:
+            # Ensure data directory exists with proper permissions
+            data_dir = project_root / "data"
+            data_dir.mkdir(exist_ok=True, mode=0o777)
+
             # Clean up any existing containers first
             print("🧹 Cleaning up any existing containers...")
             subprocess.run(
-                ["docker-compose", "down", "-v", "--remove-orphans"],
+                ["docker-compose", "--profile", "legacy", "down", "-v", "--remove-orphans"],
                 cwd=project_root,
                 capture_output=True,
                 text=True,
                 timeout=60,
             )
 
-            # Start with proper error handling
+            # Start with proper error handling, including legacy profile for ingestor
             print("🚀 Starting Docker services...")
             result = subprocess.run(
-                ["docker-compose", "up", "-d"],
+                ["docker-compose", "--profile", "legacy", "up", "-d"],
                 cwd=project_root,
                 capture_output=True,
                 text=True,
@@ -53,7 +57,7 @@ class TestDockerE2E:
 
             # Show running containers
             print("📦 Running containers:")
-            subprocess.run(["docker-compose", "ps"], cwd=project_root)
+            subprocess.run(["docker-compose", "--profile", "legacy", "ps"], cwd=project_root)
 
             # Enhanced service readiness with retries
             max_attempts = 3
@@ -84,7 +88,7 @@ class TestDockerE2E:
             # Enhanced cleanup
             print("\n🧹 Cleaning up Docker services...")
             result = subprocess.run(
-                ["docker-compose", "down", "-v", "--remove-orphans"],
+                ["docker-compose", "--profile", "legacy", "down", "-v", "--remove-orphans"],
                 cwd=project_root,
                 capture_output=True,
                 text=True,
@@ -201,7 +205,10 @@ class TestDockerE2E:
         """Test the complete pipeline from file creation to Neo4j storage."""
         # Create a test file in the data directory
         data_dir = Path("./data")
-        data_dir.mkdir(exist_ok=True)
+        data_dir.mkdir(exist_ok=True, mode=0o777)
+
+        # Ensure we can write to the directory
+        data_dir.chmod(0o777)
 
         test_file = data_dir / "docker_e2e_test.txt"
         test_file.write_text("Docker E2E test content")
@@ -283,7 +290,10 @@ class TestDockerE2E:
     def test_multiple_file_processing(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test processing multiple files concurrently."""
         data_dir = Path("./data")
-        data_dir.mkdir(exist_ok=True)
+        data_dir.mkdir(exist_ok=True, mode=0o777)
+
+        # Ensure we can write to the directory
+        data_dir.chmod(0o777)
 
         # Create multiple test files
         test_files = []
@@ -319,7 +329,10 @@ class TestDockerE2E:
     def test_neighbor_file_relationships_docker(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test neighbor file relationships in Docker environment."""
         data_dir = Path("./data")
-        data_dir.mkdir(exist_ok=True)
+        data_dir.mkdir(exist_ok=True, mode=0o777)
+
+        # Ensure we can write to the directory
+        data_dir.chmod(0o777)
 
         # Create related files
         files = [
@@ -363,7 +376,10 @@ class TestDockerE2E:
     def test_service_restart_resilience(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that system recovers from service restarts."""
         data_dir = Path("./data")
-        data_dir.mkdir(exist_ok=True)
+        data_dir.mkdir(exist_ok=True, mode=0o777)
+
+        # Ensure we can write to the directory
+        data_dir.chmod(0o777)
 
         # Create initial file
         test_file1 = data_dir / "before_restart.txt"
@@ -373,7 +389,9 @@ class TestDockerE2E:
         time.sleep(10)
 
         # Restart populator service
-        subprocess.run(["docker-compose", "restart", "populator"], check=True)
+        subprocess.run(
+            ["docker-compose", "--profile", "legacy", "restart", "populator"], check=True
+        )
 
         # Wait for service to come back up
         time.sleep(10)
@@ -413,7 +431,10 @@ class TestDockerE2E:
     def test_docker_volume_persistence(self, docker_compose_up: None) -> None:  # noqa: ARG002
         """Test that data persists across container restarts."""
         data_dir = Path("./data")
-        data_dir.mkdir(exist_ok=True)
+        data_dir.mkdir(exist_ok=True, mode=0o777)
+
+        # Ensure we can write to the directory
+        data_dir.chmod(0o777)
 
         # Create test file
         test_file = data_dir / "persistence_test.txt"
@@ -436,7 +457,7 @@ class TestDockerE2E:
                 original_hash = record["hash"]
 
             # Restart all services
-            subprocess.run(["docker-compose", "restart"], check=True)
+            subprocess.run(["docker-compose", "--profile", "legacy", "restart"], check=True)
 
             # Wait for services to come back
             self._wait_for_services()
@@ -465,7 +486,7 @@ class TestDockerE2E:
 
         for service in services:
             result = subprocess.run(
-                ["docker-compose", "logs", "--tail=50", service],
+                ["docker-compose", "--profile", "legacy", "logs", "--tail=50", service],
                 capture_output=True,
                 text=True,
             )
