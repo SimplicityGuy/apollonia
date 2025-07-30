@@ -630,6 +630,13 @@ jobs:
         with:
           docker-compose: latest
 
+      - name: 🧹 Clean up any existing containers
+        run: |
+          # Ensure clean state by removing any existing containers
+          docker-compose down -v --remove-orphans || true
+          docker container prune -f || true
+          docker volume prune -f || true
+
       - name: 🐋 Build services
         run: |
           export DOCKER_BUILDKIT=1

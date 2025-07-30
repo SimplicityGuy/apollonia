@@ -38,8 +38,43 @@ def docker_compose_project(docker_client: docker.DockerClient) -> Iterator[str]:
     if not compose_file.exists():
         pytest.skip("docker-compose.yml not found")
 
-    # Start services
+    # Ensure clean state by removing any existing containers
     try:
+        # Force cleanup any existing containers for this project
+        subprocess.run(
+            [
+                "docker-compose",
+                "-p",
+                project_name,
+                "-f",
+                str(compose_file),
+                "down",
+                "-v",
+                "--remove-orphans",
+            ],
+            check=False,
+            capture_output=True,
+        )
+
+        # Also clean up any containers that might conflict with our service names
+        conflicting_names = [
+            "apollonia_rabbitmq_1",
+            "apollonia_neo4j_1",
+            "apollonia_postgres_1",
+            "apollonia_redis_1",
+            "apollonia_ingestor_1",
+            "apollonia_populator_1",
+            "apollonia_api_1",
+            "apollonia_frontend_1",
+        ]
+        for name in conflicting_names:
+            subprocess.run(
+                ["docker", "rm", "-f", name],
+                check=False,
+                capture_output=True,
+            )
+
+        # Start services
         subprocess.run(
             ["docker-compose", "-p", project_name, "-f", str(compose_file), "up", "-d"],
             check=True,
@@ -52,9 +87,25 @@ def docker_compose_project(docker_client: docker.DockerClient) -> Iterator[str]:
         yield project_name
 
     finally:
-        # Stop and remove services
+        # Stop and remove services with more aggressive cleanup
         subprocess.run(
-            ["docker-compose", "-p", project_name, "-f", str(compose_file), "down", "-v"],
+            [
+                "docker-compose",
+                "-p",
+                project_name,
+                "-f",
+                str(compose_file),
+                "down",
+                "-v",
+                "--remove-orphans",
+            ],
+            check=False,
+            capture_output=True,
+        )
+
+        # Also ensure any lingering containers are removed
+        subprocess.run(
+            ["docker", "container", "prune", "-f"],
             check=False,
             capture_output=True,
         )

@@ -2,7 +2,6 @@ services:
   # PostgreSQL for media catalog
   postgres:
     image: postgres:16-alpine
-    container_name: apollonia-postgres
     environment:
       POSTGRES_USER: apollonia
       POSTGRES_PASSWORD: apollonia
@@ -26,7 +25,6 @@ services:
   # Redis for caching
   redis:
     image: redis:7-alpine
-    container_name: apollonia-redis
     ports:
       - "6379:6379"
     volumes:
@@ -46,7 +44,6 @@ services:
   # RabbitMQ for message queuing
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: apollonia-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"  # Management UI
@@ -70,7 +67,6 @@ services:
   # Neo4j for graph database (optional, kept for compatibility)
   neo4j:
     image: neo4j:5-community
-    container_name: apollonia-neo4j
     ports:
       - "7474:7474"  # HTTP
       - "7687:7687"  # Bolt
@@ -100,7 +96,6 @@ services:
     build:
       context: .
       dockerfile: ./ingestor/Dockerfile.media
-    container_name: apollonia-media-ingestor
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -125,7 +120,6 @@ services:
     build:
       context: .
       dockerfile: ./analyzer/Dockerfile
-    container_name: apollonia-analyzer
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -153,7 +147,6 @@ services:
     build:
       context: .
       dockerfile: ./populator/Dockerfile
-    container_name: apollonia-populator
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -183,7 +176,6 @@ services:
     build:
       context: .
       dockerfile: ./api/Dockerfile
-    container_name: apollonia-api
     depends_on:
       postgres:
         condition: service_healthy
@@ -215,7 +207,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: apollonia-frontend
     depends_on:
       api:
         condition: service_healthy
@@ -238,7 +229,6 @@ services:
     build:
       context: .
       dockerfile: ./ingestor/Dockerfile
-    container_name: apollonia-ingestor
     depends_on:
       rabbitmq:
         condition: service_healthy
