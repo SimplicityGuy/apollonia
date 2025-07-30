@@ -24,24 +24,107 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.actor }}/apollonia
+  AMQP_CONNECTION_STRING: amqp://test:test@localhost:5672/
+  NEO4J_URI: bolt://localhost:7687
+  NEO4J_USER: neo4j
+  NEO4J_PASSWORD: apollonia
 
 jobs:
-  # Quality checks (fast feedback)
-  quality:
-    name: Quality Checks
-    uses: ./.github/workflows/quality.yml
+  # ========== QUALITY CHECKS (Fast Feedback) ==========
+  # All quality checks run in parallel for fast feedback
+
+  backend-quality:
+    name: Backend Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       security-events: write
       checks: write
 
-  # Security scanning
-  security:
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🔍 Run backend linting
+        run: just lint-backend
+
+      - name: 💅 Check backend formatting
+        run: just format-check-backend
+
+      - name: 🔍 Run type checking
+        run: just typecheck-backend
+
+      - name: 🔒 Run security checks
+        run: just security-backend
+
+      - name: 📤 Upload bandit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  frontend-quality:
+    name: Frontend Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
+        with:
+          node-version: '22'
+          install-just: true
+
+      - name: 🔍 Run frontend linting
+        run: just lint-frontend
+
+      - name: 💅 Check frontend formatting
+        run: just format-check-frontend
+
+      - name: 🔍 Run type checking
+        run: just typecheck-frontend
+
+      - name: 🔒 Audit dependencies
+        run: just security-frontend
+
+  pre-commit:
+    name: Pre-commit Hooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🪝 Run pre-commit hooks
+        run: just pre-commit
+
+  # ========== SECURITY SCANNING ==========
+
+  security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: quality
-
     permissions:
       contents: read
       security-events: write
@@ -58,7 +141,6 @@ jobs:
           scan-python: true
           scan-javascript: true
 
-  # Dependency review for PRs
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
@@ -75,62 +157,691 @@ jobs:
           fail-on-severity: moderate
           warn-only: false
 
-  # Comprehensive testing
-  tests:
-    name: Test Suite
+  # ========== PYTHON TESTS (All run in parallel) ==========
+
+  python-unit-tests:
+    name: Python Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: ${{ !inputs.skip_tests }}
-    uses: ./.github/workflows/test.yml
-    needs: quality
     permissions:
       contents: read
       checks: write
       pull-requests: write
-      packages: read
-    secrets: inherit
-    with:
-      skip_changes_detection: true
 
-  # Docker builds and deployment
-  docker:
-    name: Docker Build & Deploy
-    uses: ./.github/workflows/docker.yml
-    needs: [quality, tests]
-    if: ${{ !cancelled() && (needs.tests.result == 'success' || needs.tests.result == 'skipped') }}
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🧪 Run unit tests with coverage
+        run: |
+          uv run pytest tests/unit \
+            -m "not integration and not e2e" \
+            --cov=apollonia \
+            --cov=ingestor \
+            --cov=populator \
+            --cov=analyzer \
+            --cov=api \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-unit.xml
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: unit
+          name-suffix: unit
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-unit.xml
+          check-name: Python Unit Test Results
+
+  python-analyzer-tests:
+    name: Python Analyzer Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🧪 Run analyzer tests with coverage
+        run: |
+          uv run pytest tests/analyzer \
+            -m "not integration and not e2e" \
+            --cov=analyzer \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-analyzer.xml
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: analyzer
+          name-suffix: analyzer
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-analyzer.xml
+          check-name: Python Analyzer Test Results
+
+  python-ingestor-tests:
+    name: Python Ingestor Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🧪 Run ingestor tests with coverage
+        run: |
+          uv run pytest tests/ingestor \
+            -m "not integration and not e2e" \
+            --cov=ingestor \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-ingestor.xml
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: ingestor
+          name-suffix: ingestor
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-ingestor.xml
+          check-name: Python Ingestor Test Results
+
+  python-populator-tests:
+    name: Python Populator Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🧪 Run populator tests with coverage
+        run: |
+          uv run pytest tests/populator \
+            -m "not integration and not e2e" \
+            --cov=populator \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-populator.xml
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: populator
+          name-suffix: populator
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-populator.xml
+          check-name: Python Populator Test Results
+
+  # ========== INTEGRATION TESTS ==========
+
+  python-integration-tests:
+    name: Python Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        ports:
+          - 5672:5672
+          - 15672:15672
+        env:
+          RABBITMQ_DEFAULT_USER: test
+          RABBITMQ_DEFAULT_PASS: test
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+          --health-start-period 10s
+
+      postgres:
+        image: postgres:15-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: apollonia_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 3s
+          --health-timeout 2s
+          --health-retries 10
+          --health-start-period 5s
+
+      neo4j:
+        image: neo4j:5-community
+        ports:
+          - 7474:7474
+          - 7687:7687
+        env:
+          NEO4J_AUTH: neo4j/apollonia
+          NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
+          NEO4J_dbms_memory_heap_max__size: '512M'
+          NEO4J_dbms_memory_heap_initial__size: '512M'
+        options: >-
+          --health-cmd "neo4j status || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+          --health-start-period 30s
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 10s
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: ⏳ Wait for services
+        uses: ./.github/actions/wait-for-services
+        with:
+          services: 'rabbitmq postgres neo4j redis'
+          timeout: '60'
+
+      - name: 🔗 Run integration tests with coverage
+        env:
+          POSTGRES_URL: postgresql://test:test@localhost:5432/apollonia_test
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          uv run pytest tests/integration \
+            -m "not e2e and not docker" \
+            --cov=apollonia \
+            --cov=ingestor \
+            --cov=populator \
+            --cov=analyzer \
+            --cov=api \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-integration.xml
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: integration
+          name-suffix: integration
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-integration.xml
+          check-name: Python Integration Test Results
+
+  # ========== FRONTEND TESTS ==========
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
+        with:
+          node-version: '22'
+          install-just: true
+
+      - name: 🧪 Run tests with coverage
+        run: just test-frontend-ci
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./frontend/coverage/lcov.info
+          flags: frontend
+          name-suffix: frontend
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: frontend/test-report.junit.xml
+          check-name: Frontend Test Results
+
+      - name: 📤 Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: |
+            frontend/coverage/
+            frontend/test-report.junit.xml
+
+  # ========== DOCKER INTEGRATION TESTS ==========
+
+  docker-integration-tests:
+    name: Docker Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+      packages: read
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🐋 Install docker-compose
+        uses: alexellis/arkade-get@1eef818e467c387d3f50cfe0d2c565d1cbe82b03
+        with:
+          docker-compose: latest
+
+      - name: 🐋 Build services
+        run: |
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          docker-compose build --parallel
+
+      - name: 🌐 Run Docker tests with coverage
+        run: |
+          docker-compose up -d
+          timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
+
+          uv run pytest -v \
+            tests/e2e/test_docker_e2e.py \
+            -m "docker" \
+            --cov=apollonia \
+            --cov=ingestor \
+            --cov=populator \
+            --cov=analyzer \
+            --cov=api \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-docker.xml
+
+      - name: 📋 Show service logs on failure
+        if: failure()
+        run: docker-compose logs --tail=100
+
+      - name: 🛑 Stop services
+        if: always()
+        run: docker-compose down -v
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: docker
+          name-suffix: docker
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-docker.xml
+          check-name: Docker Integration Test Results
+
+  # ========== E2E TESTS ==========
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+      packages: read
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🔧 Setup frontend environment
+        uses: ./.github/actions/setup-frontend-env
+        with:
+          node-version: '22'
+
+      - name: 🐋 Install docker-compose
+        uses: alexellis/arkade-get@1eef818e467c387d3f50cfe0d2c565d1cbe82b03
+        with:
+          docker-compose: latest
+
+      - name: 🐋 Build services
+        run: |
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          docker-compose build --parallel
+
+      - name: 🌐 Run E2E tests with coverage
+        run: |
+          docker-compose up -d
+          timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
+
+          uv run pytest -v \
+            tests/e2e \
+            -m "not docker and not playwright" \
+            --cov=apollonia \
+            --cov=ingestor \
+            --cov=populator \
+            --cov=analyzer \
+            --cov=api \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-e2e.xml
+
+      - name: 📋 Show service logs on failure
+        if: failure()
+        run: docker-compose logs --tail=100
+
+      - name: 🛑 Stop services
+        if: always()
+        run: docker-compose down -v
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: e2e
+          name-suffix: e2e
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-e2e.xml
+          check-name: E2E Test Results
+
+      - name: 📤 Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            junit-e2e.xml
+            coverage.xml
+            htmlcov/
+            cypress/screenshots/
+            cypress/videos/
+
+  # ========== DOCKER BUILD & DEPLOY ==========
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only require quality checks to pass before building
+    needs: [backend-quality, frontend-quality]
+    if: ${{ !cancelled() }}
     permissions:
       contents: read
       packages: write
       security-events: write
-      id-token: write
-    secrets: inherit
-    with:
-      push_images: ${{ inputs.push_images || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
-  # Final status check
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ingestor, analyzer, populator, api, frontend]
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔒 Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: ${{ matrix.service }}
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.service }}.sarif'
+
+      - name: 📤 Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
+
+      - name: 🔐 Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-
+
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔨 Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service == 'frontend' && 'frontend' || '.' }}
+          file: ${{ matrix.service }}/Dockerfile
+          platforms: linux/amd64
+          push: ${{ inputs.push_images || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  # ========== COVERAGE COMBINATION ==========
+
+  combine-coverage:
+    name: Combine Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [
+      python-unit-tests,
+      python-analyzer-tests,
+      python-ingestor-tests,
+      python-populator-tests,
+      python-integration-tests,
+      frontend-tests,
+      docker-integration-tests,
+      e2e-tests
+    ]
+    if: always()
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📊 Generate coverage summary
+        run: |
+          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports have been uploaded to Codecov for detailed analysis." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed coverage: [Codecov Dashboard](https://codecov.io/gh/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
+
+  # ========== FINAL STATUS CHECK ==========
+
   ci-status:
     name: CI/CD Status
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [quality, security, tests, docker]
+    needs: [
+      backend-quality,
+      frontend-quality,
+      pre-commit,
+      security-scan,
+      python-unit-tests,
+      python-analyzer-tests,
+      python-ingestor-tests,
+      python-populator-tests,
+      python-integration-tests,
+      frontend-tests,
+      docker-integration-tests,
+      e2e-tests,
+      docker-build
+    ]
+    if: always()
 
     steps:
       - name: 📊 CI/CD Pipeline Summary
         run: |
           echo "## 🚀 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 🔍 Quality Checks" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality Checks | ${{ needs.quality.result == 'success' && '✅ Passed' || needs.quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security Scan | ${{ needs.security.result == 'success' && '✅ Passed' || needs.security.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Suite | ${{ needs.tests.result == 'success' && '✅ Passed' || needs.tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker Build | ${{ needs.docker.result == 'success' && '✅ Passed' || needs.docker.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Quality | ${{ needs.backend-quality.result == 'success' && '✅ Passed' || needs.backend-quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Quality | ${{ needs.frontend-quality.result == 'success' && '✅ Passed' || needs.frontend-quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-commit | ${{ needs.pre-commit.result == 'success' && '✅ Passed' || needs.pre-commit.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Passed' || needs.security-scan.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Set overall status
-          if [[ "${{ needs.quality.result }}" == "success" && \
-                "${{ needs.security.result }}" == "success" && \
-                ("${{ needs.tests.result }}" == "success" || "${{ needs.tests.result }}" == "skipped") && \
-                "${{ needs.docker.result }}" == "success" ]]; then
-            echo "### ✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Unit | ${{ needs.python-unit-tests.result == 'success' && '✅ Passed' || needs.python-unit-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Analyzer | ${{ needs.python-analyzer-tests.result == 'success' && '✅ Passed' || needs.python-analyzer-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Ingestor | ${{ needs.python-ingestor-tests.result == 'success' && '✅ Passed' || needs.python-ingestor-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Populator | ${{ needs.python-populator-tests.result == 'success' && '✅ Passed' || needs.python-populator-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Integration | ${{ needs.python-integration-tests.result == 'success' && '✅ Passed' || needs.python-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || needs.frontend-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Integration | ${{ needs.docker-integration-tests.result == 'success' && '✅ Passed' || needs.docker-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 🐋 Docker Build" >> $GITHUB_STEP_SUMMARY
+          echo "| Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ${{ needs.docker-build.result == 'success' && '✅ All images built' || needs.docker-build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Determine overall status
+          if [[ "${{ needs.backend-quality.result }}" == "success" && \
+                "${{ needs.frontend-quality.result }}" == "success" && \
+                "${{ needs.security-scan.result }}" == "success" ]]; then
+            echo "### ✅ All required checks passed!" >> $GITHUB_STEP_SUMMARY
             exit 0
           else
             echo "### ❌ Some checks failed" >> $GITHUB_STEP_SUMMARY
