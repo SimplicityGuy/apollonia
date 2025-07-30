@@ -13,7 +13,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 WORKDIR /app
 
 # Copy dependency files
-COPY api/pyproject.toml .
+COPY api/pyproject.toml api/README.md ./
 COPY shared /shared
 
 # Install dependencies

@@ -145,9 +145,21 @@ test-python-watch:
 
 # Run API tests specifically
 [group('test')]
-test-api *args="":
+test-api:
   echo "🌐 Running API tests..."
-  uv run pytest tests/api tests/unit/test_api.py -v {{args}}
+  uv run pytest tests/api tests/unit/test_api.py -v -x --tb=short
+
+# Run API tests for CI (with markers and coverage)
+[group('test')]
+test-api-ci:
+  echo "🌐 Running API tests for CI..."
+  uv run pytest tests/api tests/unit/test_api.py -v \
+    -m "not integration and not e2e" \
+    --cov=api \
+    --cov-report=xml \
+    --cov-report=html \
+    --cov-report=term \
+    --junit-xml=junit-api.xml
 
 # Run tests with coverage report
 [group('test')]
