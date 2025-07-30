@@ -238,4 +238,8 @@ data/
 # Security reports
 bandit-report.json
 
+# Benchmark results
+benchmark-results.json
+.benchmarks/
+
 backups/
