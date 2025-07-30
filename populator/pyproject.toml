@@ -24,11 +24,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "mypy>=1.10.0",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=4.1.0",
     "ruff>=0.5.0",
-    "mypy>=1.10.0",
 ]
 
 [project.scripts]
@@ -38,7 +38,6 @@ apollonia-populator = "populator:main"
 Homepage = "https://github.com/SimplicityGuy/apollonia"
 Repository = "https://github.com/SimplicityGuy/apollonia"
 Issues = "https://github.com/SimplicityGuy/apollonia/issues"
-Documentation = "https://github.com/SimplicityGuy/apollonia/tree/main/docs/services"
 
 [build-system]
 requires = ["hatchling"]
@@ -47,15 +46,14 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["."]
 
-# Tool configurations for service-specific development
 [tool.ruff]
 target-version = "py312"
 line-length = 100
 extend-include = ["*.py"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "PTH", "SIM", "ASYNC", "S"]
-ignore = ["S101"]  # Allow assert in this service
+select = ["ARG", "ASYNC", "B", "C4", "E", "F", "I", "PTH", "S", "SIM", "UP", "W"]
+ignore = ["S101"]
 
 [tool.mypy]
 python_version = "3.12"
