@@ -27,9 +27,10 @@ RUN uv venv && \
 # Runtime stage
 FROM python:3.12-slim
 
-# Install runtime dependencies
+# Install runtime dependencies including gosu for user switching
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Add any system dependencies here if needed
+    gosu \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -55,8 +56,9 @@ ENV DATA_DIRECTORY="/data"
 # Create data directory
 RUN mkdir -p /data && chown apollonia:apollonia /data
 
-# Switch to non-root user
-USER apollonia
+# Copy entrypoint script to handle permissions
+COPY ingestor/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Volume for monitored data
 VOLUME ["/data"]
@@ -71,5 +73,6 @@ LABEL org.opencontainers.image.description="File monitoring service that publish
 LABEL org.opencontainers.image.authors="robert@simplicityguy.com"
 LABEL org.opencontainers.image.source="https://github.com/SimplicityGuy/apollonia"
 
-# Run the service
+# Set entrypoint and default command
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "-m", "ingestor"]

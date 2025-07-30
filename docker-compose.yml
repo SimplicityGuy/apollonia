@@ -247,6 +247,8 @@ services:
       DATA_DIRECTORY: /data
     volumes:
       - ./data:/data
+    # Run as root to allow entrypoint script to fix permissions
+    user: "root"
     restart: unless-stopped
     profiles: ["legacy"]  # Only start with --profile legacy
     deploy:
