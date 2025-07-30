@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
+
+    from sqlalchemy.engine import Engine
+    from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from api.config import Settings, get_settings
@@ -36,7 +43,7 @@ app.dependency_overrides[get_settings] = get_test_settings
 
 
 @pytest.fixture(scope="session")
-def test_db_engine():
+def test_db_engine() -> Iterator[Engine]:
     """Create a test database engine."""
     engine = create_engine(
         "sqlite:///:memory:",
@@ -49,7 +56,7 @@ def test_db_engine():
 
 
 @pytest.fixture(scope="function")
-def test_db_session(test_db_engine):
+def test_db_session(test_db_engine: Engine) -> Iterator[Session]:
     """Create a test database session."""
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_db_engine)
     session = TestingSessionLocal()
@@ -58,7 +65,7 @@ def test_db_session(test_db_engine):
 
 
 @pytest.fixture(scope="function")
-async def mock_db_session():
+async def mock_db_session() -> AsyncMock:
     """Mock async database session."""
     mock_session = AsyncMock()
     mock_session.execute = AsyncMock()
@@ -75,7 +82,7 @@ async def mock_db_session():
 
 
 @pytest.fixture(scope="function")
-async def mock_redis_client():
+async def mock_redis_client() -> AsyncMock:
     """Mock Redis client."""
     mock_client = AsyncMock()
     mock_client.ping = AsyncMock(return_value=True)
@@ -90,7 +97,7 @@ async def mock_redis_client():
 
 
 @pytest.fixture(scope="function")
-async def mock_neo4j_session():
+async def mock_neo4j_session() -> AsyncMock:
     """Mock Neo4j session for tests expecting Neo4j."""
     mock_session = AsyncMock()
     mock_session.run = AsyncMock()
@@ -106,19 +113,21 @@ async def mock_neo4j_session():
 
 
 @pytest.fixture(autouse=True)
-async def setup_test_dependencies(mock_db_session, mock_redis_client, mock_neo4j_session):
+async def setup_test_dependencies(
+    mock_db_session: AsyncMock, mock_redis_client: AsyncMock, mock_neo4j_session: AsyncMock
+) -> AsyncIterator[None]:
     """Setup test dependencies for all tests."""
 
     # Mock database session
-    async def mock_get_session():
+    async def mock_get_session() -> AsyncIterator[AsyncMock]:
         yield mock_db_session
 
     # Mock Redis client
-    async def mock_get_cache():
+    async def mock_get_cache() -> AsyncMock:
         return mock_redis_client
 
     # Mock Neo4j session (for tests expecting Neo4j)
-    async def mock_get_neo4j_session():
+    async def mock_get_neo4j_session() -> AsyncIterator[AsyncMock]:
         yield mock_neo4j_session
 
     # Override dependencies
@@ -160,10 +169,9 @@ def authenticated_client(client: TestClient) -> TestClient:
         email="test@example.com",
         full_name="Test User",
         disabled=False,
-        hashed_password="$2b$12$test",  # noqa: S106
     )
 
-    async def mock_get_current_user():
+    async def mock_get_current_user() -> User:
         return mock_user
 
     app.dependency_overrides[get_current_active_user] = mock_get_current_user

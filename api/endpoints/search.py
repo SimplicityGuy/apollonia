@@ -42,7 +42,7 @@ async def search_media(
         query = query.where(
             or_(
                 MediaFile.file_name.ilike(search_term),
-                MediaFile.metadata["tags"].astext.ilike(search_term),
+                MediaFile.file_metadata["tags"].astext.ilike(search_term),
                 MediaAnalysis.results["predictions"]["genres"].astext.ilike(
                     search_term
                 ),
@@ -130,7 +130,7 @@ async def search_media(
             mime_type=media_file.mime_type,
             created_at=media_file.created_at,
             updated_at=media_file.updated_at,
-            metadata=media_file.metadata,
+            metadata=media_file.file_metadata,
         )
 
         if analysis:

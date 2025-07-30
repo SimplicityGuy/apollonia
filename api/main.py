@@ -94,7 +94,7 @@ def create_app() -> FastAPI:
     )
 
     # Add GraphQL
-    async def get_context() -> dict[str, Any]:
+    def get_context() -> dict[str, Any]:
         """Get GraphQL context."""
         # For testing, add test user to context
         import os

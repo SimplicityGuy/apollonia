@@ -206,14 +206,27 @@ async def upload_media_file(
         ) from e
 
     # Create media file record
+    import hashlib
+    import xxhash
+
+    # Compute hashes
+    sha256_hash = hashlib.sha256(content).hexdigest()
+    xxh128_hash = xxhash.xxh128(content).hexdigest()
+
     media_file = MediaFile(
         catalog_id=catalog_id,
         file_path=str(file_path),
         file_name=file.filename,  # validated above
+        filename=file.filename,  # For database compatibility
+        original_path=str(file_path),
         file_size=file.size or 0,
+        size=file.size or 0,  # For database compatibility
         media_type=media_type,
         mime_type=file.content_type,
-        metadata={
+        sha256_hash=sha256_hash,
+        xxh128_hash=xxh128_hash,
+        extension=file_ext,
+        file_metadata={
             "uploaded_by": current_user.username,
             "original_filename": file.filename,  # validated above
         },
@@ -238,16 +251,22 @@ async def create_media_file(
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     """Create a media file record (for testing)."""
-    from database.models import MediaFile
+    from shared.models import MediaFile
     import hashlib
 
     # Create media file record
+    file_name = media_data.get("file_name", media_data.get("filename", "test.mp3"))
     media_file = MediaFile(
-        filename=media_data.get("file_name", media_data.get("filename", "test.mp3")),
+        file_name=file_name,
+        filename=file_name,  # For database compatibility
+        file_path=media_data.get("file_path", media_data.get("path", "/data/test.mp3")),
         original_path=media_data.get(
             "file_path", media_data.get("path", "/data/test.mp3")
         ),
-        size=media_data.get("file_size", media_data.get("size", 0)),
+        file_size=media_data.get("file_size", media_data.get("size", 0)),
+        size=media_data.get(
+            "file_size", media_data.get("size", 0)
+        ),  # For database compatibility
         media_type=media_data.get("media_type", "audio"),
         sha256_hash=media_data.get(
             "hash_sha256",
@@ -256,9 +275,7 @@ async def create_media_file(
         xxh128_hash=media_data.get(
             "hash_xxh128", media_data.get("xxh128_hash", "test123")
         ),
-        extension=Path(
-            media_data.get("file_name", media_data.get("filename", "test.mp3"))
-        ).suffix,
+        extension=Path(file_name).suffix,
         mime_type=media_data.get("mime_type", "audio/mpeg"),
     )
 
@@ -269,9 +286,9 @@ async def create_media_file(
     return MediaFileResponse(
         id=media_file.id,
         catalog_id=UUID("00000000-0000-0000-0000-000000000000"),  # Default catalog
-        file_path=media_file.original_path,
-        file_name=media_file.filename,
-        file_size=media_file.size,
+        file_path=media_file.file_path,
+        file_name=media_file.file_name,
+        file_size=media_file.file_size,
         media_type=media_file.media_type,
         mime_type=media_file.mime_type,
         hash_sha256=media_file.sha256_hash,
@@ -290,7 +307,7 @@ async def update_media_file(
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     """Update media file details."""
-    from database.models import MediaFile
+    from shared.models import MediaFile
 
     media_file = await session.get(MediaFile, media_id)
 
@@ -302,11 +319,14 @@ async def update_media_file(
 
     # Update fields
     if "file_size" in update_data:
-        media_file.size = update_data["file_size"]
+        media_file.file_size = update_data["file_size"]
+        media_file.size = update_data["file_size"]  # For database compatibility
     if "size" in update_data:
-        media_file.size = update_data["size"]
+        media_file.file_size = update_data["size"]
+        media_file.size = update_data["size"]  # For database compatibility
     if "file_name" in update_data:
-        media_file.filename = update_data["file_name"]
+        media_file.file_name = update_data["file_name"]
+        media_file.filename = update_data["file_name"]  # For database compatibility
     if "media_type" in update_data:
         media_file.media_type = update_data["media_type"]
 
@@ -319,9 +339,9 @@ async def update_media_file(
     return MediaFileResponse(
         id=media_file.id,
         catalog_id=UUID("00000000-0000-0000-0000-000000000000"),  # Default catalog
-        file_path=media_file.original_path,
-        file_name=media_file.filename,
-        file_size=media_file.size,
+        file_path=media_file.file_path,
+        file_name=media_file.file_name,
+        file_size=media_file.file_size,
         media_type=media_file.media_type,
         mime_type=media_file.mime_type,
         hash_sha256=media_file.sha256_hash,

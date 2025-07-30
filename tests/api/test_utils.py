@@ -21,7 +21,6 @@ def create_test_user(
         email=email,
         full_name=full_name,
         disabled=disabled,
-        hashed_password="$2b$12$test",  # noqa: S106
     )
 
 

@@ -211,15 +211,16 @@ async def get_media_file(info: Info, id: UUID) -> MediaFile | None:
 
         return MediaFile(
             id=media_file.id,
-            catalog_id=media_file.catalog_id,
+            catalog_id=media_file.catalog_id
+            or UUID("00000000-0000-0000-0000-000000000000"),
             file_path=media_file.file_path,
             file_name=media_file.file_name,
             file_size=media_file.file_size,
             media_type=media_file.media_type,
             mime_type=media_file.mime_type,
-            hash_sha256=media_file.hash_sha256,
-            hash_xxh128=media_file.hash_xxh128,
-            metadata=media_file.metadata,
+            hash_sha256=media_file.sha256_hash,
+            hash_xxh128=media_file.xxh128_hash,
+            metadata=media_file.file_metadata,
             status=media_file.status,
             created_at=media_file.created_at,
             updated_at=media_file.updated_at,
@@ -327,15 +328,16 @@ async def get_media_files(
                     cursor=encode_cursor(str(media_file.id)),
                     node=MediaFile(
                         id=media_file.id,
-                        catalog_id=media_file.catalog_id,
+                        catalog_id=media_file.catalog_id
+                        or UUID("00000000-0000-0000-0000-000000000000"),
                         file_path=media_file.file_path,
                         file_name=media_file.file_name,
                         file_size=media_file.file_size,
                         media_type=media_file.media_type,
                         mime_type=media_file.mime_type,
-                        hash_sha256=media_file.hash_sha256,
-                        hash_xxh128=media_file.hash_xxh128,
-                        metadata=media_file.metadata,
+                        hash_sha256=media_file.sha256_hash,
+                        hash_xxh128=media_file.xxh128_hash,
+                        metadata=media_file.file_metadata,
                         status=media_file.status,
                         created_at=media_file.created_at,
                         updated_at=media_file.updated_at,
@@ -433,7 +435,7 @@ async def search_media(info: Info, input: SearchInput) -> SearchResult:
             query = query.where(
                 or_(
                     MediaFileModel.file_name.ilike(search_term),
-                    MediaFileModel.metadata["tags"].astext.ilike(search_term),
+                    MediaFileModel.file_metadata["tags"].astext.ilike(search_term),
                 )
             )
 
@@ -460,14 +462,15 @@ async def search_media(info: Info, input: SearchInput) -> SearchResult:
         for media_file, analysis in rows:
             result_item = SearchResultItem(
                 id=media_file.id,
-                catalog_id=media_file.catalog_id,
+                catalog_id=media_file.catalog_id
+                or UUID("00000000-0000-0000-0000-000000000000"),
                 file_name=media_file.file_name,
                 file_size=media_file.file_size,
                 media_type=media_file.media_type,
                 mime_type=media_file.mime_type,
                 created_at=media_file.created_at,
                 updated_at=media_file.updated_at,
-                metadata=media_file.metadata,
+                metadata=media_file.file_metadata,
                 analysis=analysis.results if analysis else None,
             )
             results.append(result_item)

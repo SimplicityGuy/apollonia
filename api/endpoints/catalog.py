@@ -245,7 +245,7 @@ async def list_media_files(
 ) -> dict[str, Any]:
     """List all media files with pagination."""
     try:
-        from database.models import MediaFile
+        from shared.models import MediaFile
 
         # Build query
         query = select(MediaFile)
@@ -266,9 +266,9 @@ async def list_media_files(
             "items": [
                 {
                     "id": str(m.id),
-                    "file_name": m.filename,
-                    "file_path": m.original_path,
-                    "file_size": m.size,
+                    "file_name": m.file_name,
+                    "file_path": m.file_path,
+                    "file_size": m.file_size,
                     "media_type": m.media_type,
                     "created_at": m.created_at,
                     "updated_at": m.updated_at,
@@ -307,7 +307,7 @@ async def search_media(
 ) -> dict[str, Any]:
     """Search media files."""
     try:
-        from database.models import MediaFile
+        from shared.models import MediaFile
 
         # Build query
         query = select(MediaFile)
@@ -315,18 +315,18 @@ async def search_media(
         # Apply search filter
         if q:
             query = query.where(
-                MediaFile.filename.ilike(f"%{q}%")
-                | MediaFile.original_path.ilike(f"%{q}%")
+                MediaFile.file_name.ilike(f"%{q}%")
+                | MediaFile.file_path.ilike(f"%{q}%")
             )
 
         if media_type:
             query = query.where(MediaFile.media_type == media_type)
 
         if min_size is not None:
-            query = query.where(MediaFile.size >= min_size)
+            query = query.where(MediaFile.file_size >= min_size)
 
         if max_size is not None:
-            query = query.where(MediaFile.size <= max_size)
+            query = query.where(MediaFile.file_size <= max_size)
 
         if created_after:
             query = query.where(MediaFile.created_at >= created_after)
@@ -336,16 +336,20 @@ async def search_media(
 
         # Apply sorting
         if sort_by == "size":
-            order_col = MediaFile.size
+            if sort_order == "desc":
+                query = query.order_by(MediaFile.file_size.desc())
+            else:
+                query = query.order_by(MediaFile.file_size)
         elif sort_by == "name":
-            order_col = MediaFile.filename
+            if sort_order == "desc":
+                query = query.order_by(MediaFile.file_name.desc())
+            else:
+                query = query.order_by(MediaFile.file_name)
         else:
-            order_col = MediaFile.created_at
-
-        if sort_order == "desc":
-            query = query.order_by(order_col.desc())
-        else:
-            query = query.order_by(order_col)
+            if sort_order == "desc":
+                query = query.order_by(MediaFile.created_at.desc())
+            else:
+                query = query.order_by(MediaFile.created_at)
 
         # Execute query
         result = await session.execute(query)
@@ -356,8 +360,8 @@ async def search_media(
             "results": [
                 {
                     "id": str(m.id),
-                    "file_name": m.filename,
-                    "file_size": m.size,
+                    "file_name": m.file_name,
+                    "file_size": m.file_size,
                     "media_type": m.media_type,
                     "created_at": m.created_at,
                 }

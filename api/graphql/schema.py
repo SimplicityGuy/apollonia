@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import strawberry
 from strawberry.types import Info
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 from .resolvers import (
     get_catalog,
@@ -243,7 +247,7 @@ class Subscription:
     """GraphQL subscription root."""
 
     @strawberry.subscription
-    async def media_updates(self, info: Info) -> MediaUpdate:
+    async def media_updates(self, info: Info) -> AsyncGenerator[MediaUpdate, None]:
         """Subscribe to media file updates."""
         # TODO: Implement real-time updates
         import asyncio
@@ -258,11 +262,19 @@ class Subscription:
             )
 
     @strawberry.subscription
-    async def mediaUpdates(self, info: Info) -> MediaUpdate:
+    async def mediaUpdates(self, info: Info) -> AsyncGenerator[MediaUpdate, None]:
         """Subscribe to media file updates (camelCase alias)."""
-        # Delegate to snake_case version
-        async for update in self.media_updates(info):
-            yield update
+        # TODO: Implement real-time updates (duplicate for now to avoid issues)
+        import asyncio
+
+        while True:
+            await asyncio.sleep(1)
+            yield MediaUpdate(
+                id=UUID("00000000-0000-0000-0000-000000000000"),
+                filename="placeholder.mp3",
+                event="created",
+                timestamp=datetime.now(timezone.utc),
+            )
 
     @strawberry.subscription
     async def media_analysis_updates(
