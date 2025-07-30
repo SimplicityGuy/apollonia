@@ -70,12 +70,12 @@ def test_env() -> dict[str, Any]:
     return {
         "rabbitmq_host": "localhost",
         "rabbitmq_port": 5672,
-        "rabbitmq_user": "guest",
-        "rabbitmq_password": "guest",
+        "rabbitmq_user": "apollonia",
+        "rabbitmq_password": "apollonia",
         "neo4j_host": "localhost",
         "neo4j_port": 7687,
         "neo4j_user": "neo4j",
-        "neo4j_password": "password",
+        "neo4j_password": "apollonia",
         "test_data_dir": "/tmp/apollonia_test_data",  # noqa: S108
         "frontend_url": "http://localhost:3000",
         "api_url": "http://localhost:8000",

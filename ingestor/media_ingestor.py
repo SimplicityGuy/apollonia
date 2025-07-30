@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Configuration
-AMQP_CONNECTION = os.getenv("AMQP_CONNECTION_STRING", "amqp://guest:guest@localhost:5672/")
+AMQP_CONNECTION = os.getenv("AMQP_CONNECTION_STRING", "amqp://apollonia:apollonia@localhost:5672/")
 AMQP_EXCHANGE = "apollonia"
 
 # Support multiple watch directories via comma-separated list

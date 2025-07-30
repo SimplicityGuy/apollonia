@@ -24,7 +24,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.actor }}/apollonia
-  AMQP_CONNECTION_STRING: amqp://test:test@localhost:5672/
+  AMQP_CONNECTION_STRING: amqp://apollonia:apollonia@localhost:5672/
   NEO4J_URI: bolt://localhost:7687
   NEO4J_USER: neo4j
   NEO4J_PASSWORD: apollonia
@@ -353,8 +353,8 @@ jobs:
           - 5672:5672
           - 15672:15672
         env:
-          RABBITMQ_DEFAULT_USER: test
-          RABBITMQ_DEFAULT_PASS: test
+          RABBITMQ_DEFAULT_USER: apollonia
+          RABBITMQ_DEFAULT_PASS: apollonia
         options: >-
           --health-cmd "rabbitmq-diagnostics ping"
           --health-interval 5s
@@ -367,12 +367,12 @@ jobs:
         ports:
           - 5432:5432
         env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: apollonia_test
+          POSTGRES_USER: apollonia
+          POSTGRES_PASSWORD: apollonia
+          POSTGRES_DB: apollonia
           POSTGRES_HOST_AUTH_METHOD: trust
         options: >-
-          --health-cmd "pg_isready -U test"
+          --health-cmd "pg_isready -U apollonia"
           --health-interval 3s
           --health-timeout 2s
           --health-retries 10
@@ -424,7 +424,7 @@ jobs:
 
       - name: 🔗 Run integration tests with coverage
         env:
-          POSTGRES_URL: postgresql://test:test@localhost:5432/apollonia_test
+          POSTGRES_URL: postgresql://apollonia:apollonia@localhost:5432/apollonia
           REDIS_URL: redis://localhost:6379/0
         run: |
           uv run pytest tests/integration \
@@ -543,11 +543,54 @@ jobs:
       - name: 🌐 Run Docker tests with coverage
         run: |
           docker-compose up -d
-          timeout 60s bash -c "until docker-compose ps | grep -E '(healthy|running)' | wc -l | grep -q \"\$(docker-compose ps -q | wc -l)\"; do sleep 2; done"
 
+          # Enhanced readiness check with proper error handling
+          timeout 180s bash -c '
+            echo "⏳ Waiting for services to become healthy..."
+            while true; do
+              # Get health status of each service
+              healthy_count=0
+              total_count=0
+
+              while read -r container; do
+                if [ -n "$container" ]; then
+                  total_count=$((total_count + 1))
+                  health=$(docker inspect --format="{{.State.Health.Status}}" "$container" 2>/dev/null || echo "no health check")
+                  state=$(docker inspect --format="{{.State.Status}}" "$container" 2>/dev/null || echo "unknown")
+
+                  echo "Container $container: state=$state, health=$health"
+
+                  if [ "$health" = "healthy" ] || ([ "$health" = "no health check" ] && [ "$state" = "running" ]); then
+                    healthy_count=$((healthy_count + 1))
+                  fi
+                fi
+              done < <(docker-compose ps -q)
+
+              echo "✅ Healthy: $healthy_count/$total_count services"
+
+              if [ "$healthy_count" -eq "$total_count" ] && [ "$total_count" -gt 0 ]; then
+                echo "✅ All services are ready!"
+                break
+              fi
+
+              sleep 5
+            done
+          '
+
+          # Add service warm-up period
+          echo "⏳ Warming up services..."
+          sleep 30
+
+          # Show service status before running tests
+          echo "📊 Service status:"
+          docker-compose ps
+
+          # Run tests with retry mechanism
           uv run pytest -v \
             tests/e2e/test_docker_e2e.py \
             -m "docker" \
+            --maxfail=3 \
+            --tb=short \
             --cov=apollonia \
             --cov=ingestor \
             --cov=populator \
@@ -626,11 +669,54 @@ jobs:
       - name: 🌐 Run E2E tests with coverage
         run: |
           docker-compose up -d
-          timeout 60s bash -c "until docker-compose ps | grep -E '(healthy|running)' | wc -l | grep -q \"\$(docker-compose ps -q | wc -l)\"; do sleep 2; done"
 
+          # Enhanced readiness check with proper error handling
+          timeout 180s bash -c '
+            echo "⏳ Waiting for services to become healthy..."
+            while true; do
+              # Get health status of each service
+              healthy_count=0
+              total_count=0
+
+              while read -r container; do
+                if [ -n "$container" ]; then
+                  total_count=$((total_count + 1))
+                  health=$(docker inspect --format="{{.State.Health.Status}}" "$container" 2>/dev/null || echo "no health check")
+                  state=$(docker inspect --format="{{.State.Status}}" "$container" 2>/dev/null || echo "unknown")
+
+                  echo "Container $container: state=$state, health=$health"
+
+                  if [ "$health" = "healthy" ] || ([ "$health" = "no health check" ] && [ "$state" = "running" ]); then
+                    healthy_count=$((healthy_count + 1))
+                  fi
+                fi
+              done < <(docker-compose ps -q)
+
+              echo "✅ Healthy: $healthy_count/$total_count services"
+
+              if [ "$healthy_count" -eq "$total_count" ] && [ "$total_count" -gt 0 ]; then
+                echo "✅ All services are ready!"
+                break
+              fi
+
+              sleep 5
+            done
+          '
+
+          # Add service warm-up period
+          echo "⏳ Warming up services..."
+          sleep 30
+
+          # Show service status before running tests
+          echo "📊 Service status:"
+          docker-compose ps
+
+          # Run tests with retry mechanism
           uv run pytest -v \
             tests/e2e \
             -m "not docker and not playwright" \
+            --maxfail=3 \
+            --tb=short \
             --cov=apollonia \
             --cov=ingestor \
             --cov=populator \

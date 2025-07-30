@@ -12,10 +12,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U apollonia"]
+      test: ["CMD-SHELL", "pg_isready -U apollonia -d apollonia"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
 
   # Redis for caching
   redis:
@@ -29,7 +35,13 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
 
   # RabbitMQ for message queuing
   rabbitmq:
@@ -47,7 +59,13 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   # Neo4j for graph database (optional, kept for compatibility)
   neo4j:
@@ -59,14 +77,23 @@ services:
     environment:
       NEO4J_AUTH: neo4j/apollonia
       NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_memory_heap_max__size: '512M'
+      NEO4J_dbms_memory_heap_initial__size: '512M'
+      NEO4J_dbms_memory_pagecache_size: '512M'
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
     healthcheck:
-      test: ["CMD", "neo4j", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "apollonia", "RETURN 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1.0'
 
   # Media Ingestor Service
   media-ingestor:
@@ -87,6 +114,11 @@ services:
       - ./data/videos:/videos
     restart: unless-stopped
     profiles: ["media", "full"]  # Only start with --profile media or --profile full
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
 
   # ML Analyzer Service
   analyzer:
@@ -110,6 +142,11 @@ services:
       - ./data/videos:/videos:ro
     restart: unless-stopped
     profiles: ["ml", "full"]  # Only start with --profile ml or --profile full
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
 
   # Database Populator Service (enhanced)
   populator:
@@ -131,6 +168,15 @@ services:
       NEO4J_USER: neo4j
       NEO4J_PASSWORD: apollonia
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
 
   # API Service
   api:
@@ -158,6 +204,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   # Frontend Web Application
   frontend:
@@ -176,6 +227,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
 
   # Original Ingestor (kept for backward compatibility)
   ingestor:
@@ -193,6 +249,11 @@ services:
       - ./data:/data
     restart: unless-stopped
     profiles: ["legacy"]  # Only start with --profile legacy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
 
 volumes:
   postgres_data:

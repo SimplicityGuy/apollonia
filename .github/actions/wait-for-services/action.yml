@@ -41,7 +41,7 @@ runs:
         # Service health check commands
         declare -A health_checks=(
           ["rabbitmq"]="curl -f http://localhost:15672"
-          ["postgres"]="pg_isready -h localhost -p 5432 -U test"
+          ["postgres"]="pg_isready -h localhost -p 5432 -U apollonia"
           ["neo4j"]="curl -f http://localhost:7474"
           ["redis"]="redis-cli -h localhost ping"
         )

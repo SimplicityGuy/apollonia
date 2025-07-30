@@ -16,7 +16,7 @@ class TestDockerE2E:
 
     @pytest.fixture(scope="class")
     def docker_compose_up(self) -> Iterator[None]:
-        """Start all services using docker-compose."""
+        """Start all services with enhanced readiness verification."""
         project_root = Path(__file__).parent.parent.parent
 
         # Check if we should skip Docker setup
@@ -24,51 +24,176 @@ class TestDockerE2E:
             yield
             return
 
-        # Start services
-        subprocess.run(
-            ["docker-compose", "up", "-d"],
-            cwd=project_root,
-            check=True,
-        )
+        try:
+            # Clean up any existing containers first
+            print("🧹 Cleaning up any existing containers...")
+            subprocess.run(
+                ["docker-compose", "down", "-v", "--remove-orphans"],
+                cwd=project_root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
 
-        # Wait for services to be ready
-        self._wait_for_services()
+            # Start with proper error handling
+            print("🚀 Starting Docker services...")
+            result = subprocess.run(
+                ["docker-compose", "up", "-d"],
+                cwd=project_root,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
 
-        yield
+            if result.returncode != 0:
+                print(f"❌ Docker compose failed with return code {result.returncode}")
+                print(f"Stdout: {result.stdout}")
+                print(f"Stderr: {result.stderr}")
+                pytest.fail(f"Docker compose failed to start: {result.stderr}")
 
-        # Cleanup
-        subprocess.run(
-            ["docker-compose", "down", "-v"],
-            cwd=project_root,
-            check=True,
-        )
+            # Show running containers
+            print("📦 Running containers:")
+            subprocess.run(["docker-compose", "ps"], cwd=project_root)
 
-    def _wait_for_services(self, timeout: int = 60) -> None:
-        """Wait for all services to be ready."""
+            # Enhanced service readiness with retries
+            max_attempts = 3
+            for attempt in range(max_attempts):
+                try:
+                    print(
+                        f"\n🔄 Attempt {attempt + 1}/{max_attempts} to verify service readiness..."
+                    )
+                    self._wait_for_services(timeout=180)
+                    print("✅ All services are ready!")
+                    break
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        # On final failure, show logs to help debug
+                        print("\n❌ Services failed to start. Showing logs:")
+                        subprocess.run(
+                            ["docker-compose", "logs", "--tail=50"],
+                            cwd=project_root,
+                        )
+                        raise
+                    print(f"⚠️ Attempt {attempt + 1} failed: {e}")
+                    print("⏳ Waiting 30 seconds before retry...")
+                    time.sleep(30)
+
+            yield
+
+        finally:
+            # Enhanced cleanup
+            print("\n🧹 Cleaning up Docker services...")
+            result = subprocess.run(
+                ["docker-compose", "down", "-v", "--remove-orphans"],
+                cwd=project_root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+
+            if result.returncode != 0:
+                print(f"⚠️ Cleanup failed: {result.stderr}")
+            else:
+                print("✅ Cleanup completed successfully")
+
+    def _wait_for_services(self, timeout: int = 120) -> None:
+        """Wait for all services to be ready with exponential backoff."""
+        import pika
+        import psycopg2
+        import redis
+
+        services_ready = {"rabbitmq": False, "neo4j": False, "postgres": False, "redis": False}
+
         start_time = time.time()
+        attempt = 0
 
-        while time.time() - start_time < timeout:
-            try:
-                # Check RabbitMQ
-                requests.get(
-                    "http://localhost:15672/api/health/checks/alarms",
-                    auth=("guest", "guest"),
-                    timeout=5,
-                )
+        while time.time() - start_time < timeout and not all(services_ready.values()):
+            attempt += 1
+            backoff_time = min(2 ** (attempt // 3), 10)  # Exponential backoff, max 10s
 
-                # Check Neo4j
-                driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
-                with driver.session() as session:
-                    session.run("RETURN 1")
-                driver.close()
+            # Check RabbitMQ with exchange validation
+            if not services_ready["rabbitmq"]:
+                try:
+                    # First check management API
+                    response = requests.get(
+                        "http://localhost:15672/api/exchanges/%2F/apollonia",
+                        auth=("apollonia", "apollonia"),
+                        timeout=5,
+                    )
+                    if response.status_code == 200:
+                        # Then verify AMQP connection
+                        connection = pika.BlockingConnection(
+                            pika.ConnectionParameters(
+                                "localhost",
+                                5672,
+                                credentials=pika.PlainCredentials("apollonia", "apollonia"),
+                            )
+                        )
+                        connection.close()
+                        services_ready["rabbitmq"] = True
+                        print("✅ RabbitMQ is ready")
+                except Exception as e:
+                    if attempt % 5 == 0:  # Log every 5th attempt
+                        print(f"⏳ RabbitMQ not ready: {e}")
 
-                # If we get here, services are ready
-                return
+            # Check Neo4j with actual query
+            if not services_ready["neo4j"]:
+                try:
+                    driver = GraphDatabase.driver(
+                        "bolt://localhost:7687", auth=("neo4j", "apollonia")
+                    )
+                    with driver.session() as session:
+                        result = session.run("RETURN 1 as test")
+                        result.consume()  # Ensure query completes
+                    driver.close()
+                    services_ready["neo4j"] = True
+                    print("✅ Neo4j is ready")
+                except Exception as e:
+                    if attempt % 5 == 0:
+                        print(f"⏳ Neo4j not ready: {e}")
 
-            except Exception:
-                time.sleep(2)
+            # Check PostgreSQL
+            if not services_ready["postgres"]:
+                try:
+                    conn = psycopg2.connect(
+                        host="localhost",
+                        port=5432,
+                        user="apollonia",
+                        password="apollonia",  # noqa: S106
+                        database="apollonia",
+                        connect_timeout=5,
+                    )
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT 1")
+                    cursor.close()
+                    conn.close()
+                    services_ready["postgres"] = True
+                    print("✅ PostgreSQL is ready")
+                except Exception as e:
+                    if attempt % 5 == 0:
+                        print(f"⏳ PostgreSQL not ready: {e}")
 
-        pytest.fail("Services did not become ready in time")
+            # Check Redis
+            if not services_ready["redis"]:
+                try:
+                    r = redis.Redis(host="localhost", port=6379, decode_responses=True)
+                    r.ping()
+                    services_ready["redis"] = True
+                    print("✅ Redis is ready")
+                except Exception as e:
+                    if attempt % 5 == 0:
+                        print(f"⏳ Redis not ready: {e}")
+
+            if not all(services_ready.values()):
+                time.sleep(backoff_time)
+
+        if not all(services_ready.values()):
+            failed = [k for k, v in services_ready.items() if not v]
+            pytest.fail(f"Services failed to start within {timeout}s: {failed}")
+
+        # Additional warm-up period for service stabilization
+        print("⏳ Warming up services...")
+        time.sleep(10)
 
     @pytest.mark.docker
     @pytest.mark.slow
@@ -85,7 +210,7 @@ class TestDockerE2E:
         time.sleep(10)
 
         # Check Neo4j for the file
-        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "apollonia"))
 
         try:
             with driver.session() as session:
@@ -114,7 +239,7 @@ class TestDockerE2E:
         # Connect to RabbitMQ
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                "localhost", 5672, credentials=pika.PlainCredentials("guest", "guest")
+                "localhost", 5672, credentials=pika.PlainCredentials("apollonia", "apollonia")
             )
         )
         channel = connection.channel()
@@ -137,12 +262,14 @@ class TestDockerE2E:
         """Test that all services have working health endpoints."""
         # RabbitMQ Management API
         response = requests.get(
-            "http://localhost:15672/api/health/checks/alarms", auth=("guest", "guest"), timeout=5
+            "http://localhost:15672/api/health/checks/alarms",
+            auth=("apollonia", "apollonia"),
+            timeout=5,
         )
         assert response.status_code == 200
 
         # Neo4j health check
-        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "apollonia"))
         try:
             with driver.session() as session:
                 result = session.run("RETURN 1 as health")
@@ -169,7 +296,7 @@ class TestDockerE2E:
         time.sleep(15)
 
         # Check all files in Neo4j
-        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "apollonia"))
 
         try:
             with driver.session() as session:
@@ -208,7 +335,7 @@ class TestDockerE2E:
         time.sleep(15)
 
         # Check relationships in Neo4j
-        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "apollonia"))
 
         try:
             with driver.session() as session:
@@ -259,7 +386,7 @@ class TestDockerE2E:
         time.sleep(10)
 
         # Check both files in Neo4j
-        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "apollonia"))
 
         try:
             with driver.session() as session:
@@ -296,7 +423,7 @@ class TestDockerE2E:
         time.sleep(10)
 
         # Check file in Neo4j
-        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+        driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "apollonia"))
 
         try:
             with driver.session() as session:
