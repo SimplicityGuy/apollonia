@@ -229,10 +229,15 @@ test-e2e-ci:
 test-benchmarks:
   #!/usr/bin/env bash
   echo "⚡ Running performance benchmarks..."
-  if [ -d "benchmarks" ]; then
-    uv run pytest benchmarks/ --benchmark-json=benchmark-results.json
+  if [ -d "benchmarks" ] && [ -n "$(find benchmarks -name 'test_*.py' -print -quit)" ]; then
+    uv run pytest benchmarks/ \
+      --benchmark-json=benchmark-results.json \
+      --benchmark-autosave \
+      --benchmark-save-data \
+      -v
   else
-    echo "ℹ️ No benchmark directory found, skipping performance tests"
+    echo "ℹ️ No benchmark tests found in benchmarks/ directory"
+    exit 0
   fi
 
 # Run frontend tests
