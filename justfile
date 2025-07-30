@@ -143,11 +143,11 @@ test-python-watch:
   echo "👁️ Running Python tests in watch mode..."
   uv run pytest-watch
 
-# Run API tests specifically
+# Run API tests specifically (for local development)
 [group('test')]
-test-api:
+test-api *args="":
   echo "🌐 Running API tests..."
-  uv run pytest tests/api tests/unit/test_api.py -v -x --tb=short
+  uv run pytest tests/api tests/unit/test_api.py -v {{args}}
 
 # Run API tests for CI (with markers and coverage)
 [group('test')]
