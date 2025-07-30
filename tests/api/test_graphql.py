@@ -1,27 +1,8 @@
 """Test GraphQL API."""
 
-from collections.abc import Generator
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
-import pytest
 from fastapi.testclient import TestClient
-
-from api.main import app
-
-
-@pytest.fixture
-def client() -> TestClient:
-    """Create a test client for the API."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def mock_neo4j_session() -> Generator[AsyncMock, None, None]:
-    """Mock Neo4j session."""
-    with patch("api.database.get_neo4j_session") as mock:
-        session = AsyncMock()
-        mock.return_value.__aenter__.return_value = session
-        yield session
 
 
 class TestGraphQLQueries:

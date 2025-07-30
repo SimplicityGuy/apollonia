@@ -49,6 +49,10 @@ async def get_cache() -> Redis:
     return redis_client
 
 
+# Compatibility alias for tests
+get_cache_client = get_cache
+
+
 async def cache_get(key: str) -> Any | None:
     """Get value from cache."""
     if not redis_client:

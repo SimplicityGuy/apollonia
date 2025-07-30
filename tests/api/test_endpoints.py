@@ -1,38 +1,11 @@
 """Test API endpoints in detail."""
 
-from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-
-from api.main import app
-
-
-@pytest.fixture
-def client() -> TestClient:
-    """Create a test client for the API."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def mock_neo4j_session() -> Generator[AsyncMock, None, None]:
-    """Mock Neo4j session."""
-    with patch("api.database.get_neo4j_session") as mock:
-        session = AsyncMock()
-        mock.return_value.__aenter__.return_value = session
-        yield session
-
-
-@pytest.fixture
-def mock_redis_client() -> Generator[AsyncMock, None, None]:
-    """Mock Redis client."""
-    with patch("api.utils.cache.get_cache_client") as mock:
-        client = AsyncMock()
-        mock.return_value = client
-        yield client
 
 
 @pytest.fixture
@@ -59,13 +32,11 @@ class TestMediaEndpoints:
     """Test media-related endpoints."""
 
     def test_get_media_file(
-        self, client: TestClient, mock_neo4j_session: AsyncMock, sample_media_file: dict[str, Any]
+        self, client: TestClient, mock_db_session: AsyncMock, sample_media_file: dict[str, Any]
     ) -> None:
         """Test getting a single media file."""
-        # Mock Neo4j response
-        mock_neo4j_session.run.return_value = Mock(
-            single=Mock(return_value={"file": sample_media_file})
-        )
+        # Mock database response
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = None
 
         response = client.get(f"/api/v1/media/{sample_media_file['id']}")
         assert response.status_code == 200

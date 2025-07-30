@@ -70,3 +70,7 @@ async def get_session() -> AsyncIterator[AsyncSession]:
             raise
         finally:
             await session.close()
+
+
+# Compatibility alias for tests expecting Neo4j
+get_neo4j_session = get_session

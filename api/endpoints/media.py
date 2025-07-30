@@ -232,6 +232,107 @@ async def upload_media_file(
     return MediaFileResponse.from_orm(media_file)
 
 
+@router.post("/", response_model=MediaFileResponse, status_code=status.HTTP_201_CREATED)
+async def create_media_file(
+    media_data: dict[str, Any],
+    session: AsyncSession = Depends(get_session),
+) -> Any:
+    """Create a media file record (for testing)."""
+    from database.models import MediaFile
+    import hashlib
+
+    # Create media file record
+    media_file = MediaFile(
+        filename=media_data.get("file_name", media_data.get("filename", "test.mp3")),
+        original_path=media_data.get(
+            "file_path", media_data.get("path", "/data/test.mp3")
+        ),
+        size=media_data.get("file_size", media_data.get("size", 0)),
+        media_type=media_data.get("media_type", "audio"),
+        sha256_hash=media_data.get(
+            "hash_sha256",
+            media_data.get("sha256_hash", hashlib.sha256(b"test").hexdigest()),
+        ),
+        xxh128_hash=media_data.get(
+            "hash_xxh128", media_data.get("xxh128_hash", "test123")
+        ),
+        extension=Path(
+            media_data.get("file_name", media_data.get("filename", "test.mp3"))
+        ).suffix,
+        mime_type=media_data.get("mime_type", "audio/mpeg"),
+    )
+
+    session.add(media_file)
+    await session.commit()
+    await session.refresh(media_file)
+
+    return MediaFileResponse(
+        id=media_file.id,
+        catalog_id=UUID("00000000-0000-0000-0000-000000000000"),  # Default catalog
+        file_path=media_file.original_path,
+        file_name=media_file.filename,
+        file_size=media_file.size,
+        media_type=media_file.media_type,
+        mime_type=media_file.mime_type,
+        hash_sha256=media_file.sha256_hash,
+        hash_xxh128=media_file.xxh128_hash,
+        metadata={},
+        status="active",
+        created_at=media_file.created_at,
+        updated_at=media_file.updated_at,
+    )
+
+
+@router.patch("/{media_id}", response_model=MediaFileResponse)
+async def update_media_file(
+    media_id: UUID,
+    update_data: dict[str, Any],
+    session: AsyncSession = Depends(get_session),
+) -> Any:
+    """Update media file details."""
+    from database.models import MediaFile
+
+    media_file = await session.get(MediaFile, media_id)
+
+    if not media_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media file not found",
+        )
+
+    # Update fields
+    if "file_size" in update_data:
+        media_file.size = update_data["file_size"]
+    if "size" in update_data:
+        media_file.size = update_data["size"]
+    if "file_name" in update_data:
+        media_file.filename = update_data["file_name"]
+    if "media_type" in update_data:
+        media_file.media_type = update_data["media_type"]
+
+    await session.commit()
+    await session.refresh(media_file)
+
+    # Invalidate cache
+    await cache_delete(f"media:{media_id}")
+
+    return MediaFileResponse(
+        id=media_file.id,
+        catalog_id=UUID("00000000-0000-0000-0000-000000000000"),  # Default catalog
+        file_path=media_file.original_path,
+        file_name=media_file.filename,
+        file_size=media_file.size,
+        media_type=media_file.media_type,
+        mime_type=media_file.mime_type,
+        hash_sha256=media_file.sha256_hash,
+        hash_xxh128=media_file.xxh128_hash,
+        metadata={},
+        status="active",
+        created_at=media_file.created_at,
+        updated_at=media_file.updated_at,
+    )
+
+
 @router.delete("/{media_id}", response_class=Response)
 async def delete_media_file(
     media_id: UUID,

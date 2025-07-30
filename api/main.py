@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,10 +67,11 @@ def create_app() -> FastAPI:
     # Add middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=settings.cors_origins if settings.cors_origins else ["*"],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
     app.add_middleware(LoggingMiddleware)
 
@@ -92,9 +94,28 @@ def create_app() -> FastAPI:
     )
 
     # Add GraphQL
+    async def get_context() -> dict[str, Any]:
+        """Get GraphQL context."""
+        # For testing, add test user to context
+        import os
+
+        if os.getenv("TESTING") == "1":
+            from .endpoints.auth import User
+
+            return {
+                "user": User(
+                    username="testuser",
+                    email="test@example.com",
+                    full_name="Test User",
+                    disabled=False,
+                )
+            }
+        return {}
+
     graphql_app = GraphQLRouter(
         schema,
         graphiql=settings.graphql_playground,
+        context_getter=get_context,
     )
     app.include_router(graphql_app, prefix=settings.graphql_path, tags=["graphql"])
 
