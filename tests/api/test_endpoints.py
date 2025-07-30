@@ -1,23 +1,24 @@
 """Test API endpoints in detail."""
 
+from collections.abc import Generator
 from datetime import UTC, datetime
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from api.main import app
-from api.schemas.catalog import MediaFile, MediaType
 
 
 @pytest.fixture
-def client():
+def client() -> TestClient:
     """Create a test client for the API."""
     return TestClient(app)
 
 
 @pytest.fixture
-def mock_neo4j_session():
+def mock_neo4j_session() -> Generator[AsyncMock, None, None]:
     """Mock Neo4j session."""
     with patch("api.database.get_neo4j_session") as mock:
         session = AsyncMock()
@@ -26,7 +27,7 @@ def mock_neo4j_session():
 
 
 @pytest.fixture
-def mock_redis_client():
+def mock_redis_client() -> Generator[AsyncMock, None, None]:
     """Mock Redis client."""
     with patch("api.utils.cache.get_cache_client") as mock:
         client = AsyncMock()
@@ -35,40 +36,46 @@ def mock_redis_client():
 
 
 @pytest.fixture
-def sample_media_file():
+def sample_media_file() -> dict[str, Any]:
     """Create a sample media file."""
-    return MediaFile(
-        id="test-123",
-        path="/data/test.mp3",
-        filename="test.mp3",
-        media_type=MediaType.AUDIO,
-        size=1024000,
-        sha256_hash="abc123",
-        xxh128_hash="def456",
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
-        accessed_at=datetime.now(UTC),
-        modified_at=datetime.now(UTC),
-    )
+    return {
+        "id": "test-123",
+        "file_path": "/data/test.mp3",
+        "file_name": "test.mp3",
+        "media_type": "audio",
+        "file_size": 1024000,
+        "hash_sha256": "abc123",
+        "hash_xxh128": "def456",
+        "created_at": datetime.now(UTC).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
+        "catalog_id": "00000000-0000-0000-0000-000000000000",
+        "mime_type": "audio/mpeg",
+        "metadata": {},
+        "status": "active",
+    }
 
 
 class TestMediaEndpoints:
     """Test media-related endpoints."""
 
-    def test_get_media_file(self, client, mock_neo4j_session, sample_media_file):
+    def test_get_media_file(
+        self, client: TestClient, mock_neo4j_session: AsyncMock, sample_media_file: dict[str, Any]
+    ) -> None:
         """Test getting a single media file."""
         # Mock Neo4j response
         mock_neo4j_session.run.return_value = Mock(
-            single=Mock(return_value={"file": sample_media_file.model_dump()})
+            single=Mock(return_value={"file": sample_media_file})
         )
 
-        response = client.get(f"/api/v1/media/{sample_media_file.id}")
+        response = client.get(f"/api/v1/media/{sample_media_file['id']}")
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == sample_media_file.id
-        assert data["filename"] == sample_media_file.filename
+        assert data["id"] == sample_media_file["id"]
+        assert data["file_name"] == sample_media_file["file_name"]
 
-    def test_get_media_file_not_found(self, client, mock_neo4j_session):
+    def test_get_media_file_not_found(
+        self, client: TestClient, mock_neo4j_session: AsyncMock
+    ) -> None:
         """Test getting a non-existent media file."""
         mock_neo4j_session.run.return_value = Mock(single=Mock(return_value=None))
 
@@ -76,14 +83,16 @@ class TestMediaEndpoints:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
-    def test_list_media_files_with_pagination(self, client, mock_neo4j_session):
+    def test_list_media_files_with_pagination(
+        self, client: TestClient, mock_neo4j_session: AsyncMock
+    ) -> None:
         """Test listing media files with pagination."""
         # Mock Neo4j response
         mock_neo4j_session.run.return_value = Mock(
             data=Mock(
                 return_value=[
-                    {"file": {"id": "1", "filename": "test1.mp3"}},
-                    {"file": {"id": "2", "filename": "test2.mp3"}},
+                    {"file": {"id": "1", "file_name": "test1.mp3"}},
+                    {"file": {"id": "2", "file_name": "test2.mp3"}},
                 ]
             )
         )
@@ -96,15 +105,15 @@ class TestMediaEndpoints:
         assert "limit" in data
         assert "offset" in data
 
-    def test_create_media_file(self, client, mock_neo4j_session):
+    def test_create_media_file(self, client: TestClient, mock_neo4j_session: AsyncMock) -> None:
         """Test creating a new media file."""
         new_file = {
-            "path": "/data/new.mp3",
-            "filename": "new.mp3",
+            "file_path": "/data/new.mp3",
+            "file_name": "new.mp3",
             "media_type": "audio",
-            "size": 2048000,
-            "sha256_hash": "xyz789",
-            "xxh128_hash": "uvw456",
+            "file_size": 2048000,
+            "hash_sha256": "xyz789",
+            "hash_xxh128": "uvw456",
         }
 
         mock_neo4j_session.run.return_value = Mock(
@@ -114,23 +123,25 @@ class TestMediaEndpoints:
         response = client.post("/api/v1/media", json=new_file)
         assert response.status_code == 201
         data = response.json()
-        assert data["filename"] == new_file["filename"]
+        assert data["file_name"] == new_file["file_name"]
         assert "id" in data
 
-    def test_update_media_file(self, client, mock_neo4j_session, sample_media_file):
+    def test_update_media_file(
+        self, client: TestClient, mock_neo4j_session: AsyncMock, sample_media_file: dict[str, Any]
+    ) -> None:
         """Test updating a media file."""
-        update_data = {"size": 2048000}
+        update_data = {"file_size": 2048000}
 
         mock_neo4j_session.run.return_value = Mock(
-            single=Mock(return_value={"file": {**sample_media_file.model_dump(), **update_data}})
+            single=Mock(return_value={"file": {**sample_media_file, **update_data}})
         )
 
-        response = client.patch(f"/api/v1/media/{sample_media_file.id}", json=update_data)
+        response = client.patch(f"/api/v1/media/{sample_media_file['id']}", json=update_data)
         assert response.status_code == 200
         data = response.json()
-        assert data["size"] == update_data["size"]
+        assert data["file_size"] == update_data["file_size"]
 
-    def test_delete_media_file(self, client, mock_neo4j_session):
+    def test_delete_media_file(self, client: TestClient, mock_neo4j_session: AsyncMock) -> None:
         """Test deleting a media file."""
         mock_neo4j_session.run.return_value = Mock(single=Mock(return_value={"deleted": True}))
 
@@ -141,10 +152,10 @@ class TestMediaEndpoints:
 class TestSearchEndpoints:
     """Test search endpoints."""
 
-    def test_search_with_filters(self, client, mock_neo4j_session):
+    def test_search_with_filters(self, client: TestClient, mock_neo4j_session: AsyncMock) -> None:
         """Test search with various filters."""
         mock_neo4j_session.run.return_value = Mock(
-            data=Mock(return_value=[{"file": {"id": "1", "filename": "result.mp3"}}])
+            data=Mock(return_value=[{"file": {"id": "1", "file_name": "result.mp3"}}])
         )
 
         response = client.get(
@@ -157,7 +168,9 @@ class TestSearchEndpoints:
         assert data["query"] == "test"
         assert len(data["results"]) == 1
 
-    def test_search_with_date_range(self, client, mock_neo4j_session):
+    def test_search_with_date_range(
+        self, client: TestClient, mock_neo4j_session: AsyncMock
+    ) -> None:
         """Test search with date range filters."""
         mock_neo4j_session.run.return_value = Mock(data=Mock(return_value=[]))
 
@@ -174,13 +187,13 @@ class TestSearchEndpoints:
         data = response.json()
         assert data["query"] == "recent"
 
-    def test_search_with_sorting(self, client, mock_neo4j_session):
+    def test_search_with_sorting(self, client: TestClient, mock_neo4j_session: AsyncMock) -> None:
         """Test search with sorting options."""
         mock_neo4j_session.run.return_value = Mock(
             data=Mock(
                 return_value=[
-                    {"file": {"id": "1", "filename": "a.mp3", "size": 2000}},
-                    {"file": {"id": "2", "filename": "b.mp3", "size": 1000}},
+                    {"file": {"id": "1", "file_name": "a.mp3", "file_size": 2000}},
+                    {"file": {"id": "2", "file_name": "b.mp3", "file_size": 1000}},
                 ]
             )
         )
@@ -197,7 +210,9 @@ class TestSearchEndpoints:
 class TestCacheIntegration:
     """Test cache integration."""
 
-    def test_cached_response(self, client, mock_neo4j_session, mock_redis_client):
+    def test_cached_response(
+        self, client: TestClient, mock_neo4j_session: AsyncMock, mock_redis_client: AsyncMock
+    ) -> None:
         """Test that responses are cached."""
         # First call - cache miss
         mock_redis_client.get.return_value = None
@@ -209,7 +224,9 @@ class TestCacheIntegration:
         # Verify cache was set
         mock_redis_client.setex.assert_called_once()
 
-    def test_cache_invalidation(self, client, mock_neo4j_session, mock_redis_client):
+    def test_cache_invalidation(
+        self, client: TestClient, mock_neo4j_session: AsyncMock, mock_redis_client: AsyncMock
+    ) -> None:
         """Test cache invalidation on updates."""
         mock_neo4j_session.run.return_value = Mock(
             single=Mock(return_value={"file": {"id": "test-123"}})
@@ -219,10 +236,10 @@ class TestCacheIntegration:
         response = client.post(
             "/api/v1/media",
             json={
-                "path": "/data/new.mp3",
-                "filename": "new.mp3",
+                "file_path": "/data/new.mp3",
+                "file_name": "new.mp3",
                 "media_type": "audio",
-                "size": 1024,
+                "file_size": 1024,
             },
         )
         assert response.status_code == 201
@@ -234,7 +251,7 @@ class TestCacheIntegration:
 class TestErrorScenarios:
     """Test error handling scenarios."""
 
-    def test_database_connection_error(self, client):
+    def test_database_connection_error(self, client: TestClient) -> None:
         """Test handling of database connection errors."""
         with patch("api.database.get_neo4j_session") as mock:
             mock.side_effect = Exception("Connection failed")
@@ -243,20 +260,20 @@ class TestErrorScenarios:
             assert response.status_code == 503
             assert "service unavailable" in response.json()["detail"].lower()
 
-    def test_invalid_media_type(self, client):
+    def test_invalid_media_type(self, client: TestClient) -> None:
         """Test validation of invalid media type."""
         response = client.post(
             "/api/v1/media",
             json={
-                "path": "/data/test.xyz",
-                "filename": "test.xyz",
+                "file_path": "/data/test.xyz",
+                "file_name": "test.xyz",
                 "media_type": "invalid",
-                "size": 1024,
+                "file_size": 1024,
             },
         )
         assert response.status_code == 422
 
-    def test_rate_limiting(self, client, mock_redis_client):
+    def test_rate_limiting(self, client: TestClient, mock_redis_client: AsyncMock) -> None:
         """Test rate limiting functionality."""
         # Simulate rate limit exceeded
         mock_redis_client.incr.return_value = 101  # Over limit

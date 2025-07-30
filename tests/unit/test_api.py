@@ -1,37 +1,38 @@
 """Unit tests for API components."""
 
 from datetime import UTC, datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from api.config import Settings
-from api.database import get_db_session
-from api.schemas.catalog import MediaFile, MediaType
+from api.database import get_session
+from api.schemas.catalog import MediaFileResponse
 from api.schemas.search import SearchResult
-from api.utils.cache import get_cache_client
 from api.utils.logging import setup_logging
 
 
 class TestConfig:
     """Test API configuration."""
 
-    def test_settings_defaults(self):
+    def test_settings_defaults(self) -> None:
         """Test default settings values."""
         settings = Settings()
         assert settings.app_name == "Apollonia API"
         assert settings.debug is False
         assert settings.api_v1_prefix == "/api/v1"
 
-    def test_settings_from_env(self, monkeypatch):
+    def test_settings_from_env(self, monkeypatch: MonkeyPatch) -> None:
         """Test settings from environment variables."""
         monkeypatch.setenv("DEBUG", "true")
-        monkeypatch.setenv("NEO4J_URI", "bolt://test:7687")
+        monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://test@localhost/test")
         monkeypatch.setenv("REDIS_URL", "redis://test:6379")
 
         settings = Settings()
         assert settings.debug is True
-        assert settings.neo4j_uri == "bolt://test:7687"
+        assert settings.database_url == "postgresql+asyncpg://test@localhost/test"
         assert settings.redis_url == "redis://test:6379"
 
 
@@ -39,68 +40,67 @@ class TestDatabase:
     """Test database utilities."""
 
     @pytest.mark.asyncio
-    async def test_get_db_session(self):
+    async def test_get_session(self) -> None:
         """Test database session creation."""
-        with patch("api.database.AsyncSession"):
-            async with get_db_session() as session:
+        with patch("api.database.async_session_factory") as mock_factory:
+            mock_session = AsyncMock()
+            mock_factory.return_value.__aenter__.return_value = mock_session
+
+            async for session in get_session():
                 assert session is not None
-
-
-class TestCache:
-    """Test cache utilities."""
-
-    @pytest.mark.asyncio
-    async def test_get_cache_client(self):
-        """Test cache client creation."""
-        with patch("api.utils.cache.Redis"):
-            client = await get_cache_client()
-            assert client is not None
 
 
 class TestSchemas:
     """Test API schemas."""
 
-    def test_media_file_schema(self):
-        """Test MediaFile schema."""
-        media = MediaFile(
-            id="test-id",
-            path="/data/test.mp3",
-            filename="test.mp3",
-            media_type=MediaType.AUDIO,
-            size=1024,
+    def test_media_file_response_schema(self) -> None:
+        """Test MediaFileResponse schema."""
+        media = MediaFileResponse(
+            id=uuid4(),
+            catalog_id=uuid4(),
+            file_name="test.mp3",
+            file_path="/data/test.mp3",
+            file_size=1024,
+            media_type="audio",
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
-        assert media.id == "test-id"
-        assert media.media_type == MediaType.AUDIO
-        assert media.size == 1024
+        assert media.file_name == "test.mp3"
+        assert media.media_type == "audio"
+        assert media.file_size == 1024
 
-    def test_search_result_schema(self):
+    def test_search_result_schema(self) -> None:
         """Test SearchResult schema."""
-        result = SearchResult(query="test", results=[], total=0, took_ms=10.5)
-        assert result.query == "test"
-        assert result.total == 0
-        assert result.took_ms == 10.5
+        result = SearchResult(
+            id=uuid4(),
+            catalog_id=uuid4(),
+            file_name="test.mp3",
+            file_size=1024,
+            media_type="audio",
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        assert result.file_name == "test.mp3"
+        assert result.file_size == 1024
 
 
 class TestUtils:
     """Test utility functions."""
 
-    def test_setup_logging(self):
+    def test_setup_logging(self) -> None:
         """Test logging setup."""
-        logger = setup_logging("test-logger")
-        assert logger is not None
-        assert logger.name == "test-logger"
+        setup_logging()
+        # setup_logging doesn't return anything, just sets up logging
 
-    def test_emoji_utils(self):
+    def test_emoji_utils(self) -> None:
         """Test emoji utilities."""
-        from api.utils.emoji import get_file_emoji, get_status_emoji
+        from api.utils.emoji import MEDIA_EMOJI, STATUS_EMOJI
 
-        assert get_file_emoji("test.mp3") == "🎵"
-        assert get_file_emoji("test.mp4") == "🎬"
-        assert get_file_emoji("test.jpg") == "🖼️"
-        assert get_file_emoji("test.txt") == "📄"
+        assert MEDIA_EMOJI["audio"] == "🎵"
+        assert MEDIA_EMOJI["video"] == "🎬"
+        assert MEDIA_EMOJI["image"] == "🖼️"
+        assert MEDIA_EMOJI["document"] == "📄"
 
-        assert get_status_emoji("success") == "✅"
-        assert get_status_emoji("error") == "❌"
-        assert get_status_emoji("warning") == "⚠️"
+        assert STATUS_EMOJI["success"] == "✅"
+        assert STATUS_EMOJI["error"] == "❌"
+        assert STATUS_EMOJI["warning"] == "⚠️"

@@ -1,5 +1,6 @@
 """Test GraphQL API."""
 
+from collections.abc import Generator
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -9,13 +10,13 @@ from api.main import app
 
 
 @pytest.fixture
-def client():
+def client() -> TestClient:
     """Create a test client for the API."""
     return TestClient(app)
 
 
 @pytest.fixture
-def mock_neo4j_session():
+def mock_neo4j_session() -> Generator[AsyncMock, None, None]:
     """Mock Neo4j session."""
     with patch("api.database.get_neo4j_session") as mock:
         session = AsyncMock()
@@ -26,7 +27,7 @@ def mock_neo4j_session():
 class TestGraphQLQueries:
     """Test GraphQL queries."""
 
-    def test_query_media_files(self, client, mock_neo4j_session):
+    def test_query_media_files(self, client: TestClient, mock_neo4j_session: AsyncMock) -> None:
         """Test querying media files via GraphQL."""
         mock_neo4j_session.run.return_value = Mock(
             data=Mock(
@@ -64,7 +65,9 @@ class TestGraphQLQueries:
         assert "mediaFiles" in data["data"]
         assert len(data["data"]["mediaFiles"]["items"]) == 1
 
-    def test_query_single_media_file(self, client, mock_neo4j_session):
+    def test_query_single_media_file(
+        self, client: TestClient, mock_neo4j_session: AsyncMock
+    ) -> None:
         """Test querying a single media file."""
         mock_neo4j_session.run.return_value = Mock(
             single=Mock(
@@ -97,7 +100,7 @@ class TestGraphQLQueries:
         data = response.json()
         assert data["data"]["mediaFile"]["id"] == "test-123"
 
-    def test_search_query(self, client, mock_neo4j_session):
+    def test_search_query(self, client: TestClient, mock_neo4j_session: AsyncMock) -> None:
         """Test search via GraphQL."""
         mock_neo4j_session.run.return_value = Mock(
             data=Mock(return_value=[{"file": {"id": "1", "filename": "result.mp3"}}])
@@ -135,7 +138,9 @@ class TestGraphQLQueries:
 class TestGraphQLMutations:
     """Test GraphQL mutations."""
 
-    def test_create_media_file_mutation(self, client, mock_neo4j_session):
+    def test_create_media_file_mutation(
+        self, client: TestClient, mock_neo4j_session: AsyncMock
+    ) -> None:
         """Test creating a media file via GraphQL."""
         mock_neo4j_session.run.return_value = Mock(
             single=Mock(
@@ -180,7 +185,9 @@ class TestGraphQLMutations:
         data = response.json()
         assert data["data"]["createMediaFile"]["filename"] == "new.mp3"
 
-    def test_update_media_file_mutation(self, client, mock_neo4j_session):
+    def test_update_media_file_mutation(
+        self, client: TestClient, mock_neo4j_session: AsyncMock
+    ) -> None:
         """Test updating a media file via GraphQL."""
         mock_neo4j_session.run.return_value = Mock(
             single=Mock(
@@ -206,7 +213,9 @@ class TestGraphQLMutations:
         data = response.json()
         assert data["data"]["updateMediaFile"]["size"] == 2048
 
-    def test_delete_media_file_mutation(self, client, mock_neo4j_session):
+    def test_delete_media_file_mutation(
+        self, client: TestClient, mock_neo4j_session: AsyncMock
+    ) -> None:
         """Test deleting a media file via GraphQL."""
         mock_neo4j_session.run.return_value = Mock(single=Mock(return_value={"deleted": True}))
 
@@ -231,7 +240,7 @@ class TestGraphQLMutations:
 class TestGraphQLSubscriptions:
     """Test GraphQL subscriptions."""
 
-    def test_media_updates_subscription(self, client):
+    def test_media_updates_subscription(self, client: TestClient) -> None:
         """Test subscription query parsing."""
         subscription = """
         subscription {
@@ -252,7 +261,7 @@ class TestGraphQLSubscriptions:
 class TestGraphQLErrors:
     """Test GraphQL error handling."""
 
-    def test_invalid_query_syntax(self, client):
+    def test_invalid_query_syntax(self, client: TestClient) -> None:
         """Test handling of invalid GraphQL syntax."""
         query = """
         query {
@@ -267,7 +276,7 @@ class TestGraphQLErrors:
         data = response.json()
         assert "errors" in data
 
-    def test_field_not_found(self, client):
+    def test_field_not_found(self, client: TestClient) -> None:
         """Test querying non-existent fields."""
         query = """
         query {
@@ -284,7 +293,7 @@ class TestGraphQLErrors:
         data = response.json()
         assert "errors" in data
 
-    def test_type_mismatch(self, client):
+    def test_type_mismatch(self, client: TestClient) -> None:
         """Test type validation in GraphQL."""
         query = """
         query {
@@ -299,7 +308,7 @@ class TestGraphQLErrors:
         data = response.json()
         assert "errors" in data
 
-    def test_resolver_error(self, client, mock_neo4j_session):
+    def test_resolver_error(self, client: TestClient, mock_neo4j_session: AsyncMock) -> None:
         """Test handling of resolver errors."""
         mock_neo4j_session.run.side_effect = Exception("Database error")
 
