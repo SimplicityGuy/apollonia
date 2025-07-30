@@ -544,38 +544,8 @@ jobs:
         run: |
           docker-compose up -d
 
-          # Enhanced readiness check with proper error handling
-          timeout 180s bash -c '
-            echo "⏳ Waiting for services to become healthy..."
-            while true; do
-              # Get health status of each service
-              healthy_count=0
-              total_count=0
-
-              while read -r container; do
-                if [ -n "$container" ]; then
-                  total_count=$((total_count + 1))
-                  health=$(docker inspect --format="{{.State.Health.Status}}" "$container" 2>/dev/null || echo "no health check")
-                  state=$(docker inspect --format="{{.State.Status}}" "$container" 2>/dev/null || echo "unknown")
-
-                  echo "Container $container: state=$state, health=$health"
-
-                  if [ "$health" = "healthy" ] || ([ "$health" = "no health check" ] && [ "$state" = "running" ]); then
-                    healthy_count=$((healthy_count + 1))
-                  fi
-                fi
-              done < <(docker-compose ps -q)
-
-              echo "✅ Healthy: $healthy_count/$total_count services"
-
-              if [ "$healthy_count" -eq "$total_count" ] && [ "$total_count" -gt 0 ]; then
-                echo "✅ All services are ready!"
-                break
-              fi
-
-              sleep 5
-            done
-          '
+          # Use enhanced health check script
+          ./.github/scripts/health-check.sh
 
           # Add service warm-up period
           echo "⏳ Warming up services..."
@@ -603,7 +573,7 @@ jobs:
 
       - name: 📋 Show service logs on failure
         if: failure()
-        run: docker-compose logs --tail=100
+        run: docker-compose logs
 
       - name: 🛑 Stop services
         if: always()
@@ -670,38 +640,8 @@ jobs:
         run: |
           docker-compose up -d
 
-          # Enhanced readiness check with proper error handling
-          timeout 180s bash -c '
-            echo "⏳ Waiting for services to become healthy..."
-            while true; do
-              # Get health status of each service
-              healthy_count=0
-              total_count=0
-
-              while read -r container; do
-                if [ -n "$container" ]; then
-                  total_count=$((total_count + 1))
-                  health=$(docker inspect --format="{{.State.Health.Status}}" "$container" 2>/dev/null || echo "no health check")
-                  state=$(docker inspect --format="{{.State.Status}}" "$container" 2>/dev/null || echo "unknown")
-
-                  echo "Container $container: state=$state, health=$health"
-
-                  if [ "$health" = "healthy" ] || ([ "$health" = "no health check" ] && [ "$state" = "running" ]); then
-                    healthy_count=$((healthy_count + 1))
-                  fi
-                fi
-              done < <(docker-compose ps -q)
-
-              echo "✅ Healthy: $healthy_count/$total_count services"
-
-              if [ "$healthy_count" -eq "$total_count" ] && [ "$total_count" -gt 0 ]; then
-                echo "✅ All services are ready!"
-                break
-              fi
-
-              sleep 5
-            done
-          '
+          # Use enhanced health check script
+          ./.github/scripts/health-check.sh
 
           # Add service warm-up period
           echo "⏳ Warming up services..."
@@ -729,7 +669,7 @@ jobs:
 
       - name: 📋 Show service logs on failure
         if: failure()
-        run: docker-compose logs --tail=100
+        run: docker-compose logs
 
       - name: 🛑 Stop services
         if: always()
