@@ -50,10 +50,10 @@ jobs:
           # Check for actual changes
           if git diff --quiet uv.lock; then
             echo "No Python dependency updates available"
-            echo "HAS_PYTHON_UPDATES=false" >> $GITHUB_ENV
+            echo "HAS_PYTHON_UPDATES=false" >> "$GITHUB_ENV"
           else
             echo "Python dependencies updated"
-            echo "HAS_PYTHON_UPDATES=true" >> $GITHUB_ENV
+            echo "HAS_PYTHON_UPDATES=true" >> "$GITHUB_ENV"
           fi
 
       - name: 🧪 Test updated dependencies
@@ -148,10 +148,10 @@ jobs:
           # Check for changes
           if git diff --quiet package.json package-lock.json; then
             echo "No Node.js dependency updates available"
-            echo "HAS_NODE_UPDATES=false" >> $GITHUB_ENV
+            echo "HAS_NODE_UPDATES=false" >> "$GITHUB_ENV"
           else
             echo "Node.js dependencies updated"
-            echo "HAS_NODE_UPDATES=true" >> $GITHUB_ENV
+            echo "HAS_NODE_UPDATES=true" >> "$GITHUB_ENV"
           fi
 
       - name: 🧪 Test updated dependencies
@@ -278,10 +278,10 @@ jobs:
         run: |
           if git diff --quiet; then
             echo "No dependency updates to commit"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
           else
             echo "Dependency updates available"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: 📝 Generate PR body

@@ -546,7 +546,7 @@ jobs:
       - name: 🌐 Run Docker tests with coverage
         run: |
           docker-compose up -d
-          timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
+          timeout 60s bash -c "until docker-compose ps | grep -E '(healthy|running)' | wc -l | grep -q \"\$(docker-compose ps -q | wc -l)\"; do sleep 2; done"
 
           uv run pytest -v \
             tests/e2e/test_docker_e2e.py \
@@ -628,7 +628,7 @@ jobs:
       - name: 🌐 Run E2E tests with coverage
         run: |
           docker-compose up -d
-          timeout 60s bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "$(docker-compose ps -q | wc -l)"; do sleep 2; done'
+          timeout 60s bash -c "until docker-compose ps | grep -E '(healthy|running)' | wc -l | grep -q \"\$(docker-compose ps -q | wc -l)\"; do sleep 2; done"
 
           uv run pytest -v \
             tests/e2e \
@@ -774,11 +774,13 @@ jobs:
 
       - name: 📊 Generate coverage summary
         run: |
-          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Coverage reports have been uploaded to Codecov for detailed analysis." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View detailed coverage: [Codecov Dashboard](https://codecov.io/gh/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 📊 Coverage Summary"
+            echo ""
+            echo "Coverage reports have been uploaded to Codecov for detailed analysis."
+            echo ""
+            echo "View detailed coverage: [Codecov Dashboard](https://codecov.io/gh/${{ github.repository }})"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ========== FINAL STATUS CHECK ==========
 
@@ -806,44 +808,46 @@ jobs:
     steps:
       - name: 📊 CI/CD Pipeline Summary
         run: |
-          echo "## 🚀 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🚀 CI/CD Pipeline Summary"
+            echo ""
 
-          echo "### 🔍 Quality Checks" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend Quality | ${{ needs.backend-quality.result == 'success' && '✅ Passed' || needs.backend-quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend Quality | ${{ needs.frontend-quality.result == 'success' && '✅ Passed' || needs.frontend-quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pre-commit | ${{ needs.pre-commit.result == 'success' && '✅ Passed' || needs.pre-commit.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Passed' || needs.security-scan.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔍 Quality Checks"
+            echo "| Check | Status |"
+            echo "|-------|---------|"
+            echo "| Backend Quality | ${{ needs.backend-quality.result == 'success' && '✅ Passed' || needs.backend-quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Frontend Quality | ${{ needs.frontend-quality.result == 'success' && '✅ Passed' || needs.frontend-quality.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Pre-commit | ${{ needs.pre-commit.result == 'success' && '✅ Passed' || needs.pre-commit.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Passed' || needs.security-scan.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo ""
 
-          echo "### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Python Unit | ${{ needs.python-unit-tests.result == 'success' && '✅ Passed' || needs.python-unit-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Python Analyzer | ${{ needs.python-analyzer-tests.result == 'success' && '✅ Passed' || needs.python-analyzer-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Python Ingestor | ${{ needs.python-ingestor-tests.result == 'success' && '✅ Passed' || needs.python-ingestor-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Python Populator | ${{ needs.python-populator-tests.result == 'success' && '✅ Passed' || needs.python-populator-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Python Integration | ${{ needs.python-integration-tests.result == 'success' && '✅ Passed' || needs.python-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || needs.frontend-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker Integration | ${{ needs.docker-integration-tests.result == 'success' && '✅ Passed' || needs.docker-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🧪 Test Results"
+            echo "| Test Suite | Status |"
+            echo "|------------|---------|"
+            echo "| Python Unit | ${{ needs.python-unit-tests.result == 'success' && '✅ Passed' || needs.python-unit-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Python Analyzer | ${{ needs.python-analyzer-tests.result == 'success' && '✅ Passed' || needs.python-analyzer-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Python Ingestor | ${{ needs.python-ingestor-tests.result == 'success' && '✅ Passed' || needs.python-ingestor-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Python Populator | ${{ needs.python-populator-tests.result == 'success' && '✅ Passed' || needs.python-populator-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Python Integration | ${{ needs.python-integration-tests.result == 'success' && '✅ Passed' || needs.python-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Frontend | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || needs.frontend-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Docker Integration | ${{ needs.docker-integration-tests.result == 'success' && '✅ Passed' || needs.docker-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| E2E | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo ""
 
-          echo "### 🐋 Docker Build" >> $GITHUB_STEP_SUMMARY
-          echo "| Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ${{ needs.docker-build.result == 'success' && '✅ All images built' || needs.docker-build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🐋 Docker Build"
+            echo "| Status |"
+            echo "|---------|"
+            echo "| ${{ needs.docker-build.result == 'success' && '✅ All images built' || needs.docker-build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
 
           # Determine overall status
           if [[ "${{ needs.backend-quality.result }}" == "success" && \
                 "${{ needs.frontend-quality.result }}" == "success" && \
                 "${{ needs.security-scan.result }}" == "success" ]]; then
-            echo "### ✅ All required checks passed!" >> $GITHUB_STEP_SUMMARY
+            echo "### ✅ All required checks passed!" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           else
-            echo "### ❌ Some checks failed" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ Some checks failed" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
