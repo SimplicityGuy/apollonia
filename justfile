@@ -16,7 +16,9 @@ export DOCKER_BUILDKIT := "1"
 python_version := "3.12"
 venv := ".venv"
 
-# Development environment setup and configuration
+# ================================
+# Setup & Installation
+# ================================
 
 # Complete development environment setup
 [group('setup')]
@@ -39,19 +41,21 @@ install-hooks:
   uv run pre-commit install
   uv run pre-commit install --hook-type commit-msg
 
-# Update and sync all dependencies
-[group('setup')]
-update-deps:
-  uv lock --upgrade
-  uv sync --all-extras
-
 # Install frontend dependencies
 [group('setup')]
 install-frontend:
   echo "📦 Installing frontend dependencies..."
   cd frontend && npm install
 
-# Build services, frontend, and Docker images
+# Update and sync all dependencies
+[group('setup')]
+update-deps:
+  uv lock --upgrade
+  uv sync --all-extras
+
+# ================================
+# Build Commands
+# ================================
 
 # Build all components (services + frontend)
 [group('build')]
@@ -92,7 +96,9 @@ build-docker-no-cache:
   echo "🐳 Building all Docker images (no cache)..."
   docker-compose build --parallel --no-cache
 
-# Test execution with coverage and different scopes
+# ================================
+# Test Commands
+# ================================
 
 # Run all tests
 [group('test')]
@@ -105,11 +111,11 @@ test-python:
   echo "🧪 Running Python tests..."
   uv run pytest -v
 
-# Run API tests specifically
+# Run Python unit tests only (quick check)
 [group('test')]
-test-api *args="":
-  echo "🌐 Running API tests..."
-  uv run pytest tests/api tests/unit/test_api.py -v {{args}}
+test-python-unit:
+  echo "🧪 Running Python unit tests..."
+  uv run pytest tests/unit -x --tb=short
 
 # Run Python unit tests for CI (with markers and coverage)
 [group('test')]
@@ -131,40 +137,17 @@ test-python-unit-ci path marks:
     --tb=short \
     -n auto
 
-# Run Python integration tests for CI (sequential to avoid race conditions)
-[group('test')]
-test-python-integration-ci:
-  #!/usr/bin/env bash
-  echo "🔗 Running Python integration tests for CI..."
-  export NEO4J_PASSWORD="apollonia"
-  uv run pytest tests/integration \
-    -m "integration and not e2e" \
-    --cov=apollonia \
-    --cov=ingestor \
-    --cov=populator \
-    --cov=analyzer \
-    --cov=api \
-    --cov-report=xml \
-    --cov-report=html \
-    --cov-report=term \
-    --cov-append \
-    --junitxml=junit.xml \
-    -o junit_family=legacy \
-    --maxfail=5 \
-    --tb=short \
-    -v
-
-# Run Python unit tests only (quick check)
-[group('test')]
-test-python-unit:
-  echo "🧪 Running Python unit tests..."
-  uv run pytest tests/unit -x --tb=short
-
 # Run Python tests in watch mode
 [group('test')]
 test-python-watch:
   echo "👁️ Running Python tests in watch mode..."
   uv run pytest-watch
+
+# Run API tests specifically
+[group('test')]
+test-api *args="":
+  echo "🌐 Running API tests..."
+  uv run pytest tests/api tests/unit/test_api.py -v {{args}}
 
 # Run tests with coverage report
 [group('test')]
@@ -196,6 +179,29 @@ test-integration:
     --cov-report=xml \
     --cov-report=html \
     --junitxml=integration-results.xml \
+    --maxfail=5 \
+    --tb=short \
+    -v
+
+# Run Python integration tests for CI (sequential to avoid race conditions)
+[group('test')]
+test-python-integration-ci:
+  #!/usr/bin/env bash
+  echo "🔗 Running Python integration tests for CI..."
+  export NEO4J_PASSWORD="apollonia"
+  uv run pytest tests/integration \
+    -m "integration and not e2e" \
+    --cov=apollonia \
+    --cov=ingestor \
+    --cov=populator \
+    --cov=analyzer \
+    --cov=api \
+    --cov-report=xml \
+    --cov-report=html \
+    --cov-report=term \
+    --cov-append \
+    --junitxml=junit.xml \
+    -o junit_family=legacy \
     --maxfail=5 \
     --tb=short \
     -v
@@ -270,12 +276,19 @@ test-frontend-watch:
   echo "👁️ Running frontend tests in watch mode..."
   cd frontend && npm run test
 
-# Code quality checks, linting, and formatting
+# ================================
+# Code Quality Commands
+# ================================
 
 # Run all quality checks
 [group('quality')]
 check: lint typecheck format-check
   echo "✅ All quality checks passed!"
+
+# Run all linters (backend + frontend)
+[group('quality')]
+lint: lint-backend lint-frontend
+  echo "✅ All linting completed!"
 
 # Run backend linters
 [group('quality')]
@@ -289,10 +302,10 @@ lint-frontend:
   echo "🔍 Running frontend linters..."
   cd frontend && npm run lint
 
-# Run all linters (backend + frontend)
+# Fix all linting issues
 [group('quality')]
-lint: lint-backend lint-frontend
-  echo "✅ All linting completed!"
+lint-fix: lint-fix-backend lint-fix-frontend
+  echo "✅ All linting fixes completed!"
 
 # Fix backend linting issues
 [group('quality')]
@@ -306,10 +319,10 @@ lint-fix-frontend:
   echo "🔧 Fixing frontend linting issues..."
   cd frontend && npm run lint -- --fix
 
-# Fix all linting issues
+# Format all code (backend + frontend)
 [group('quality')]
-lint-fix: lint-fix-backend lint-fix-frontend
-  echo "✅ All linting fixes completed!"
+format: format-backend format-frontend
+  echo "✅ All formatting completed!"
 
 # Format backend code
 [group('quality')]
@@ -323,10 +336,10 @@ format-frontend:
   echo "💅 Formatting frontend code..."
   cd frontend && npm run format
 
-# Format all code (backend + frontend)
+# Check all code formatting
 [group('quality')]
-format: format-backend format-frontend
-  echo "✅ All formatting completed!"
+format-check: format-check-backend format-check-frontend
+  echo "✅ All formatting checks completed!"
 
 # Check backend code formatting
 [group('quality')]
@@ -340,10 +353,10 @@ format-check-frontend:
   echo "💅 Checking frontend code formatting..."
   cd frontend && npm run format -- --check
 
-# Check all code formatting
+# Run all type checkers (backend + frontend)
 [group('quality')]
-format-check: format-check-backend format-check-frontend
-  echo "✅ All formatting checks completed!"
+typecheck: typecheck-backend typecheck-frontend
+  echo "✅ All type checking completed!"
 
 # Run backend type checking
 [group('quality')]
@@ -357,18 +370,15 @@ typecheck-frontend:
   echo "🔍 Running frontend type checking..."
   cd frontend && npm run type-check
 
-# Run all type checkers (backend + frontend)
-[group('quality')]
-typecheck: typecheck-backend typecheck-frontend
-  echo "✅ All type checking completed!"
-
 # Run pre-commit hooks on all files
 [group('quality')]
 pre-commit:
   echo "🪝 Running pre-commit hooks..."
   uv run pre-commit run --all-files
 
-# Docker compose and container management
+# ================================
+# Docker Commands
+# ================================
 
 # Start all services
 [group('docker')]
@@ -415,7 +425,9 @@ ps:
 exec service *cmd:
   docker-compose exec {{service}} {{cmd}}
 
-# Database migrations and connections
+# ================================
+# Database Commands
+# ================================
 
 # Run database migrations
 [group('db')]
@@ -450,7 +462,9 @@ neo4j-shell:
   echo "🔷 Connecting to Neo4j..."
   docker-compose exec neo4j cypher-shell -u neo4j -p apollonia
 
-# Development workflow and service runners
+# ================================
+# Development Commands
+# ================================
 
 # Start development environment
 [group('dev')]
@@ -510,7 +524,9 @@ run-populator:
   echo "💾 Starting database populator..."
   uv run python -m populator
 
-# Clean artifacts, cache, and temporary files
+# ================================
+# Clean Commands
+# ================================
 
 # Clean all artifacts
 [group('clean')]
@@ -550,7 +566,43 @@ clean-all: clean
   rm -rf .venv/ 2>/dev/null || true
   docker system prune -af --volumes
 
-# Project utilities and maintenance tools
+# ================================
+# Security Commands
+# ================================
+
+# Run all security checks (backend + frontend)
+[group('security')]
+security: security-backend security-frontend
+  echo "✅ All security checks completed!"
+
+# Run backend security checks
+[group('security')]
+security-backend:
+  echo "🔒 Running backend security checks..."
+  uv run pip-audit
+  uv run bandit -r . -f json -o bandit-report.json || true
+
+# Run pip-audit in CI mode with JSON output
+[group('security')]
+security-pip-audit:
+  echo "🔒 Running pip-audit security scan..."
+  uv run pip-audit --format=json --output=pip-audit-report.json --progress-spinner=off || true
+
+# Run bandit security scan in CI mode
+[group('security')]
+security-bandit:
+  echo "🔒 Running bandit security scan..."
+  uv run bandit -r . -f json -o bandit-report.json || true
+
+# Run frontend security checks
+[group('security')]
+security-frontend:
+  echo "🔒 Running frontend security checks..."
+  cd frontend && npm audit
+
+# ================================
+# Utility Commands
+# ================================
 
 # Show project structure
 [group('util')]
@@ -572,36 +624,6 @@ outdated:
   echo -e "\nFrontend packages:"
   cd frontend && npm outdated
 
-# Run backend security checks
-[group('util')]
-security-backend:
-  echo "🔒 Running backend security checks..."
-  uv run pip-audit
-  uv run bandit -r . -f json -o bandit-report.json || true
-
-# Run pip-audit in CI mode with JSON output
-[group('util')]
-security-pip-audit:
-  echo "🔒 Running pip-audit security scan..."
-  uv run pip-audit --format=json --output=pip-audit-report.json --progress-spinner=off || true
-
-# Run bandit security scan in CI mode
-[group('util')]
-security-bandit:
-  echo "🔒 Running bandit security scan..."
-  uv run bandit -r . -f json -o bandit-report.json || true
-
-# Run frontend security checks
-[group('util')]
-security-frontend:
-  echo "🔒 Running frontend security checks..."
-  cd frontend && npm audit
-
-# Run all security checks (backend + frontend)
-[group('util')]
-security: security-backend security-frontend
-  echo "✅ All security checks completed!"
-
 # Generate .env template
 [group('util')]
 env-template:
@@ -615,7 +637,9 @@ env-template:
     sort | uniq | \
     awk '{print $0"="}' >> .env.template
 
-# Documentation building and serving
+# ================================
+# Documentation Commands
+# ================================
 
 # Serve documentation locally
 [group('docs')]
@@ -629,7 +653,9 @@ docs-build:
   echo "📚 Building documentation..."
   uv run mkdocs build
 
-# Version management and release preparation
+# ================================
+# Release Commands
+# ================================
 
 # Bump version (patch/minor/major)
 [group('release')]
@@ -662,7 +688,9 @@ release: check test
   echo "5. Push to repository"
   echo "⚠️  Manual release process required"
 
-# Help and information commands
+# ================================
+# Help Commands
+# ================================
 
 # Display available commands
 [group('help')]
