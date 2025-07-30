@@ -2,7 +2,26 @@
 name = "apollonia-shared"
 version = "0.1.0"
 description = "Shared utilities for Apollonia services"
+authors = [
+    { name = "Robert Wlodarczyk", email = "robert@simplicityguy.com" }
+]
+readme = "README.md"
 requires-python = "~=3.12.0"
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/SimplicityGuy/apollonia"
+Repository = "https://github.com/SimplicityGuy/apollonia"
+Issues = "https://github.com/SimplicityGuy/apollonia/issues"
 
 [build-system]
 requires = ["hatchling"]

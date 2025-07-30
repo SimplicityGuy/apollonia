@@ -2,28 +2,45 @@
 name = "apollonia-api"
 version = "0.1.0"
 description = "RESTful API and GraphQL service for Apollonia"
+authors = [
+    { name = "Robert Wlodarczyk", email = "robert@simplicityguy.com" }
+]
+readme = "README.md"
 requires-python = "~=3.12.0"
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
 
 dependencies = [
-    "fastapi>=0.109.0",
-    "uvicorn[standard]>=0.25.0",
-    "strawberry-graphql[fastapi]>=0.217.0",
-    "asyncpg>=0.29.0",
-    "sqlalchemy[asyncio]>=2.0.0",
-    "redis>=5.0.0",
     "aiofiles>=24.1.0",
+    "asyncpg>=0.29.0",
+    "fastapi>=0.109.0",
     "httpx>=0.25.0",
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-instrumentation-fastapi>=0.43b0",
+    "opentelemetry-sdk>=1.22.0",
     "orjson>=3.9.0",
+    "passlib[bcrypt]>=1.7.4",
+    "prometheus-client>=0.19.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
-    "python-multipart>=0.0.6",
-    "passlib[bcrypt]>=1.7.4",
     "python-jose[cryptography]>=3.3.0",
-    "prometheus-client>=0.19.0",
-    "opentelemetry-api>=1.22.0",
-    "opentelemetry-sdk>=1.22.0",
-    "opentelemetry-instrumentation-fastapi>=0.43b0",
+    "python-multipart>=0.0.6",
+    "redis>=5.0.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "strawberry-graphql[fastapi]>=0.217.0",
+    "uvicorn[standard]>=0.25.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/SimplicityGuy/apollonia"
+Repository = "https://github.com/SimplicityGuy/apollonia"
+Issues = "https://github.com/SimplicityGuy/apollonia/issues"
 
 [build-system]
 requires = ["hatchling"]
