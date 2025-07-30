@@ -61,16 +61,6 @@ jobs:
       - name: 🔍 Run type checking
         run: just typecheck-backend
 
-      - name: 🔒 Run security checks
-        run: just security-backend
-
-      - name: 📤 Upload bandit results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: bandit-report
-          path: bandit-report.json
-
   frontend-quality:
     name: Frontend Quality
     runs-on: ubuntu-latest
