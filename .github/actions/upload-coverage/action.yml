@@ -30,3 +30,5 @@ runs:
         flags: ${{ inputs.flags }}
         name: apollonia-${{ inputs.name-suffix }}-coverage
         fail_ci_if_error: ${{ inputs.fail-on-error }}
+        verbose: true
+        codecov_yml_path: ./.codecov.yml

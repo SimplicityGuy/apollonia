@@ -334,6 +334,51 @@ jobs:
           test-files: junit-populator.xml
           check-name: Python Populator Test Results
 
+  python-api-tests:
+    name: Python API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: backend-quality
+    if: ${{ !inputs.skip_tests }}
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: '3.12'
+          install-just: true
+
+      - name: 🧪 Run API tests with coverage
+        run: |
+          uv run pytest tests/api tests/unit/test_api.py \
+            -m "not integration and not e2e" \
+            --cov=api \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junit-xml=junit-api.xml
+
+      - name: 📤 Upload coverage to Codecov
+        uses: ./.github/actions/upload-coverage
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          coverage-files: ./coverage.xml
+          flags: api
+          name-suffix: api
+
+      - name: 📊 Publish test results
+        if: always()
+        uses: ./.github/actions/publish-test-results
+        with:
+          test-files: junit-api.xml
+          check-name: Python API Test Results
+
   # ========== INTEGRATION TESTS ==========
 
   python-integration-tests:
@@ -792,6 +837,7 @@ jobs:
       python-analyzer-tests,
       python-ingestor-tests,
       python-populator-tests,
+      python-api-tests,
       python-integration-tests,
       frontend-tests,
       docker-integration-tests,
@@ -828,6 +874,7 @@ jobs:
       python-analyzer-tests,
       python-ingestor-tests,
       python-populator-tests,
+      python-api-tests,
       python-integration-tests,
       frontend-tests,
       docker-integration-tests,
@@ -859,6 +906,7 @@ jobs:
             echo "| Python Analyzer | ${{ needs.python-analyzer-tests.result == 'success' && '✅ Passed' || needs.python-analyzer-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
             echo "| Python Ingestor | ${{ needs.python-ingestor-tests.result == 'success' && '✅ Passed' || needs.python-ingestor-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
             echo "| Python Populator | ${{ needs.python-populator-tests.result == 'success' && '✅ Passed' || needs.python-populator-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
+            echo "| Python API | ${{ needs.python-api-tests.result == 'success' && '✅ Passed' || needs.python-api-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
             echo "| Python Integration | ${{ needs.python-integration-tests.result == 'success' && '✅ Passed' || needs.python-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
             echo "| Frontend | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || needs.frontend-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"
             echo "| Docker Integration | ${{ needs.docker-integration-tests.result == 'success' && '✅ Passed' || needs.docker-integration-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |"

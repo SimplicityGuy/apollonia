@@ -1,0 +1,178 @@
+# Codecov configuration for Apollonia project
+# https://docs.codecov.com/docs/codecov-yaml
+
+codecov:
+  notify:
+    # Don't wait for all uploads before posting PR comment
+    after_n_builds: 2
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        # Overall project coverage
+        target: 70%
+        threshold: 2%
+        base: auto
+        if_ci_failed: error
+
+      # Service-specific coverage requirements
+      api:
+        target: 70%
+        threshold: 2%
+        flags:
+          - api
+        paths:
+          - api/
+
+      analyzer:
+        target: 65%
+        threshold: 2%
+        flags:
+          - analyzer
+        paths:
+          - analyzer/
+
+      ingestor:
+        target: 75%
+        threshold: 2%
+        flags:
+          - ingestor
+        paths:
+          - ingestor/
+
+      populator:
+        target: 75%
+        threshold: 2%
+        flags:
+          - populator
+        paths:
+          - populator/
+
+      frontend:
+        target: 60%
+        threshold: 3%
+        flags:
+          - frontend
+        paths:
+          - frontend/
+
+    patch:
+      default:
+        # Coverage for new/modified code
+        target: 80%
+        threshold: 5%
+        base: auto
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: no
+  require_base: no
+  require_head: yes
+
+flags:
+  # Unit tests for each service
+  unit:
+    paths:
+      - apollonia/
+      - ingestor/
+      - populator/
+      - analyzer/
+      - api/
+    carryforward: true
+
+  api:
+    paths:
+      - api/
+    carryforward: true
+
+  analyzer:
+    paths:
+      - analyzer/
+    carryforward: true
+
+  ingestor:
+    paths:
+      - ingestor/
+    carryforward: true
+
+  populator:
+    paths:
+      - populator/
+    carryforward: true
+
+  # Integration tests
+  integration:
+    paths:
+      - apollonia/
+      - ingestor/
+      - populator/
+      - analyzer/
+      - api/
+    carryforward: true
+
+  # Docker tests
+  docker:
+    paths:
+      - apollonia/
+      - ingestor/
+      - populator/
+      - analyzer/
+      - api/
+    carryforward: true
+
+  # End-to-end tests
+  e2e:
+    paths:
+      - apollonia/
+      - ingestor/
+      - populator/
+      - analyzer/
+      - api/
+    carryforward: true
+
+  # Frontend tests
+  frontend:
+    paths:
+      - frontend/
+    carryforward: true
+
+ignore:
+  # Ignore test files
+  - "**/test_*.py"
+  - "**/*_test.py"
+  - "**/tests/"
+  - "**/__tests__/"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/*.spec.tsx"
+
+  # Ignore configuration files
+  - "**/__init__.py"
+  - "**/conftest.py"
+  - "setup.py"
+  - "**/*.config.js"
+  - "**/*.config.ts"
+
+  # Ignore documentation
+  - "**/*.md"
+  - "docs/"
+
+  # Ignore generated files
+  - "**/migrations/"
+  - "**/*.generated.ts"
+  - "**/generated/"

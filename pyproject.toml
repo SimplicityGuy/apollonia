@@ -41,6 +41,11 @@ dependencies = [
     "uvicorn[standard]>=0.27.0",
     "strawberry-graphql[fastapi]>=0.217.0",
     "redis>=5.0.0",
+    "prometheus-client>=0.19.0",
+    "pydantic-settings>=2.1.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
     # Audio ML dependencies (x86_64 only)
     "essentia-tensorflow>=2.1b6.dev1110",
 ]
@@ -111,7 +116,7 @@ dev-dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["ingestor", "populator", "analyzer"]
+packages = ["apollonia", "ingestor", "populator", "analyzer", "api"]
 
 [tool.taskipy.tasks]
 # Development setup tasks
@@ -124,7 +129,7 @@ lint = "uv run ruff check . --fix"
 typecheck = "uv run mypy ."
 
 # Testing tasks
-test = "uv run pytest -v --cov=ingestor --cov=populator --cov-report=term-missing"
+test = "uv run pytest -v --cov=apollonia --cov=ingestor --cov=populator --cov=analyzer --cov=api --cov-report=term-missing"
 test-watch = "uv run pytest-watch -v"
 test-integration = "uv run pytest -v -m integration"
 test-e2e = "uv run pytest -v -m e2e"
