@@ -4,14 +4,10 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 import strawberry
 from strawberry.types import Info
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
 
 from .resolvers import (
     get_catalog,
@@ -247,7 +243,7 @@ class Subscription:
     """GraphQL subscription root."""
 
     @strawberry.subscription
-    async def media_updates(self, info: Info) -> AsyncGenerator[MediaUpdate, None]:
+    async def media_updates(self, info: Info) -> MediaUpdate:
         """Subscribe to media file updates."""
         # TODO: Implement real-time updates
         import asyncio
@@ -262,7 +258,7 @@ class Subscription:
             )
 
     @strawberry.subscription
-    async def mediaUpdates(self, info: Info) -> AsyncGenerator[MediaUpdate, None]:
+    async def mediaUpdates(self, info: Info) -> MediaUpdate:
         """Subscribe to media file updates (camelCase alias)."""
         # TODO: Implement real-time updates (duplicate for now to avoid issues)
         import asyncio

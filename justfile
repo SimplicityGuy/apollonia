@@ -105,6 +105,12 @@ test-python:
   echo "🧪 Running Python tests..."
   uv run pytest -v
 
+# Run API tests specifically
+[group('test')]
+test-api *args="":
+  echo "🌐 Running API tests..."
+  uv run pytest tests/api tests/unit/test_api.py -v {{args}}
+
 # Run Python unit tests for CI (with markers and coverage)
 [group('test')]
 test-python-unit-ci path marks:

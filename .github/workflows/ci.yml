@@ -356,7 +356,7 @@ jobs:
 
       - name: 🧪 Run API tests with coverage
         run: |
-          uv run pytest tests/api tests/unit/test_api.py \
+          just test-api \
             -m "not integration and not e2e" \
             --cov=api \
             --cov-report=xml \
