@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -243,7 +244,7 @@ class Subscription:
     """GraphQL subscription root."""
 
     @strawberry.subscription
-    async def media_updates(self, info: Info) -> MediaUpdate:
+    async def media_updates(self, info: Info) -> AsyncGenerator[MediaUpdate, None]:
         """Subscribe to media file updates."""
         # TODO: Implement real-time updates
         import asyncio
@@ -258,7 +259,7 @@ class Subscription:
             )
 
     @strawberry.subscription
-    async def mediaUpdates(self, info: Info) -> MediaUpdate:
+    async def mediaUpdates(self, info: Info) -> AsyncGenerator[MediaUpdate, None]:
         """Subscribe to media file updates (camelCase alias)."""
         # TODO: Implement real-time updates (duplicate for now to avoid issues)
         import asyncio
