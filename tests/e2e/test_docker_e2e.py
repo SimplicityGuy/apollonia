@@ -21,6 +21,8 @@ class TestDockerE2E:
             [
                 "docker",
                 "exec",
+                "--user",
+                "apollonia",
                 "apollonia-ingestor",
                 "sh",
                 "-c",
@@ -35,7 +37,16 @@ class TestDockerE2E:
     def remove_file_from_container(filename: str) -> None:
         """Remove a file from inside the ingestor container."""
         subprocess.run(
-            ["docker", "exec", "apollonia-ingestor", "rm", "-f", f"/data/{filename}"],
+            [
+                "docker",
+                "exec",
+                "--user",
+                "apollonia",
+                "apollonia-ingestor",
+                "rm",
+                "-f",
+                f"/data/{filename}",
+            ],
             capture_output=True,
         )
 
@@ -342,6 +353,8 @@ class TestDockerE2E:
             [
                 "docker",
                 "exec",
+                "--user",
+                "apollonia",
                 "apollonia-ingestor",
                 "sh",
                 "-c",
