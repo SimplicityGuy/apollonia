@@ -26,20 +26,30 @@ runs:
       uses: ./.github/actions/setup-python-env
       with:
         python-version: ${{ inputs.python-version }}
-        install-just: false
+        install-just: true
         cache-key-prefix: security-scan
 
     - name: 🔒 Run pip-audit security scan
       if: inputs.scan-python == 'true'
       shell: bash
-      run: |
-        uv run pip-audit --format=json --output=pip-audit-report.json --progress-spinner=off || true
+      run: just security-pip-audit
 
     - name: 🔒 Run bandit security scan
       if: inputs.scan-python == 'true'
       shell: bash
-      run: |
-        uv run bandit -r . -f json -o bandit-report.json || true
+      run: just security-bandit
+
+    - name: 🔧 Setup frontend environment
+      if: inputs.scan-javascript == 'true'
+      uses: ./.github/actions/setup-frontend-env
+      with:
+        node-version: '22'
+        install-just: true
+
+    - name: 🔒 Audit frontend dependencies
+      if: inputs.scan-javascript == 'true'
+      shell: bash
+      run: just security-frontend
 
     - name: 🔍 Initialize CodeQL
       if: inputs.upload-sarif == 'true'

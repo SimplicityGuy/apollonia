@@ -568,6 +568,18 @@ security-backend:
   uv run pip-audit
   uv run bandit -r . -f json -o bandit-report.json || true
 
+# Run pip-audit in CI mode with JSON output
+[group('util')]
+security-pip-audit:
+  echo "🔒 Running pip-audit security scan..."
+  uv run pip-audit --format=json --output=pip-audit-report.json --progress-spinner=off || true
+
+# Run bandit security scan in CI mode
+[group('util')]
+security-bandit:
+  echo "🔒 Running bandit security scan..."
+  uv run bandit -r . -f json -o bandit-report.json || true
+
 # Run frontend security checks
 [group('util')]
 security-frontend:

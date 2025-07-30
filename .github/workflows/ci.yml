@@ -37,6 +37,7 @@ jobs:
     name: Backend Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: pre-commit
     permissions:
       contents: read
       security-events: write
@@ -65,6 +66,7 @@ jobs:
     name: Frontend Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: pre-commit
     permissions:
       contents: read
       checks: write
@@ -87,9 +89,6 @@ jobs:
 
       - name: 🔍 Run type checking
         run: just typecheck-frontend
-
-      - name: 🔒 Audit dependencies
-        run: just security-frontend
 
   pre-commit:
     name: Pre-commit Hooks
@@ -115,6 +114,7 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: pre-commit
     permissions:
       contents: read
       security-events: write
@@ -153,6 +153,7 @@ jobs:
     name: Python Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: backend-quality
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
@@ -202,6 +203,7 @@ jobs:
     name: Python Analyzer Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: backend-quality
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
@@ -246,6 +248,7 @@ jobs:
     name: Python Ingestor Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: backend-quality
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
@@ -290,6 +293,7 @@ jobs:
     name: Python Populator Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: backend-quality
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
@@ -336,6 +340,7 @@ jobs:
     name: Python Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: backend-quality
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
@@ -455,6 +460,7 @@ jobs:
     name: Frontend Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: frontend-quality
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
@@ -503,6 +509,7 @@ jobs:
     name: Docker Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: [backend-quality, frontend-quality]
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
@@ -580,6 +587,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: docker-integration-tests
     if: ${{ !inputs.skip_tests }}
     permissions:
       contents: read
