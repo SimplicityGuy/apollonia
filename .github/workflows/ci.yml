@@ -761,7 +761,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Only require quality checks to pass before building
-    needs: [backend-quality, frontend-quality]
+    needs: [
+      backend-quality,
+      frontend-quality,
+      security-scan
+    ]
     if: ${{ !cancelled() }}
     permissions:
       contents: read
