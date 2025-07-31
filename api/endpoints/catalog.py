@@ -120,122 +120,6 @@ async def create_catalog(
     return CatalogResponse.from_orm(catalog)
 
 
-@router.get("/{catalog_id}", response_model=CatalogResponse)
-async def get_catalog(
-    catalog_id: UUID,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_active_user),
-) -> Any:
-    """Get catalog by ID."""
-    # Try cache first
-    cache_key = f"catalog:{catalog_id}"
-    cached = await cache_get(cache_key)
-    if cached:
-        logger.info("💾 Cache hit for catalog: %s", catalog_id)
-        return CatalogResponse(**cached)
-
-    from shared.models import Catalog
-
-    catalog = await session.get(Catalog, catalog_id)
-
-    if not catalog:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Catalog not found",
-        )
-
-    if catalog.user_id != current_user.username:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied",
-        )
-
-    # Cache the result
-    response = CatalogResponse.from_orm(catalog)
-    await cache_set(cache_key, response.dict(), ttl=3600)
-
-    return response
-
-
-@router.put("/{catalog_id}", response_model=CatalogResponse)
-async def update_catalog(
-    catalog_id: UUID,
-    catalog_data: CatalogUpdate,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_active_user),
-) -> Any:
-    """Update catalog."""
-    logger.info("✏️ Updating catalog: %s", catalog_id)
-
-    from shared.models import Catalog
-
-    catalog = await session.get(Catalog, catalog_id)
-
-    if not catalog:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Catalog not found",
-        )
-
-    if catalog.user_id != current_user.username:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied",
-        )
-
-    # Update fields
-    for field, value in catalog_data.dict(exclude_unset=True).items():
-        setattr(catalog, field, value)
-
-    catalog.updated_at = datetime.utcnow()
-
-    await session.commit()
-    await session.refresh(catalog)
-
-    # Invalidate cache
-    await cache_delete(f"catalog:{catalog_id}")
-
-    logger.info("✅ Updated catalog: %s", catalog_id)
-
-    return CatalogResponse.from_orm(catalog)
-
-
-@router.delete("/{catalog_id}", response_class=Response)
-async def delete_catalog(
-    catalog_id: UUID,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_active_user),
-) -> Response:
-    """Delete catalog."""
-    logger.info("🗑️ Deleting catalog: %s", catalog_id)
-
-    from shared.models import Catalog
-
-    catalog = await session.get(Catalog, catalog_id)
-
-    if not catalog:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Catalog not found",
-        )
-
-    if catalog.user_id != current_user.username:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied",
-        )
-
-    await session.delete(catalog)
-    await session.commit()
-
-    # Invalidate cache
-    await cache_delete(f"catalog:{catalog_id}")
-
-    logger.info("✅ Deleted catalog: %s", catalog_id)
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @router.get("/media")
 async def list_media_files(
     limit: int = Query(20, ge=1, le=100),
@@ -380,6 +264,122 @@ async def search_media(
                 "total": 0,
             }
         raise
+
+
+@router.get("/{catalog_id}", response_model=CatalogResponse)
+async def get_catalog(
+    catalog_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),  # noqa: ARG001
+) -> Any:
+    """Get catalog by ID."""
+    # Try cache first
+    cache_key = f"catalog:{catalog_id}"
+    cached = await cache_get(cache_key)
+    if cached:
+        logger.info("💾 Cache hit for catalog: %s", catalog_id)
+        return CatalogResponse(**cached)
+
+    from shared.models import Catalog
+
+    catalog = await session.get(Catalog, catalog_id)
+
+    if not catalog:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Catalog not found",
+        )
+
+    if catalog.user_id != current_user.username:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    # Cache the result
+    response = CatalogResponse.from_orm(catalog)
+    await cache_set(cache_key, response.dict(), ttl=3600)
+
+    return response
+
+
+@router.put("/{catalog_id}", response_model=CatalogResponse)
+async def update_catalog(
+    catalog_id: UUID,
+    catalog_data: CatalogUpdate,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """Update catalog."""
+    logger.info("✏️ Updating catalog: %s", catalog_id)
+
+    from shared.models import Catalog
+
+    catalog = await session.get(Catalog, catalog_id)
+
+    if not catalog:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Catalog not found",
+        )
+
+    if catalog.user_id != current_user.username:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    # Update fields
+    for field, value in catalog_data.dict(exclude_unset=True).items():
+        setattr(catalog, field, value)
+
+    catalog.updated_at = datetime.utcnow()
+
+    await session.commit()
+    await session.refresh(catalog)
+
+    # Invalidate cache
+    await cache_delete(f"catalog:{catalog_id}")
+
+    logger.info("✅ Updated catalog: %s", catalog_id)
+
+    return CatalogResponse.from_orm(catalog)
+
+
+@router.delete("/{catalog_id}", response_class=Response)
+async def delete_catalog(
+    catalog_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> Response:
+    """Delete catalog."""
+    logger.info("🗑️ Deleting catalog: %s", catalog_id)
+
+    from shared.models import Catalog
+
+    catalog = await session.get(Catalog, catalog_id)
+
+    if not catalog:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Catalog not found",
+        )
+
+    if catalog.user_id != current_user.username:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    await session.delete(catalog)
+    await session.commit()
+
+    # Invalidate cache
+    await cache_delete(f"catalog:{catalog_id}")
+
+    logger.info("✅ Deleted catalog: %s", catalog_id)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{catalog_id}/media", response_model=PaginatedResponse)

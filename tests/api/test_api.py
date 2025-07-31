@@ -83,9 +83,18 @@ class TestMiddleware:
 
     def test_cors_headers(self, client: TestClient) -> None:
         """Test CORS headers are properly set."""
-        response = client.options("/api/v1/catalog/media")
+        # Test preflight OPTIONS request for CORS
+        response = client.options(
+            "/api/v1/catalog/media",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
         assert response.status_code == 200
         assert "access-control-allow-origin" in response.headers
+        assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
 
     def test_request_id_header(self, client: TestClient) -> None:
         """Test request ID header is added."""

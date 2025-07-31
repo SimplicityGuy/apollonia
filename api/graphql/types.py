@@ -69,12 +69,12 @@ class MediaFile:
     updated_at: datetime
 
     # Aliases for test compatibility
-    @property
+    @strawberry.field
     def filename(self) -> str:
         """Alias for file_name."""
         return self.file_name
 
-    @property
+    @strawberry.field
     def size(self) -> int:
         """Alias for file_size."""
         return self.file_size
@@ -180,12 +180,12 @@ class MediaFileConnection:
     total_count: int
 
     # Aliases for test compatibility
-    @property
+    @strawberry.field
     def items(self) -> list[MediaFile]:
         """Alias for getting nodes from edges."""
         return [edge.node for edge in self.edges]
 
-    @property
+    @strawberry.field
     def total(self) -> int:
         """Alias for total_count."""
         return self.total_count
@@ -226,7 +226,7 @@ class SearchResultItem:
     score: float = 1.0  # Default score for search results
 
     # Aliases for test compatibility
-    @property
+    @strawberry.field
     def filename(self) -> str:
         """Alias for file_name."""
         return self.file_name
@@ -243,13 +243,13 @@ class SearchResult:
     pages: int
 
     # Aliases for test compatibility
-    @property
+    @strawberry.field
     def totalCount(self) -> int:
         """GraphQL field alias for total."""
         return self.total
 
-    @property
-    def facets(self) -> dict[str, Any]:
+    @strawberry.field
+    def facets(self) -> JSON:
         """GraphQL field for facets."""
         # Return empty facets for now
         return {"mediaTypes": []}

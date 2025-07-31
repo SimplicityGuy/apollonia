@@ -73,7 +73,11 @@ class TestProspector:
         result = await prospector.prospect()
 
         # Check basic fields
-        assert result["file_path"] == str(test_file.absolute())
+        # On macOS, /var and /tmp are symlinks to /private/var and /private/tmp
+        expected_path = str(test_file.absolute())
+        actual_path = result["file_path"]
+        # Resolve symlinks for comparison
+        assert Path(actual_path).resolve() == Path(expected_path).resolve()
         assert result["event_type"] == "IN_CREATE"
         assert result["timestamp"] == "2024-01-01T12:00:00+00:00"
 
@@ -105,7 +109,11 @@ class TestProspector:
         result = await prospector.prospect()
 
         # Should still return basic data
-        assert result["file_path"] == str(missing_file.absolute())
+        # On macOS, /var and /tmp are symlinks to /private/var and /private/tmp
+        expected_path = str(missing_file.absolute())
+        actual_path = result["file_path"]
+        # Resolve symlinks for comparison
+        assert Path(actual_path).resolve() == Path(expected_path).resolve()
         assert result["event_type"] == "IN_CREATE"
         assert "timestamp" in result
 
@@ -141,7 +149,11 @@ class TestProspector:
             result = await prospector.prospect()
 
             # Should still return basic data
-            assert result["file_path"] == str(test_file.absolute())
+            # On macOS, /var and /tmp are symlinks to /private/var and /private/tmp
+            expected_path = str(test_file.absolute())
+            actual_path = result["file_path"]
+            # Resolve symlinks for comparison
+            assert Path(actual_path).resolve() == Path(expected_path).resolve()
             assert "timestamp" in result
 
             # No stats data

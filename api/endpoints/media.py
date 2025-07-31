@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import get_settings
 from ..database import get_session
 from ..endpoints.auth import User, get_current_active_user
-from ..schemas.media import MediaAnalysisResponse, MediaFileResponse
+from ..schemas.media import MediaAnalysisResponse, MediaFileResponse, MediaFileUpdate
 from ..utils.cache import cache_delete, cache_get, cache_set
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ router = APIRouter()
 async def get_media_file(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),  # noqa: ARG001
 ) -> Any:
     """Get media file details."""
     # Try cache first
@@ -70,7 +70,7 @@ async def get_media_file(
 async def get_media_analysis(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),  # noqa: ARG001
 ) -> Any:
     """Get media file ML analysis results."""
     # Try cache first
@@ -121,7 +121,7 @@ async def upload_media_file(
     catalog_id: UUID,
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),  # noqa: ARG001
 ) -> Any:
     """Upload a media file to catalog."""
     logger.info(
@@ -303,7 +303,7 @@ async def create_media_file(
 @router.patch("/{media_id}", response_model=MediaFileResponse)
 async def update_media_file(
     media_id: UUID,
-    update_data: dict[str, Any],
+    update_data: MediaFileUpdate,
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     """Update media file details."""
@@ -318,17 +318,20 @@ async def update_media_file(
         )
 
     # Update fields
-    if "file_size" in update_data:
-        media_file.file_size = update_data["file_size"]
-        media_file.size = update_data["file_size"]  # For database compatibility
-    if "size" in update_data:
-        media_file.file_size = update_data["size"]
-        media_file.size = update_data["size"]  # For database compatibility
-    if "file_name" in update_data:
-        media_file.file_name = update_data["file_name"]
-        media_file.filename = update_data["file_name"]  # For database compatibility
-    if "media_type" in update_data:
-        media_file.media_type = update_data["media_type"]
+    update_dict = update_data.dict(exclude_unset=True)
+
+    if "file_size" in update_dict:
+        media_file.file_size = update_dict["file_size"]
+        media_file.size = update_dict["file_size"]  # For database compatibility
+    if "file_name" in update_dict:
+        media_file.file_name = update_dict["file_name"]
+        media_file.filename = update_dict["file_name"]  # For database compatibility
+    if "media_type" in update_dict:
+        media_file.media_type = update_dict["media_type"]
+    if "metadata" in update_dict:
+        media_file.file_metadata = update_dict["metadata"]
+    if "status" in update_dict:
+        media_file.status = update_dict["status"]
 
     await session.commit()
     await session.refresh(media_file)
@@ -357,7 +360,7 @@ async def update_media_file(
 async def delete_media_file(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),  # noqa: ARG001
 ) -> Response:
     """Delete media file."""
     logger.info("🗑️ Deleting media file: %s", media_id)

@@ -47,3 +47,13 @@ class MediaFileResponse(BaseModel):
         """Pydantic config."""
 
         from_attributes = True
+
+
+class MediaFileUpdate(BaseModel):
+    """Schema for media file update request."""
+
+    file_size: int | None = None
+    file_name: str | None = None
+    media_type: str | None = None
+    metadata: dict[str, Any] | None = None
+    status: str | None = None

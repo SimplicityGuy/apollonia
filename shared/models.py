@@ -11,9 +11,14 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import JSON, UUID, DateTime, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from database.models import Base
+
+# Use a separate Base class for API models to avoid conflicts
+class APIBase(DeclarativeBase):
+    """Base class for API models."""
+
+    pass
 
 
 class TimestampMixin:
@@ -30,7 +35,7 @@ class TimestampMixin:
     )
 
 
-class Catalog(Base, TimestampMixin):
+class Catalog(APIBase, TimestampMixin):
     """Catalog model for API."""
 
     __tablename__ = "catalogs"
@@ -43,7 +48,7 @@ class Catalog(Base, TimestampMixin):
     settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
-class MediaFile(Base, TimestampMixin):
+class MediaFile(APIBase, TimestampMixin):
     """Media file model with API timestamp fields for compatibility."""
 
     __tablename__ = "media_files"
@@ -71,7 +76,7 @@ class MediaFile(Base, TimestampMixin):
     media_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     mime_type: Mapped[str | None] = mapped_column(String(100))
 
-    # JSON metadata
+    # JSON metadata with column alias
     file_metadata: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSON, default=dict, nullable=False
     )
@@ -88,7 +93,7 @@ class MediaFile(Base, TimestampMixin):
         self.file_metadata = value
 
 
-class MediaAnalysis(Base, TimestampMixin):
+class MediaAnalysis(APIBase, TimestampMixin):
     """Media analysis results model."""
 
     __tablename__ = "media_analyses"

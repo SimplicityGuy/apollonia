@@ -150,16 +150,14 @@ async def test_graphql_query(auth_token: str) -> None:
 
     query = """
     query {
-        mediaFiles(first: 10) {
-            edges {
-                node {
-                    id
-                    fileName
-                    mediaType
-                    fileSize
-                }
+        mediaFiles(limit: 10) {
+            items {
+                id
+                filename
+                mediaType
+                size
             }
-            totalCount
+            total
         }
     }
     """
