@@ -264,7 +264,7 @@ uv run task check
 
   - [Quick Start Guide](docs/getting-started.md) - Initial setup and usage
   - [Architecture Overview](docs/architecture/overview.md) - System design and components
-  - [API Documentation](docs/api/README.md) - REST and GraphQL reference
+  - [API Documentation](docs/api/api-reference.md) - REST and GraphQL reference
 
 - **Development**
 

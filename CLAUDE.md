@@ -5,16 +5,17 @@ repository.
 
 ## Project Overview
 
-Apollonia is a Python 3.12 microservices architecture for media file monitoring, processing, and
-cataloging. It uses AMQP message queuing for service communication and includes machine learning
-capabilities for media analysis. The project consists of several main services:
+Apollonia is a comprehensive Python 3.12 media catalog system that automatically detects,
+classifies, and analyzes audio and video files using machine learning. Built with a modern
+microservices architecture, it provides real-time processing, advanced analytics, and a responsive
+web interface for managing large media collections. The project consists of several main services:
 
-1. **Ingestor**: Monitors the `/data` directory for new media files and publishes file metadata to
-   AMQP
-1. **Populator**: Consumes messages from AMQP queue and stores file metadata in Neo4j graph database
+1. **Ingestor**: Monitors directories for new media files and publishes file metadata to AMQP
+1. **Populator**: Consumes messages from AMQP queue and stores file metadata in PostgreSQL and Neo4j
 1. **Analyzer**: Performs ML-based analysis on audio/video files using TensorFlow and Essentia
-1. **API**: Provides REST and GraphQL endpoints for accessing the catalog
-1. **Frontend**: React-based web interface for browsing and managing media
+1. **API**: Provides REST and GraphQL endpoints with JWT authentication for accessing the catalog
+1. **Frontend**: React 18 TypeScript web interface with real-time updates for browsing and managing
+   media
 
 ## Development Commands
 
@@ -131,9 +132,24 @@ uv run task ci
 ### Populator
 
 - `AMQP_CONNECTION_STRING`: AMQP broker URL (default: `amqp://guest:guest@localhost:5672/`)
+- `DATABASE_URL`: PostgreSQL connection URL (default:
+  `postgresql://postgres:password@localhost:5432/apollonia`)
 - `NEO4J_URI`: Neo4j connection URI (default: `bolt://localhost:7687`)
 - `NEO4J_USER`: Neo4j username (default: `neo4j`)
 - `NEO4J_PASSWORD`: Neo4j password (required, no default)
+
+### API Service
+
+- `DATABASE_URL`: PostgreSQL connection URL
+- `JWT_SECRET_KEY`: Secret key for JWT token signing
+- `JWT_ALGORITHM`: JWT algorithm (default: `HS256`)
+- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration (default: `30`)
+
+### Analyzer
+
+- `AMQP_CONNECTION_STRING`: AMQP broker URL
+- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379`)
+- `ML_MODEL_PATH`: Path to ML models directory
 
 ## Architecture
 
@@ -178,9 +194,10 @@ The ingestor publishes messages with this structure:
 
 #### Populator (`/populator/`)
 
-- Basic structure exists but core functionality needs implementation
-- Configured for Neo4j integration (see dependencies)
-- Should implement message consumption and Neo4j import logic
+- Complete AMQP message consumption with asyncio patterns
+- PostgreSQL integration for primary data storage with SQLAlchemy
+- Neo4j integration for graph relationships and advanced queries
+- Implements comprehensive media metadata storage and indexing
 
 ## Important Implementation Details
 

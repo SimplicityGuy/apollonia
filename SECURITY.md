@@ -12,8 +12,8 @@ We provide security updates for the following versions:
 | Version | Supported |
 | ------- | --------- |
 | main    | ✅ Yes    |
-| 1.x.x   | ✅ Yes    |
-| < 1.0   | ❌ No     |
+| 0.1.x   | ✅ Yes    |
+| < 0.1   | ❌ No     |
 
 ## Security Features
 
@@ -396,7 +396,7 @@ We thank the security community for helping keep Apollonia secure:
 
 ______________________________________________________________________
 
-**Last Updated**: December 2024
+**Last Updated**: July 2025
 
 For questions about this security policy, please contact
 [robert@simplicityguy.com](mailto:robert@simplicityguy.com).

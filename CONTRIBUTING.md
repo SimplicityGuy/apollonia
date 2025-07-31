@@ -37,10 +37,11 @@ By participating, you are expected to uphold this standard.
 Before contributing, ensure you have:
 
 - Python 3.12+ installed
-- Node.js 18+ for frontend development
-- Docker and Docker Compose
+- Node.js 22+ for frontend development
+- Docker and Docker Compose (v2.0+)
 - Git for version control
 - [Just](https://just.systems/) task runner (recommended)
+- [uv](https://github.com/astral-sh/uv) package manager
 
 ### Repository Structure
 
@@ -48,16 +49,20 @@ Before contributing, ensure you have:
 apollonia/
 ├── api/                    # FastAPI backend service
 ├── analyzer/              # ML analysis service
+├── database/              # Database models and migrations
 ├── frontend/              # React frontend application
 ├── ingestor/              # File monitoring service
 ├── populator/             # Database population service
-├── shared/                # Shared utilities
+├── shared/                # Shared utilities and models
 ├── docs/                  # Documentation
 ├── tests/                 # Test suites
+├── benchmarks/            # Performance benchmarks
 ├── .github/workflows/     # CI/CD workflows
 ├── README.md              # Project overview
 ├── CLAUDE.md              # AI development guide
-└── CONTRIBUTING.md        # This file
+├── CONTRIBUTING.md        # This file
+├── SECURITY.md            # Security policies
+└── justfile               # Task runner commands
 ```
 
 ## Development Setup
@@ -97,7 +102,10 @@ uv run pre-commit install
 # Install frontend dependencies
 cd frontend && npm ci && cd ..
 
-# Start services
+# Start infrastructure services
+just up
+
+# Or manually with docker-compose
 docker-compose up -d
 ```
 
@@ -234,13 +242,15 @@ See [Emoji Logging Convention](docs/development/logging-convention.md) for detai
 just test
 
 # Run specific test types
-just test-python        # Python unit tests
-just test-frontend      # Frontend tests
-just test-integration   # Integration tests
-just test-e2e          # End-to-end tests
+uv run pytest -v -m "not integration and not e2e"  # Unit tests only
+uv run pytest -v -m integration                     # Integration tests
+uv run pytest -v -m e2e                            # End-to-end tests
+
+# Frontend tests
+cd frontend && npm test
 
 # Run with coverage
-just test-coverage
+uv run task test
 ```
 
 ### Writing Tests
