@@ -1,0 +1,68 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual environments
+venv
+env
+.venv
+.env
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+.coverage
+htmlcov
+.tox
+
+# Build artifacts
+dist
+build
+*.egg
+
+# Documentation build
+docs/_build
+
+# Logs
+*.log
+
+# Local data (but not the directory structure)
+data/*
+!data/.gitkeep
+
+# Models
+models/*
+!models/.gitkeep
+
+# Node modules (for frontend)
+node_modules
+
+# Development files
+docker-compose.override.yml
+.env.local
+
+# Explicitly include README files
+!README.md
+!*/README.md
+!**/README.md

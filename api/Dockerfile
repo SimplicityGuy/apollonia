@@ -14,7 +14,8 @@ WORKDIR /app
 
 # Copy dependency files
 COPY api/pyproject.toml api/README.md ./
-COPY shared /shared
+# Copy shared package with all files
+COPY shared/ /shared/
 
 # Install dependencies
 RUN uv venv && \
