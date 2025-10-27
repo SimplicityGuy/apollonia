@@ -533,7 +533,7 @@ jobs:
           check-name: Frontend Test Results
 
       - name: 📤 Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: frontend-test-results
@@ -736,7 +736,7 @@ jobs:
           check-name: E2E Test Results
 
       - name: 📤 Upload E2E test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: e2e-test-results
