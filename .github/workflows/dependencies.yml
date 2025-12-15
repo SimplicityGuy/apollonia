@@ -91,7 +91,7 @@ jobs:
 
       - name: 📤 Upload Python update artifacts
         if: env.HAS_PYTHON_UPDATES == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: python-dependency-updates
           path: |
@@ -194,7 +194,7 @@ jobs:
 
       - name: 📤 Upload Node.js update artifacts
         if: env.HAS_NODE_UPDATES == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nodejs-dependency-updates
           path: |
@@ -382,7 +382,7 @@ jobs:
           cd ..
 
       - name: 📤 Upload security reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: security-reports
           path: |
